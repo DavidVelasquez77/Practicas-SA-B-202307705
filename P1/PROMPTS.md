@@ -1,5 +1,11 @@
-Prompt 1: Generación del Repositorio y Consultas SQL Seguras
+# Registro de Prompts - Práctica 1
 
+## Prompt 1: Generación de Repositorio (Acceso a Datos)
+**Objetivo:** Generar la capa de base de datos utilizando el driver `pg` nativo, implementando consultas parametrizadas para prevenir inyección SQL y aplicando el principio de Responsabilidad Única (SRP).
+
+**Prompt utilizado:
+
+```xml
   <rol>
     Actúa como un desarrollador experto en backend utilizando TypeScript, Node.js y principios SOLID.
   </rol>
@@ -59,3 +65,12 @@ Prompt 1: Generación del Repositorio y Consultas SQL Seguras
         la mantenibilidad del código.
     </documentacion_interna>
   </instrucciones>
+```
+
+**Resumen de la respuesta generada:**
+La IA generó exitosamente los modelos de interfaces (`solicitud.interface.ts`), la configuración del pool de conexiones (`db.ts`) y la clase `SolicitudRepository`. Cumplió con la inyección de dependencias al solicitar el `Pool` por constructor e implementó un manejo de errores personalizado (`DatabaseOperationError`) para ocultar detalles sensibles de la base de datos al cliente.
+
+**Análisis y ajustes:**
+El código fue adoptado casi en su totalidad debido a su alta calidad. Se verificó que todas las consultas SQL (`INSERT`, `UPDATE`, `DELETE`) utilizan parámetros `$1, $2`, eliminando por completo el riesgo de inyección SQL estipulado en los requerimientos de seguridad.
+
+
