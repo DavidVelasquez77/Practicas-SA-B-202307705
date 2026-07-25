@@ -207,6 +207,13 @@ Finalmente, se conservó la jerarquía `AppError`, `ValidationError` y `NotFound
 **Resumen de la respuesta generada:**
 La IA generó el `SolicitudController`, el archivo de rutas y el punto de entrada `index.ts`. Se implementó la composición de dependencias en el archivo principal (`Pool` -> `Repository` -> `Service` -> `Controller`), inyectando cada capa en la siguiente mediante sus constructores. Express quedó configurado con protecciones básicas (desactivar `x-powered-by`, límite de JSON de 100kb).
 
+**Evidencia de Respuesta generada**
+![alt text](img/p3-1.png)
+![alt text](img/p3-2.png)
+![alt text](img/p3-3.png)
+![alt text](img/p3-4.png)
+![alt text](img/p3-5.png)
+
 **Análisis y ajustes:**
 La respuesta generada inicialmente incluía manejo de errores dentro del controlador mediante un método privado `responderError`. Aunque esta solución funcionaba, durante la revisión crítica se identificó que podía generar duplicación al existir también un middleware global de errores. Para mejorar la separación de responsabilidades, se modificó el controlador para utilizar `next(error)` en los bloques `catch`, delegando la conversión de errores HTTP al middleware `errorMiddleware`.
 
