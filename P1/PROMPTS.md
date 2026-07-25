@@ -76,9 +76,17 @@ La IA generó exitosamente los modelos de interfaces (`solicitud.interface.ts`),
 ![alt text](img/p1-3.png)
 ![alt text](img/p1-4.png)
 ![alt text](img/p1-5.png)
-**Análisis y ajustes:**
-El código fue adoptado casi en su totalidad debido a su alta calidad. Se verificó que todas las consultas SQL (`INSERT`, `UPDATE`, `DELETE`) utilizan parámetros `$1, $2`, eliminando por completo el riesgo de inyección SQL estipulado en los requerimientos de seguridad.
 
+**Análisis y ajustes:**
+La respuesta generada fue revisada antes de integrarse al proyecto, principalmente en los aspectos de seguridad, separación de responsabilidades y manejo de errores. Se verificó que las operaciones `INSERT`, `UPDATE`, `DELETE` y `PATCH` utilizaran consultas parametrizadas con `$1`, `$2`, etc., evitando concatenar valores recibidos desde el cliente. Esto fue importante para prevenir inyección SQL y cumplir con el requisito de código seguro.
+
+También se validó que el método encargado de actualizar el estado no construyera SQL dinámico ni permitiera seleccionar columnas desde el cuerpo de la petición. Se mantuvo la consulta fija `SET estado = $1`, por lo que el endpoint PATCH solo puede modificar el campo permitido.
+
+Como ajuste de diseño, se separó el error de base de datos en una clase `DatabaseOperationError`, conservando el error original únicamente para registro interno. Posteriormente se decidió mover este error a la carpeta `errors/` y hacerlo parte de la jerarquía de errores de la aplicación, extendiendo de `AppError`, para mantener un manejo más uniforme y alineado con el principio de Abierto/Cerrado (OCP).
+
+Además, se revisó la conversión del campo `costo_estimado`, ya que PostgreSQL puede devolver los campos `NUMERIC` como texto mediante el driver `pg`. Por ello, se mantuvo un método privado `mapRowToSolicitud`, encargado de transformar la fila de PostgreSQL al formato usado por la aplicación. Esto evita repetir lógica de mapeo en cada método del repositorio y mantiene el código más limpio.
+
+Finalmente, se confirmó que el repositorio no contiene lógica de negocio, validaciones HTTP ni reglas propias del controlador. Su responsabilidad quedó limitada al acceso a datos, cumpliendo con el principio de Responsabilidad Única (SRP).
 
 ## Prompt 2: Generación de la Capa de Servicios (Lógica de Negocio)
 **Objetivo:** Implementar la lógica de negocio y las validaciones del sistema antes de interactuar con la base de datos, garantizando la separación de responsabilidades (SRP) y la Inversión de Dependencias (DIP).
@@ -139,8 +147,17 @@ La IA construyó la clase `SolicitudService` inyectando `SolicitudRepository` po
 ![alt text](img/p2-5.png)
 
 **Análisis y ajustes:**
-El resultado fue excelente y se adoptó directamente. Destaca la correcta aplicación del Principio de Abierto/Cerrado (OCP) al centralizar los errores en una clase base `AppError`, lo que permitirá que el controlador procese cualquier error de dominio futuro sin modificar su estructura. Se validó que el método para actualizar el estado (PATCH) únicamente exige y evalúa dicho campo, cumpliendo con la regla de negocio requerida.
+La respuesta generada fue evaluada para confirmar que la capa de servicios quedara separada de Express y de PostgreSQL. Se verificó que `SolicitudService` no utilizara `Request`, `Response`, consultas SQL ni códigos HTTP directamente. Su responsabilidad quedó limitada a validar reglas de negocio y coordinar las operaciones del repositorio.
 
+Se revisaron las validaciones propuestas y se conservaron las reglas requeridas por el enunciado: prioridad como número entero entre 1 y 5, costo estimado mayor o igual a 0, estado limitado a `registrada`, `en_proceso` o `finalizada`, y campos de texto obligatorios. Además, se confirmó que `trim()` fuera utilizado para evitar aceptar cadenas formadas únicamente por espacios.
+
+Un punto importante de revisión fue el método de actualización exclusiva de estado. Se verificó que `actualizarEstado` validara únicamente el `id` y el campo `estado`, sin exigir `titulo`, `area_solicitante`, `prioridad` ni `costo_estimado`. Esto permite que el endpoint PATCH cumpla su propósito de modificar solo una parte del recurso.
+
+También se validó el manejo de identificadores inválidos. Como el controlador convierte `req.params.id` con `Number(...)`, se revisó que el servicio rechazara valores como `NaN`, decimales, cero o números negativos mediante `validarId`. Esto evita que identificadores inválidos lleguen al repositorio.
+
+Como mejora de código limpio, se mantuvieron métodos privados para evitar duplicar validaciones: `validarDatosCompletos`, `validarTexto`, `validarPrioridad`, `validarCostoEstimado`, `validarEstado` y `validarId`. Esto aplica el principio DRY y facilita mantener las reglas de negocio en un solo lugar.
+
+Finalmente, se conservó la jerarquía `AppError`, `ValidationError` y `NotFoundError`, ya que permite que la capa superior maneje errores conocidos sin depender de cada clase concreta. Esto apoya el principio de Abierto/Cerrado (OCP), porque nuevos errores de dominio pueden agregarse sin modificar la lógica principal de los controladores.
 
 ## Prompt 3: Generación de la Capa de Controladores y Rutas (API REST)
 **Objetivo:** Exponer la lógica de negocio a través de una API RESTful utilizando Express, asegurando que el controlador cumpla con el Principio de Responsabilidad Única (SRP) y maneje correctamente los códigos de estado HTTP y los errores genéricos (OCP).
@@ -191,5 +208,24 @@ El resultado fue excelente y se adoptó directamente. Destaca la correcta aplica
 La IA generó el `SolicitudController`, el archivo de rutas y el punto de entrada `index.ts`. Se implementó la composición de dependencias en el archivo principal (`Pool` -> `Repository` -> `Service` -> `Controller`), inyectando cada capa en la siguiente mediante sus constructores. Express quedó configurado con protecciones básicas (desactivar `x-powered-by`, límite de JSON de 100kb).
 
 **Análisis y ajustes:**
-Durante la ingeniería del prompt, se aplicó una revisión crítica sobre los estándares HTTP: se instruyó explícitamente a la IA que la operación DELETE debe retornar un estado `204 No Content` utilizando `res.status(204).send()` sin incluir cuerpo (body) en la respuesta, en lugar del método `.json()` estándar. La IA aplicó esta instrucción correctamente. Además, se implementó un chequeo de conexión a PostgreSQL (`SELECT 1`) previo a levantar el servidor web, previniendo que la API acepte tráfico si la base de datos está caída.
+La respuesta generada inicialmente incluía manejo de errores dentro del controlador mediante un método privado `responderError`. Aunque esta solución funcionaba, durante la revisión crítica se identificó que podía generar duplicación al existir también un middleware global de errores. Para mejorar la separación de responsabilidades, se modificó el controlador para utilizar `next(error)` en los bloques `catch`, delegando la conversión de errores HTTP al middleware `errorMiddleware`.
 
+Este ajuste permitió que el controlador quedara enfocado únicamente en extraer datos de `req.params` o `req.body`, llamar al servicio correspondiente y devolver respuestas exitosas. De esta forma se reforzó el principio de Responsabilidad Única (SRP), ya que el controlador ya no clasifica errores ni decide respuestas de fallo.
+
+También se implementó un middleware global de errores para capturar tanto los errores de dominio (`ValidationError`, `NotFoundError`) como los errores de infraestructura (`DatabaseOperationError`) y los errores generados por Express antes de llegar al controlador, como un JSON mal formado. Esta mejora fue necesaria porque al probar un JSON inválido, Express devolvía inicialmente una página HTML con información interna y rutas locales del proyecto. El middleware corrige este riesgo devolviendo una respuesta JSON controlada con código `400` y sin exponer detalles técnicos.
+
+Se corrigió además el archivo `index.ts`, eliminando un registro duplicado de las rutas `/api/solicitudes`. Las rutas quedaron registradas una sola vez y el middleware de errores fue colocado al final de la configuración de Express, como corresponde en el flujo de middlewares.
+
+Se verificó que los códigos HTTP exitosos fueran correctos: `200` para consultas y actualizaciones, `201` para creación y `204 No Content` para eliminación. En el caso de DELETE, se mantuvo `res.status(204).send()` para no enviar cuerpo en la respuesta, cumpliendo con buenas prácticas REST.
+
+Finalmente, se revisó la composición de dependencias en `index.ts`, manteniendo el flujo `Pool -> Repository -> Service -> Controller`. Esta composición evita que las capas creen internamente sus dependencias y permite evidenciar la Inversión de Dependencias (DIP).
+
+## Ajuste adicional posterior: Middleware global de errores e interfaz del repositorio
+
+Durante las pruebas manuales se detectó que, al enviar un JSON mal formado, Express respondía con una página HTML que incluía el stack trace y rutas internas del entorno local. Esto representaba un riesgo de seguridad porque exponía información de infraestructura al cliente.
+
+Para corregirlo se agregó un middleware global `errorMiddleware`, encargado de transformar errores conocidos y no conocidos en respuestas JSON seguras. También se modificaron los controladores para usar `next(error)` en lugar de responder los errores directamente. Con esto se centralizó el manejo de errores y se redujo duplicación.
+
+Además, se revisó la jerarquía de errores y se decidió que `DatabaseOperationError` extendiera de `AppError`, conservando el campo `originalError` únicamente para el log interno del servidor. Esto permitió mantener un manejo uniforme de errores conocidos sin exponer detalles técnicos al cliente.
+
+Como mejora adicional de SOLID, se consideró definir una interfaz `ISolicitudRepository` para que el servicio dependa de un contrato y no de la clase concreta `SolicitudRepository`. Esta decisión refuerza la Inversión de Dependencias (DIP) y permite sustituir la implementación de PostgreSQL por otra implementación, por ejemplo una versión en memoria para pruebas, sin modificar la lógica de negocio.
