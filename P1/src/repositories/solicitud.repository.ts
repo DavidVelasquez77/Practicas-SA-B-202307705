@@ -13,7 +13,7 @@ import {
 } from "../models/solicitud.interface";
 
 import { DatabaseOperationError } from "../errors/database-operation.error";
-
+import { ISolicitudRepository } from "./solicitud.repository.interface";
 /**
  * Representación exacta de una fila devuelta por PostgreSQL.
  *
@@ -38,7 +38,7 @@ interface SolicitudRow extends QueryResultRow {
  */
 type SqlParameter = string | number;
 
-export class SolicitudRepository {
+export class SolicitudRepository implements ISolicitudRepository {
   /**
    * La instancia de Pool se recibe por constructor.
    *

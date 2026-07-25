@@ -6,7 +6,7 @@ import {
   Solicitud,
 } from "../models/solicitud.interface";
 
-import { SolicitudRepository } from "../repositories/solicitud.repository";
+import { ISolicitudRepository } from "../repositories/solicitud.repository.interface";
 
 import {
   NotFoundError,
@@ -34,7 +34,7 @@ export class SolicitudService {
    * su dependencia, reduciendo el acoplamiento y facilitando las pruebas.
    */
   constructor(
-    private readonly solicitudRepository: SolicitudRepository,
+    private readonly solicitudRepository: ISolicitudRepository,
   ) {}
 
   /**
