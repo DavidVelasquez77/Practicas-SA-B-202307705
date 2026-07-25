@@ -124,8 +124,7 @@ export class SolicitudRepository {
    * Actualiza completamente una solicitud.
    *
    * Retorna null cuando el id no existe. De esta manera, la capa de
-   * servicios o el controlador puede transformar el resultado en
-   * una respuesta HTTP 404.
+   * servicios puede transformar el resultado en un NotFoundError.
    */
   public async actualizarCompleta(
     id: number,

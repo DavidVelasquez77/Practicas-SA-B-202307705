@@ -31,6 +31,16 @@ if (!Number.isInteger(parsedPort)) {
   );
 }
 
+if (
+  !Number.isInteger(parsedPort) ||
+  parsedPort <= 0 ||
+  parsedPort > 65535
+) {
+  throw new Error(
+    "La variable DB_PORT debe contener un puerto válido.",
+  );
+}
+
 export const databasePool = new Pool({
   user: DB_USER,
   password: DB_PASSWORD,

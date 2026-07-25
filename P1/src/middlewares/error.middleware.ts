@@ -44,23 +44,24 @@ export const errorMiddleware: ErrorRequestHandler = (
     return;
   }
 
-  if (error instanceof AppError) {
-    res.status(error.statusCode).json({
-      code: error.code,
-      message: error.message,
-    });
-
-    return;
-  }
-
   if (error instanceof DatabaseOperationError) {
     console.error(
       "Error de base de datos:",
       error.originalError,
     );
 
-    res.status(500).json({
+    res.status(error.statusCode).json({
+      code: error.code,
       message: "Error interno del servidor",
+    });
+
+    return;
+  }
+
+  if (error instanceof AppError) {
+    res.status(error.statusCode).json({
+      code: error.code,
+      message: error.message,
     });
 
     return;
