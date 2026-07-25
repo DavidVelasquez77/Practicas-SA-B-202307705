@@ -12,7 +12,7 @@ import {
   Solicitud,
 } from "../models/solicitud.interface";
 
-import { DatabaseOperationError } from "./database-operation.error";
+import { DatabaseOperationError } from "../errors/database-operation.error";
 
 /**
  * Representación exacta de una fila devuelta por PostgreSQL.
