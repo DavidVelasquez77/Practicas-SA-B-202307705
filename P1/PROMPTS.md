@@ -220,7 +220,7 @@ Se verificó que los códigos HTTP exitosos fueran correctos: `200` para consult
 
 Finalmente, se revisó la composición de dependencias en `index.ts`, manteniendo el flujo `Pool -> Repository -> Service -> Controller`. Esta composición evita que las capas creen internamente sus dependencias y permite evidenciar la Inversión de Dependencias (DIP).
 
-## Ajuste adicional posterior: Middleware global de errores e interfaz del repositorio
+## Ajustes adicionales posteriores
 
 Durante las pruebas manuales se detectó que, al enviar un JSON mal formado, Express respondía con una página HTML que incluía el stack trace y rutas internas del entorno local. Esto representaba un riesgo de seguridad porque exponía información de infraestructura al cliente.
 
