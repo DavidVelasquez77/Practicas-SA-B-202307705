@@ -10,37 +10,18 @@ import { SolicitudRepository } from "./repositories/solicitud.repository";
 import { SolicitudService } from "./services/solicitud.service";
 import { SolicitudController } from "./controllers/solicitud.controller";
 import { crearSolicitudesRouter } from "./routes/solicitudes.routes";
+import { errorMiddleware } from "./middlewares/error.middleware";
 
-/**
- * Creación y configuración de Express.
- */
 const app: Express = express();
 
-/**
- * Evita exponer innecesariamente que el servidor utiliza Express.
- */
 app.disable("x-powered-by");
 
-/**
- * Permite recibir cuerpos de solicitudes en formato JSON.
- *
- * El límite evita aceptar cuerpos excesivamente grandes para una API
- * que únicamente administra registros pequeños.
- */
 app.use(
   express.json({
     limit: "100kb",
   }),
 );
 
-/**
- * Composición de dependencias.
- *
- * Pool -> Repository -> Service -> Controller
- *
- * Esta es la única sección que conoce e instancia las implementaciones
- * concretas. Las capas internas reciben sus dependencias por constructor.
- */
 const solicitudRepository = new SolicitudRepository(
   databasePool,
 );
@@ -53,17 +34,11 @@ const solicitudController = new SolicitudController(
   solicitudService,
 );
 
-/**
- * Registro del router de solicitudes.
- */
 app.use(
   "/api/solicitudes",
   crearSolicitudesRouter(solicitudController),
 );
 
-/**
- * Ruta opcional para verificar que la API está activa.
- */
 app.get(
   "/health",
   (_req: Request, res: Response): void => {
@@ -74,9 +49,6 @@ app.get(
   },
 );
 
-/**
- * Respuesta para rutas inexistentes.
- */
 app.use(
   (_req: Request, res: Response): void => {
     res.status(404).json({
@@ -84,6 +56,8 @@ app.use(
     });
   },
 );
+
+app.use(errorMiddleware);
 
 const port = Number(process.env.PORT ?? 3000);
 
@@ -97,12 +71,6 @@ if (
   );
 }
 
-/**
- * Comprueba la conexión antes de iniciar el servidor.
- *
- * Si PostgreSQL no está disponible, la aplicación no queda escuchando
- * peticiones en un estado parcialmente funcional.
- */
 async function iniciarServidor(): Promise<void> {
   try {
     await databasePool.query("SELECT 1");
