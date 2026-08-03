@@ -1,0 +1,31 @@
+@import "tailwindcss";
+
+:root {
+  color-scheme: dark;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  background: #09090b;
+}
+
+body {
+  min-height: 100vh;
+  margin: 0;
+  background: #09090b;
+  color: #f4f4f5;
+}
+
+button,
+input,
+select {
+  font: inherit;
+}
+
+::selection {
+  background: #b91c1c;
+  color: #ffffff;
+}
