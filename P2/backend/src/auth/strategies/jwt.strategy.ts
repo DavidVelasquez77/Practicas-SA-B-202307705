@@ -6,24 +6,23 @@ import { ConfigService } from '@nestjs/config';
 import { PassportStrategy } from '@nestjs/passport';
 import type { Request } from 'express';
 import { Strategy } from 'passport-jwt';
-import { RoleName } from '../../generated/prisma/client';
+import type { AuthenticatedUser } from '../types/authenticated-user.interface';
+import {
+  USER_ROLES,
+  type UserRole,
+} from '../types/user-role.type';
 
 interface JwtPayload {
   sub: number;
-  role: RoleName;
+  role: UserRole;
   iat?: number;
   exp?: number;
-}
-
-interface AuthenticatedUser {
-  id: number;
-  role: RoleName;
 }
 
 const extractJwtFromCookie = (
   request: Request,
 ): string | null => {
-  if (!request || !request.cookies) {
+  if (!request?.cookies) {
     return null;
   }
 
@@ -54,8 +53,8 @@ export class JwtStrategy extends PassportStrategy(
 
   validate(payload: JwtPayload): AuthenticatedUser {
     const validRole =
-      payload.role === RoleName.Admin ||
-      payload.role === RoleName.Cliente;
+      payload.role === USER_ROLES.ADMIN ||
+      payload.role === USER_ROLES.CLIENTE;
 
     if (!Number.isInteger(payload.sub) || !validRole) {
       throw new UnauthorizedException(

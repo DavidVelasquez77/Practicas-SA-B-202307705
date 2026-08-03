@@ -9,6 +9,8 @@ import { EncryptionModule } from '../encryption/encryption.module';
 import { PrismaModule } from '../prisma/prisma.module';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
+import { JwtAuthGuard } from './guards/jwt-auth.guard';
+import { UserRoleGuard } from './guards/user-role.guard';
 import { JwtStrategy } from './strategies/jwt.strategy';
 
 @Module({
@@ -28,12 +30,11 @@ import { JwtStrategy } from './strategies/jwt.strategy';
       useFactory: (
         configService: ConfigService,
       ) => {
-        const jwtExpiresIn =
-          Number(
-            configService.getOrThrow<string>(
-              'JWT_EXPIRES_IN',
-            ),
-          );
+        const jwtExpiresIn = Number(
+          configService.getOrThrow<string>(
+            'JWT_EXPIRES_IN',
+          ),
+        );
 
         if (
           !Number.isInteger(jwtExpiresIn) ||
@@ -60,10 +61,14 @@ import { JwtStrategy } from './strategies/jwt.strategy';
   providers: [
     AuthService,
     JwtStrategy,
+    JwtAuthGuard,
+    UserRoleGuard,
   ],
   exports: [
     AuthService,
     PassportModule,
+    JwtAuthGuard,
+    UserRoleGuard,
   ],
 })
 export class AuthModule {}
