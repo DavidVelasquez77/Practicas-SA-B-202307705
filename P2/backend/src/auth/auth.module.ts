@@ -27,23 +27,12 @@ import { JwtStrategy } from './strategies/jwt.strategy';
     JwtModule.registerAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
-      useFactory: (
-        configService: ConfigService,
-      ) => {
-        const jwtExpiresIn = Number(
+      useFactory: (configService: ConfigService) => {
+        const expiresIn = Number(
           configService.getOrThrow<string>(
             'JWT_EXPIRES_IN',
           ),
         );
-
-        if (
-          !Number.isInteger(jwtExpiresIn) ||
-          jwtExpiresIn <= 0
-        ) {
-          throw new Error(
-            'JWT_EXPIRES_IN debe ser un número entero positivo expresado en segundos',
-          );
-        }
 
         return {
           secret:
@@ -51,7 +40,7 @@ import { JwtStrategy } from './strategies/jwt.strategy';
               'JWT_SECRET',
             ),
           signOptions: {
-            expiresIn: jwtExpiresIn,
+            expiresIn,
           },
         };
       },
