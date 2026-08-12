@@ -1699,3 +1699,33 @@ Las tecnologías y patrones seleccionados responden a las necesidades específic
 | Trazabilidad | Correlation ID | Permite reconstruir una operación a través de múltiples servicios y eventos |
 
 Estas decisiones buscan mantener una arquitectura escalable, desacoplada, auditable y resistente a fallos.
+
+# 13. Estrategia de despliegue con Docker y Kubernetes
+
+Como complemento a la arquitectura propuesta, se considera el uso de Docker y Kubernetes para facilitar el despliegue y escalamiento independiente de los microservicios.
+
+Docker permitiría empaquetar cada componente desplegable de forma independiente, incluyendo:
+
+- API Gateway;
+- Servicio de Autenticación y Autorización;
+- Servicio de Lotes de Transacciones;
+- Servicio de Aprobaciones;
+- Servicio de Procesamiento;
+- Servicio de Notificaciones.
+
+Cada servicio podría contar con su propia imagen y ciclo de despliegue, manteniendo la separación definida en la arquitectura.
+
+Para un ambiente de alta demanda, Kubernetes podría utilizarse como plataforma de orquestación de los contenedores.
+
+Su uso permitiría:
+
+- ejecutar varias réplicas de los servicios con mayor carga;
+- reiniciar automáticamente instancias con fallos;
+- distribuir tráfico entre réplicas;
+- escalar microservicios de forma independiente;
+- administrar configuración y secretos de manera centralizada;
+- realizar despliegues controlados sin afectar toda la solución.
+
+Esta estrategia es especialmente útil para el escenario bancario planteado, ya que servicios como Procesamiento o Lotes podrían requerir mayor capacidad durante períodos de alta demanda sin necesidad de escalar todos los componentes del sistema.
+
+Docker y Kubernetes no modifican las responsabilidades ni los flujos definidos previamente; únicamente complementan la arquitectura con una estrategia de despliegue y escalabilidad acorde con un entorno basado en microservicios.
