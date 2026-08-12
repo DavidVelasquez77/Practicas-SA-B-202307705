@@ -714,119 +714,183 @@ porque un destinatario puede existir antes de realizarse su primer intento de en
 
 # 6. Diagramas de secuencia UML para los flujos críticos
 
-## 6.1 Aprobación de transacciones de tres pasos
+Los siguientes diagramas representan los tres flujos críticos solicitados:
 
-```mermaid
-sequenceDiagram
-    autonumber
-    actor M as Maker
-    actor C as Checker
-    actor A as Authorizer
-    participant FE as Aplicación Cliente
-    participant GW as API Gateway
-    participant AS as Servicio de Aprobaciones
-    participant DB as BD de Aprobaciones
-    participant BUS as Bus de Eventos
-    participant LOG as Logging Centralizado
+1. aprobación de transacciones mediante Maker-Checker-Authorizer;
+2. envío de transacciones aprobadas al Core Bancario;
+3. notificación a clientes o beneficiarios.
 
-    M->>FE: Aprobar como Maker
-    FE->>GW: Solicitud autenticada
-    GW->>AS: Acción Maker
-    AS->>DB: Validar proceso
-    AS->>DB: Registrar Maker
-    AS->>LOG: Registrar acción
-
-    C->>FE: Revisar lote
-    FE->>GW: Solicitud autenticada
-    GW->>AS: Acción Checker
-    AS->>DB: Validar Checker != Maker
-
-    alt Checker rechaza
-        AS->>DB: Registrar rechazo
-        AS->>LOG: Registrar rechazo
-    else Checker aprueba
-        AS->>DB: Registrar Checker
-        AS->>LOG: Registrar acción
-
-        A->>FE: Autorizar lote
-        FE->>GW: Solicitud autenticada
-        GW->>AS: Acción Authorizer
-        AS->>DB: Validar Authorizer != Maker y Checker
-
-        alt Authorizer rechaza
-            AS->>DB: Registrar rechazo
-            AS->>LOG: Registrar rechazo
-        else Authorizer aprueba
-            AS->>DB: Registrar Authorizer
-            AS->>DB: Marcar proceso aprobado
-            AS->>BUS: Publicar Lote aprobado
-            AS->>LOG: Registrar aprobación final
-        end
-    end
-```
+El identificador de trazabilidad (`Correlation ID`) se propaga en las solicitudes y en los eventos internos. Para mantener los diagramas legibles, no se muestra como parámetro en cada mensaje, pero forma parte del contexto de cada operación.
 
 ---
 
-## 6.2 Envío al sistema Core Bancario
+## 6.1 Secuencia UML — Aprobación de transacciones de tres pasos
 
-```mermaid
-sequenceDiagram
-    autonumber
-    participant BUS as Bus de Eventos
-    participant PS as Servicio de Procesamiento
-    participant DB as BD de Procesamiento
-    participant CORE as Core Bancario Externo
-    participant LOG as Logging Centralizado
+El proceso de aprobación debe cumplir el esquema:
 
-    BUS->>PS: Evento Lote aprobado
-    PS->>DB: Crear procesamiento
-    PS->>DB: Estado = Procesando
-    PS->>CORE: Enviar transacciones aprobadas
+```text
+Maker
+  ↓
+Checker
+  ↓
+Authorizer
+````
 
-    alt Procesamiento exitoso
-        CORE-->>PS: Resultado exitoso
-        PS->>DB: Estado = Procesado
-        PS->>BUS: Publicar Lote procesado
-        PS->>LOG: Registrar resultado exitoso
-    else Procesamiento fallido
-        CORE-->>PS: Error / rechazo / indisponibilidad
-        PS->>DB: Registrar intento y error
-        PS->>DB: Estado = Fallido
-        PS->>BUS: Publicar Lote fallido
-        PS->>LOG: Registrar error
-    end
+Cada etapa debe ser realizada por un usuario distinto.
+
+Si el Checker o el Authorizer rechazan el lote, el resultado debe comunicarse al Servicio de Lotes para actualizar su estado e historial.
+
+![alt text](Diagramas/UML-Secuencia-AprobaciónTransacciones.png)
+
+
+### Resultado del flujo
+
+Un lote únicamente se considera aprobado cuando:
+
+```text
+Maker registrado
+        +
+Checker aprobado
+        +
+Authorizer aprobado
 ```
+
+Además:
+
+```text
+Maker != Checker
+Maker != Authorizer
+Checker != Authorizer
+```
+
+Si Checker o Authorizer rechazan el lote, se genera el evento:
+
+```text
+Lote rechazado
+```
+
+que permite actualizar el historial administrado por el Servicio de Lotes.
 
 ---
 
-## 6.3 Notificación a clientes o beneficiarios
+## 6.2 Secuencia UML — Envío al sistema Core Bancario
 
-```mermaid
-sequenceDiagram
-    autonumber
-    participant BUS as Bus de Eventos
-    participant NS as Servicio de Notificaciones
-    participant DB as BD de Notificaciones
-    participant MAIL as Servicio Externo de Correo
-    participant LOG as Logging Centralizado
+El Servicio de Procesamiento inicia su trabajo cuando recibe el evento `Lote aprobado`.
 
-    BUS->>NS: Evento Lote aprobado
-    NS->>DB: Crear notificaciones
+Antes de enviar las transacciones al Core Bancario se verifica si el lote ya fue procesado previamente. Esta validación permite evitar que un evento duplicado provoque el envío de las mismas transacciones más de una vez.
 
-    loop Por cada beneficiario
-        NS->>MAIL: Enviar notificación
+También se contempla un mecanismo de reintento para errores técnicos temporales. Si después de los intentos permitidos el Core continúa sin estar disponible, el procesamiento se marca como fallido.
 
-        alt Envío exitoso
-            MAIL-->>NS: Confirmación
-            NS->>DB: Marcar como enviada
-            NS->>LOG: Registrar envío
-        else Error de envío
-            MAIL-->>NS: Error
-            NS->>DB: Registrar fallo
-            NS->>LOG: Registrar error
-        end
-    end
+![alt text](Diagramas/UML-Secuencia-EnvioCore.png)
+
+### Idempotencia
+
+Antes de realizar cualquier envío hacia el Core Bancario, el Servicio de Procesamiento consulta si ya existe un procesamiento asociado al `batchId`.
+
+El atributo:
+
+```text
+PROCESSING_JOB.batch_id
 ```
+
+se mantiene único dentro del Servicio de Procesamiento.
+
+Esto permite detectar eventos duplicados y evitar que un mismo lote sea enviado nuevamente al Core Bancario después de haber alcanzado un estado terminal.
+
+### Manejo de resultados
+
+El procesamiento puede finalizar de las siguientes formas:
+
+```text
+COMPLETED
+→ El Core Bancario recibió y aceptó correctamente el lote.
+
+REJECTED
+→ El Core Bancario respondió correctamente, pero rechazó la operación.
+
+RETRY_PENDING
+→ Ocurrió un error técnico temporal y se realizará un nuevo intento.
+
+FAILED
+→ Se agotaron los intentos permitidos sin completar el procesamiento.
+```
+
+Cuando el procesamiento finaliza, el resultado se comunica mediante el Bus de Eventos al Servicio de Lotes.
+
+De esta manera se cierra el ciclo:
+
+```text
+Lote aprobado
+      ↓
+Servicio de Procesamiento
+      ↓
+Core Bancario
+      ↓
+Resultado
+      ↓
+Lote procesado / Lote fallido
+      ↓
+Bus de Eventos
+      ↓
+Servicio de Lotes
+      ↓
+PROCESSED / FAILED
+```
+
+Esto garantiza que el historial administrado por el Servicio de Lotes refleje el resultado final de la operación.
+
+---
+
+## 6.3 Secuencia UML — Notificación a clientes o beneficiarios
+
+El Servicio de Notificaciones comienza su operación al recibir el evento:
+
+```text
+Lote aprobado
+```
+
+El envío de correos se realiza de forma independiente al procesamiento bancario.
+
+De esta manera, un problema temporal en el servicio de correo no bloquea la aprobación ni el envío del lote al Core Bancario.
+
+![alt text](Diagramas/UML-Secuencia-Notificaciones.png)
+
+
+### Estados finales
+
+El estado general de una notificación puede ser:
+
+```text
+PENDING
+PROCESSING
+SENT
+PARTIAL
+FAILED
+```
+
+Mientras que cada destinatario puede encontrarse en:
+
+```text
+PENDING
+SENT
+RETRY_PENDING
+FAILED
+```
+
+Esto permite representar correctamente un lote con múltiples beneficiarios.
+
+Por ejemplo:
+
+```text
+100 beneficiarios
+
+98 enviados correctamente
+2 fallidos
+
+Estado general:
+PARTIAL
+```
+
 
 ---
 
