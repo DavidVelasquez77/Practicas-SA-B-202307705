@@ -8,20 +8,6 @@
 
 ---
 
-## Introducción
-
-La institución bancaria cuenta actualmente con un sistema monolítico para el procesamiento de transacciones. En períodos de alta demanda, como fin de mes, pagos masivos de planillas corporativas o temporadas de impuestos, este enfoque puede convertirse en un punto de saturación debido a que múltiples responsabilidades se ejecutan dentro de una misma solución.
-
-La propuesta consiste en diseñar una arquitectura basada en microservicios que permita separar responsabilidades, reducir el acoplamiento y facilitar la evolución independiente de las distintas capacidades del sistema.
-
-El diseño contempla el proceso completo de carga y validación de lotes de transacciones, el flujo de aprobación de tres pasos Maker-Checker-Authorizer, la integración con el sistema Core Bancario externo, la notificación a clientes o beneficiarios, el almacenamiento de archivos CSV, la autenticación y autorización, así como la trazabilidad y auditoría de las operaciones.
-
-La solución también aprovecha el trabajo desarrollado en la Práctica 2 para la gestión de autenticación, sesiones, roles y permisos, adaptándolo al nuevo contexto distribuido.
-
-A lo largo de este documento, cada apartado corresponde directamente con uno de los elementos solicitados en el alcance de la práctica. Los diagramas Mermaid incluidos funcionan como **referencia lógica para su elaboración final en Lucidchart**.
-
----
-
 # 1. Diagrama de Arquitectura General del sistema
 
 ## 1.1 Diagrama final
@@ -121,8 +107,10 @@ En P2, `refreshUntil` representaba el límite absoluto para renovar una sesión.
 
 En P3 se utiliza para garantizar que la sesión interna nunca pueda superar la vigencia máxima del contexto corporativo.
 
+El servicio de autenticación OAuth corporativo establece una vigencia máxima de 12 horas. Por lo tanto, la sesión interna y cualquier renovación del token interno nunca podrán superar ese límite.
+
 ```text
-refreshUntil <= expiración de la sesión corporativa
+refreshUntil <= expiración de la sesión corporativa <= 12 horas
 ```
 
 Una renovación del token interno no puede extender la sesión más allá de ese límite.
@@ -855,6 +843,7 @@ De esta manera, un problema temporal en el servicio de correo no bloquea la apro
 
 ![alt text](Diagramas/UML-Secuencia-Notificaciones.png)
 
+El mensaje enviado a cada cliente o beneficiario debe informar que su transacción ha sido aprobada y se encuentra **en proceso**, cumpliendo con la notificación requerida después del tercer paso de aprobación.
 
 ### Estados finales
 
@@ -1690,3 +1679,23 @@ pero no debe decidir:
 ```
 
 Estas decisiones pertenecen a los microservicios responsables del dominio.
+
+
+## 12.8 Resumen de tecnologías y patrones arquitectónicos
+
+Las tecnologías y patrones seleccionados responden a las necesidades específicas de la arquitectura propuesta.
+
+| Elemento | Tecnología / Patrón | Justificación |
+|---|---|---|
+| API Gateway | Kong Gateway / API Gateway Pattern | Centraliza el acceso, routing, validación del token, rate limiting y trazabilidad sin incorporar reglas de negocio |
+| Comunicación asíncrona | RabbitMQ / Event-Driven Architecture | Desacopla aprobaciones, procesamiento y notificaciones |
+| Distribución de eventos | Publish/Subscribe | Permite que un mismo evento, como `Lote aprobado`, sea consumido independientemente por varios servicios |
+| Persistencia | Database per Service | Garantiza autonomía de datos y evita acoplamiento entre microservicios |
+| Archivos CSV | AWS S3 | Separa los archivos de la persistencia relacional y facilita almacenamiento y recuperación controlada |
+| Logging | ELK Stack | Centraliza, indexa y permite consultar los registros distribuidos |
+| Fallos temporales | Retry Pattern | Permite recuperarse de errores transitorios en sistemas externos |
+| Mensajes fallidos | Dead Letter Queue | Evita pérdida de mensajes y ciclos infinitos de reintentos |
+| Eventos duplicados | Idempotent Consumer | Evita que un mismo lote sea procesado más de una vez |
+| Trazabilidad | Correlation ID | Permite reconstruir una operación a través de múltiples servicios y eventos |
+
+Estas decisiones buscan mantener una arquitectura escalable, desacoplada, auditable y resistente a fallos.
