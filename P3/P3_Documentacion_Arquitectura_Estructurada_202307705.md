@@ -460,54 +460,7 @@ Esta desnormalización permite que el servicio mantenga autonomía sobre sus pro
 
 ## 5.1 UML — Servicio de Autenticación y Autorización
 
-```mermaid
-classDiagram
-
-    class User {
-        -id: UUID
-        -corporateSubject: string
-        -encryptedName: string
-        -encryptedEmail: string
-        -status: UserStatus
-        -createdAt: datetime
-        -updatedAt: datetime
-
-        +assignRole(role: Role): void
-        +assignPermission(permission: OperationalPermission): void
-        +suspend(): void
-        +activate(): void
-        +isActive(): boolean
-    }
-
-    class Role {
-        -id: int
-        -name: string
-    }
-
-    class OperationalPermission {
-        -id: int
-        -name: string
-    }
-
-    class UserSession {
-        -id: UUID
-        -sessionId: string
-        -refreshUntil: datetime
-        -isRevoked: boolean
-        -createdAt: datetime
-        -revokedAt: datetime
-
-        +revoke(): void
-        +isExpired(currentTime: datetime): boolean
-        +canRefresh(currentTime: datetime): boolean
-    }
-
-    User "0..*" -- "0..*" Role : tiene asignado
-
-    User "0..*" -- "0..*" OperationalPermission : posee
-
-    User "1" *-- "0..*" UserSession : mantiene
-````
+![alt text](Diagramas/UML-Clases-Autenticación.png)
 
 ### Responsabilidades del modelo
 
@@ -540,70 +493,7 @@ La relación entre `User` y `UserSession` se modela mediante composición debido
 
 ## 5.2 UML — Servicio de Lotes de Transacciones
 
-```mermaid
-classDiagram
-
-    class Batch {
-        -id: UUID
-        -externalReference: string
-        -originalFilename: string
-        -status: BatchStatus
-        -totalTransactions: int
-        -totalAmount: decimal
-        -createdBy: UUID
-        -createdAt: datetime
-        -updatedAt: datetime
-
-        +addTransaction(transaction: Transaction): void
-        +calculateTotal(): decimal
-        +markPendingApproval(): void
-        +updateStatus(newStatus: BatchStatus): void
-        +isReadyForApproval(): boolean
-    }
-
-    class Transaction {
-        -id: UUID
-        -sourceAccount: string
-        -destinationAccount: string
-        -amount: decimal
-        -beneficiaryName: string
-        -beneficiaryEmail: string
-        -status: TransactionStatus
-        -createdAt: datetime
-
-        +markValid(): void
-        +markInvalid(): void
-        +isValid(): boolean
-    }
-
-    class FileMetadata {
-        -id: UUID
-        -storageKey: string
-        -checksum: string
-        -sizeBytes: bigint
-        -uploadedAt: datetime
-
-        +verifyChecksum(hash: string): boolean
-    }
-
-    class ValidationResult {
-        -id: UUID
-        -ruleCode: string
-        -result: string
-        -detail: string
-        -validatedAt: datetime
-
-        +isPassed(): boolean
-    }
-
-    Batch "1" *-- "1..*" Transaction : contiene
-
-    Batch "1" *-- "1" FileMetadata : posee
-
-    Batch "1" *-- "0..*" ValidationResult : registra
-
-    Transaction "0..1" -- "0..*" ValidationResult : asociado a
-```
+![alt text](Diagramas/UML-Clases-Transacciones.png)
 
 ### Responsabilidades del modelo
 
@@ -642,39 +532,7 @@ CSV_STRUCTURE
 
 ## 5.3 UML — Servicio de Aprobaciones
 
-```mermaid
-classDiagram
-
-    class ApprovalProcess {
-        -id: UUID
-        -batchId: UUID
-        -currentStep: ApprovalStep
-        -status: ApprovalStatus
-        -createdAt: datetime
-        -completedAt: datetime
-
-        +registerAction(action: ApprovalAction): void
-        +validateSegregationOfDuties(userId: UUID): boolean
-        +advanceStep(): void
-        +approve(): void
-        +reject(): void
-        +isFullyApproved(): boolean
-    }
-
-    class ApprovalAction {
-        -id: UUID
-        -userId: UUID
-        -step: ApprovalStep
-        -decision: ApprovalDecision
-        -comment: string
-        -createdAt: datetime
-
-        +isApproval(): boolean
-        +isRejection(): boolean
-    }
-
-    ApprovalProcess "1" *-- "0..3" ApprovalAction : registra
-```
+![alt text](Diagramas/UML-Clases-Aprobaciones.png)
 
 ### Responsabilidades del modelo
 
@@ -740,43 +598,7 @@ porque un proceso recién creado puede no tener todavía ninguna acción y puede
 
 ## 5.4 UML — Servicio de Procesamiento
 
-```mermaid
-classDiagram
-
-    class ProcessingJob {
-        -id: UUID
-        -batchId: UUID
-        -status: ProcessingStatus
-        -attemptCount: int
-        -createdAt: datetime
-        -updatedAt: datetime
-
-        +startProcessing(): void
-        +registerAttempt(attempt: ProcessingAttempt): void
-        +markCompleted(): void
-        +markRejected(): void
-        +markRetryPending(): void
-        +markFailed(): void
-        +canRetry(): boolean
-    }
-
-    class ProcessingAttempt {
-        -id: UUID
-        -attemptNumber: int
-        -requestReference: string
-        -responseCode: string
-        -result: string
-        -errorDetail: string
-        -startedAt: datetime
-        -finishedAt: datetime
-
-        +markSuccessful(responseCode: string): void
-        +markFailed(error: string): void
-        +isSuccessful(): boolean
-    }
-
-    ProcessingJob "1" *-- "0..*" ProcessingAttempt : registra
-```
+![alt text](Diagramas/UML-Clases-Procesamiento.png)
 
 ### Responsabilidades del modelo
 
@@ -824,49 +646,7 @@ La composición permite conservar el historial completo de intentos asociados a 
 
 ## 5.5 UML — Servicio de Notificaciones
 
-```mermaid
-classDiagram
-
-    class Notification {
-        -id: UUID
-        -batchId: UUID
-        -type: NotificationType
-        -status: NotificationStatus
-        -createdAt: datetime
-        -completedAt: datetime
-
-        +addRecipient(recipient: NotificationRecipient): void
-        +markProcessing(): void
-        +calculateFinalStatus(): NotificationStatus
-        +isCompleted(): boolean
-    }
-
-    class NotificationRecipient {
-        -id: UUID
-        -recipientEmail: string
-        -recipientName: string
-        -status: RecipientStatus
-
-        +recordAttempt(attempt: NotificationAttempt): void
-        +markSent(): void
-        +markRetryPending(): void
-        +markFailed(): void
-    }
-
-    class NotificationAttempt {
-        -id: UUID
-        -attemptNumber: int
-        -providerResponse: string
-        -result: string
-        -attemptedAt: datetime
-
-        +isSuccessful(): boolean
-    }
-
-    Notification "1" *-- "1..*" NotificationRecipient : contiene
-
-    NotificationRecipient "1" *-- "0..*" NotificationAttempt : registra
-```
+![alt text](Diagramas/UML-Clases-Notificaciones.png)
 
 ### Responsabilidades del modelo
 
