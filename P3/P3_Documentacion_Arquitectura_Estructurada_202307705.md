@@ -896,86 +896,9 @@ PARTIAL
 
 # 7. Diagrama de componentes UML
 
-El diagrama de componentes mostrará una vista más técnica que el Diagrama de Arquitectura General.
 
-En esta vista sí se representan las dependencias principales entre componentes y los mecanismos técnicos seleccionados.
+![alt text](Diagramas/UML-Componentes.png)
 
-## 7.1 Código Mermaid de referencia
-
-```mermaid
-flowchart TB
-
-    subgraph CLIENT["Cliente"]
-        FE[Aplicación Cliente]
-    end
-
-    subgraph ACCESS["Acceso e Identidad"]
-        IDP[Servicio OAuth Corporativo]
-        AUTH[Servicio de Autenticación y Autorización]
-        GW[API Gateway]
-    end
-
-    subgraph SERVICES["Microservicios"]
-        BATCH[Servicio de Lotes]
-        APPROVAL[Servicio de Aprobaciones]
-        PROCESS[Servicio de Procesamiento]
-        NOTIFY[Servicio de Notificaciones]
-    end
-
-    subgraph DATA["Persistencia"]
-        AUTHDB[(BD Autenticación)]
-        BDB[(BD Lotes)]
-        ADB[(BD Aprobaciones)]
-        PDB[(BD Procesamiento)]
-        NDB[(BD Notificaciones)]
-    end
-
-    subgraph INFRA["Infraestructura"]
-        MQ[Message Broker]
-        STORAGE[Almacenamiento de archivos]
-        LOG[Logging Centralizado]
-    end
-
-    subgraph EXTERNAL["Sistemas Externos"]
-        CORE[Core Bancario]
-        MAIL[Servicio de Correo]
-    end
-
-    FE --> IDP
-    FE --> AUTH
-    FE --> GW
-
-    AUTH --> AUTHDB
-
-    GW --> BATCH
-    GW --> APPROVAL
-
-    BATCH --> BDB
-    BATCH --> STORAGE
-    BATCH --> MQ
-
-    MQ --> APPROVAL
-    APPROVAL --> ADB
-    APPROVAL --> MQ
-
-    MQ --> PROCESS
-    MQ --> NOTIFY
-    MQ --> BATCH
-
-    PROCESS --> PDB
-    PROCESS --> CORE
-    PROCESS --> MQ
-
-    NOTIFY --> NDB
-    NOTIFY --> MAIL
-
-    GW -.-> LOG
-    AUTH -.-> LOG
-    BATCH -.-> LOG
-    APPROVAL -.-> LOG
-    PROCESS -.-> LOG
-    NOTIFY -.-> LOG
-```
 
 ---
 
