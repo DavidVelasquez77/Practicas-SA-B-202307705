@@ -1,0 +1,64 @@
+services:
+
+  auth-db:
+    image: postgres:17-alpine
+    restart: unless-stopped
+
+    environment:
+      POSTGRES_USER: ${AUTH_DB_USER}
+      POSTGRES_PASSWORD: ${AUTH_DB_PASSWORD}
+      POSTGRES_DB: ${AUTH_DB_NAME}
+
+    ports:
+      - "${AUTH_DB_PORT}:5432"
+
+    volumes:
+      - auth_db_data:/var/lib/postgresql/data
+
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U ${AUTH_DB_USER} -d ${AUTH_DB_NAME}"
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+
+  auth-service:
+    build:
+      context: ./services/auth-service
+
+    restart: unless-stopped
+
+    environment:
+      PORT: ${AUTH_SERVICE_PORT}
+
+      DATABASE_URL: postgresql://${AUTH_DB_USER}:${AUTH_DB_PASSWORD}@auth-db:5432/${AUTH_DB_NAME}?schema=public
+
+      JWT_SECRET: ${AUTH_JWT_SECRET}
+
+      ENCRYPTION_KEY: ${AUTH_ENCRYPTION_KEY}
+
+      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN}
+
+      JWT_REFRESH_TIME_SECONDS: ${JWT_REFRESH_TIME_SECONDS}
+
+    ports:
+      - "${AUTH_SERVICE_PORT}:3001"
+
+    depends_on:
+      auth-db:
+        condition: service_healthy
+
+    command:
+      >
+        sh -c "
+        npx prisma migrate deploy &&
+        npm run start:prod
+        "
+
+
+volumes:
+  auth_db_data:

@@ -14,23 +14,6 @@ async function bootstrap(): Promise<void> {
 
   app.use(cookieParser());
 
-  app.enableCors({
-    origin:
-      'http://localhost:3001',
-    credentials: true,
-    methods: [
-      'GET',
-      'POST',
-      'PUT',
-      'PATCH',
-      'DELETE',
-      'OPTIONS',
-    ],
-    allowedHeaders: [
-      'Content-Type',
-    ],
-  });
-
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,
@@ -41,12 +24,12 @@ async function bootstrap(): Promise<void> {
   );
 
   const port =
-    process.env.PORT ?? 3000;
+    process.env.PORT ?? 3001;
 
   await app.listen(port);
 
   console.log(
-    `API ejecutándose en http://localhost:${port}`,
+    `Auth Service ejecutándose en http://localhost:${port}`,
   );
 }
 
