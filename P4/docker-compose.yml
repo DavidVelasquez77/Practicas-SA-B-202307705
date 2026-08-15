@@ -125,7 +125,58 @@ services:
         npm run start:prod
         "
 
+  # ==========================================
+  # RENTALS DATABASE
+  # ==========================================
+
+  rentals-db:
+    image: postgres:17-alpine
+    restart: unless-stopped
+
+    environment:
+      POSTGRES_USER: ${RENTALS_DB_USER}
+      POSTGRES_PASSWORD: ${RENTALS_DB_PASSWORD}
+      POSTGRES_DB: ${RENTALS_DB_NAME}
+
+    ports:
+      - "${RENTALS_DB_PORT}:5432"
+
+    volumes:
+      - rentals_db_data:/var/lib/postgresql/data
+
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U ${RENTALS_DB_USER} -d ${RENTALS_DB_NAME}"
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  # ==========================================
+  # RENTALS SERVICE
+  # ==========================================
+
+  rentals-service:
+    build:
+      context: ./services/rentals-service
+
+    restart: unless-stopped
+
+    environment:
+      PORT: ${RENTALS_SERVICE_PORT}
+
+      DATABASE_URL: postgresql+psycopg://${RENTALS_DB_USER}:${RENTALS_DB_PASSWORD}@rentals-db:5432/${RENTALS_DB_NAME}
+
+    ports:
+      - "${RENTALS_SERVICE_PORT}:8001"
+
+    depends_on:
+      rentals-db:
+        condition: service_healthy
 
 volumes:
   auth_db_data:
   comics_db_data:
+  rentals_db_data:
