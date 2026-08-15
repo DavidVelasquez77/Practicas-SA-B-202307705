@@ -1,13 +1,42 @@
 import os
 
 
-DATABASE_URL = os.getenv("DATABASE_URL")
+def required_env(
+    name: str,
+) -> str:
+    value = os.getenv(name)
 
-if not DATABASE_URL:
-    raise RuntimeError(
-        "La variable de entorno DATABASE_URL es obligatoria."
-    )
+    if not value:
+        raise RuntimeError(
+            f"La variable de entorno "
+            f"{name} es obligatoria."
+        )
+
+    return value
+
+
+DATABASE_URL = required_env(
+    "DATABASE_URL"
+)
+
+COMICS_SERVICE_URL = required_env(
+    "COMICS_SERVICE_URL"
+)
+
+COPIES_SERVICE_URL = required_env(
+    "COPIES_SERVICE_URL"
+)
 
 PORT = int(
-    os.getenv("PORT", "8001")
+    os.getenv(
+        "PORT",
+        "8001",
+    )
+)
+
+HTTP_TIMEOUT_SECONDS = float(
+    os.getenv(
+        "HTTP_TIMEOUT_SECONDS",
+        "5",
+    )
 )

@@ -7,13 +7,14 @@ from strawberry.fastapi import (
     GraphQLRouter,
 )
 
+from app.clients.http_client import (
+    close_http_client,
+)
 from app.database import (
     init_db,
 )
 from app.graphql.schema import schema
 
-# Es necesario importar el modelo
-# antes de ejecutar create_all.
 from app.models.rental import (
     RentalModel,
 )
@@ -25,7 +26,11 @@ async def lifespan(
 ):
     await init_db()
 
-    yield
+    try:
+        yield
+
+    finally:
+        await close_http_client()
 
 
 app = FastAPI(

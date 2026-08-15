@@ -8,6 +8,15 @@ from decimal import Decimal
 from graphql import GraphQLError
 from sqlalchemy import select
 
+from app.clients.comics_client import (
+    ComicsClient,
+)
+from app.clients.copies_client import (
+    CopiesClient,
+)
+from app.clients.errors import (
+    RemoteServiceError,
+)
 from app.database import SessionLocal
 from app.graphql.inputs import (
     CreateRentalInput,
@@ -19,6 +28,7 @@ from app.models.rental import RentalModel
 def to_graphql(
     rental: RentalModel,
 ) -> Rental:
+
     return Rental(
         id=rental.id,
         user_id=rental.user_id,
@@ -38,15 +48,22 @@ class RentalsService:
 
     @staticmethod
     async def find_all() -> list[Rental]:
+
         async with SessionLocal() as session:
 
             result = await session.execute(
-                select(RentalModel).order_by(
+                select(
+                    RentalModel
+                ).order_by(
                     RentalModel.id.asc()
                 )
             )
 
-            rentals = result.scalars().all()
+            rentals = (
+                result
+                .scalars()
+                .all()
+            )
 
             return [
                 to_graphql(rental)
@@ -68,7 +85,9 @@ class RentalsService:
             if rental is None:
                 return None
 
-            return to_graphql(rental)
+            return to_graphql(
+                rental
+            )
 
     @staticmethod
     async def find_by_user(
@@ -78,7 +97,9 @@ class RentalsService:
         async with SessionLocal() as session:
 
             result = await session.execute(
-                select(RentalModel)
+                select(
+                    RentalModel
+                )
                 .where(
                     RentalModel.user_id
                     == user_id
@@ -88,7 +109,11 @@ class RentalsService:
                 )
             )
 
-            rentals = result.scalars().all()
+            rentals = (
+                result
+                .scalars()
+                .all()
+            )
 
             return [
                 to_graphql(rental)
@@ -100,24 +125,81 @@ class RentalsService:
         input: CreateRentalInput,
     ) -> Rental:
 
-        if input.precio_alquiler <= 0:
+        if input.user_id <= 0:
             raise GraphQLError(
-                "El precio de alquiler debe "
-                "ser mayor que cero."
+                "El userId debe ser "
+                "mayor que cero."
+            )
+
+        if input.comic_id <= 0:
+            raise GraphQLError(
+                "El comicId debe ser "
+                "mayor que cero."
             )
 
         if input.dias <= 0:
             raise GraphQLError(
-                "Los días de alquiler deben "
-                "ser mayores que cero."
+                "Los días de alquiler "
+                "deben ser mayores "
+                "que cero."
             )
+
+        # ======================================
+        # 1. CONSULTAR COMICS SERVICE
+        # ======================================
+
+        try:
+            comic = await ComicsClient.find_one(
+                input.comic_id
+            )
+
+        except RemoteServiceError as exc:
+            raise GraphQLError(
+                str(exc)
+            ) from exc
+
+        if not comic["activo"]:
+            raise GraphQLError(
+                "El comic no se encuentra "
+                "disponible para alquiler."
+            )
+
+        precio_alquiler = float(
+            comic["precioAlquiler"]
+        )
+
+        # ======================================
+        # 2. CONSULTAR COPIES SERVICE
+        # ======================================
+
+        try:
+            copy = (
+                await CopiesClient.find_available(
+                    input.comic_id
+                )
+            )
+
+        except RemoteServiceError as exc:
+            raise GraphQLError(
+                str(exc)
+            ) from exc
+
+        copy_id = int(
+            copy["id"]
+        )
+
+        # ======================================
+        # 3. VALIDAR RENTAL LOCAL
+        # ======================================
 
         async with SessionLocal() as session:
 
             active_result = await session.execute(
-                select(RentalModel).where(
+                select(
+                    RentalModel
+                ).where(
                     RentalModel.copy_id
-                    == input.copy_id,
+                    == copy_id,
                     RentalModel.estado
                     == "ACTIVO",
                 )
@@ -135,6 +217,24 @@ class RentalsService:
                     "un alquiler activo."
                 )
 
+            # ==================================
+            # 4. RESERVAR COPIA
+            # ==================================
+
+            try:
+                await CopiesClient.mark_as_rented(
+                    copy_id
+                )
+
+            except RemoteServiceError as exc:
+                raise GraphQLError(
+                    str(exc)
+                ) from exc
+
+            # ==================================
+            # 5. CREAR ALQUILER
+            # ==================================
+
             now = datetime.now(
                 timezone.utc
             )
@@ -142,7 +242,7 @@ class RentalsService:
             rental = RentalModel(
                 user_id=input.user_id,
                 comic_id=input.comic_id,
-                copy_id=input.copy_id,
+                copy_id=copy_id,
                 fecha_alquiler=now,
                 fecha_limite=(
                     now
@@ -152,19 +252,50 @@ class RentalsService:
                 ),
                 precio_alquiler=Decimal(
                     str(
-                        input.precio_alquiler
+                        precio_alquiler
                     )
                 ),
                 estado="ACTIVO",
             )
 
-            session.add(rental)
+            session.add(
+                rental
+            )
 
-            await session.commit()
+            try:
+                await session.commit()
 
-            await session.refresh(rental)
+                await session.refresh(
+                    rental
+                )
 
-            return to_graphql(rental)
+            except Exception as exc:
+
+                await session.rollback()
+
+                # Compensación:
+                # si falló guardar Rental,
+                # liberamos nuevamente Copy.
+
+                try:
+                    await (
+                        CopiesClient
+                        .mark_as_available(
+                            copy_id
+                        )
+                    )
+
+                except RemoteServiceError:
+                    pass
+
+                raise GraphQLError(
+                    "No se pudo registrar "
+                    "el alquiler."
+                ) from exc
+
+            return to_graphql(
+                rental
+            )
 
     @staticmethod
     async def return_rental(
@@ -189,6 +320,29 @@ class RentalsService:
                     "devuelto."
                 )
 
+            copy_id = rental.copy_id
+
+            # ==================================
+            # 1. DEVOLVER COPY
+            # ==================================
+
+            try:
+                await (
+                    CopiesClient
+                    .mark_as_available(
+                        copy_id
+                    )
+                )
+
+            except RemoteServiceError as exc:
+                raise GraphQLError(
+                    str(exc)
+                ) from exc
+
+            # ==================================
+            # 2. ACTUALIZAR RENTAL
+            # ==================================
+
             rental.estado = "DEVUELTO"
 
             rental.fecha_devolucion = (
@@ -197,8 +351,39 @@ class RentalsService:
                 )
             )
 
-            await session.commit()
+            try:
+                await session.commit()
 
-            await session.refresh(rental)
+                await session.refresh(
+                    rental
+                )
 
-            return to_graphql(rental)
+            except Exception as exc:
+
+                await session.rollback()
+
+                # Compensación:
+                # si no pudimos actualizar
+                # el alquiler, intentamos
+                # volver a marcar la copia
+                # como alquilada.
+
+                try:
+                    await (
+                        CopiesClient
+                        .mark_as_rented(
+                            copy_id
+                        )
+                    )
+
+                except RemoteServiceError:
+                    pass
+
+                raise GraphQLError(
+                    "No se pudo completar "
+                    "la devolución."
+                ) from exc
+
+            return to_graphql(
+                rental
+            )

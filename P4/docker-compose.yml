@@ -169,12 +169,24 @@ services:
 
       DATABASE_URL: postgresql+psycopg://${RENTALS_DB_USER}:${RENTALS_DB_PASSWORD}@rentals-db:5432/${RENTALS_DB_NAME}
 
+      COMICS_SERVICE_URL: ${RENTALS_COMICS_SERVICE_URL}
+
+      COPIES_SERVICE_URL: ${RENTALS_COPIES_SERVICE_URL}
+
+      HTTP_TIMEOUT_SECONDS: ${RENTALS_HTTP_TIMEOUT_SECONDS}
+
     ports:
       - "${RENTALS_SERVICE_PORT}:8001"
 
     depends_on:
       rentals-db:
         condition: service_healthy
+
+      comics-service:
+        condition: service_started
+
+      copies-service:
+        condition: service_started
 
   # ==========================================
   # COPIES DATABASE

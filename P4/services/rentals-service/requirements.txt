@@ -1,6 +1,7 @@
 annotated-doc==0.0.5
 annotated-types==0.8.0
 anyio==4.14.2
+certifi==2026.7.22
 click==8.4.2
 colorama==0.4.6
 cross-web==0.7.0
@@ -8,7 +9,9 @@ fastapi==0.141.1
 graphql-core==3.2.11
 greenlet==3.5.5
 h11==0.16.0
+httpcore==1.0.9
 httptools==0.8.0
+httpx==0.28.1
 idna==3.18
 packaging==26.3
 psycopg==3.3.4
