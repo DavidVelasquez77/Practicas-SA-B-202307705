@@ -176,7 +176,60 @@ services:
       rentals-db:
         condition: service_healthy
 
+  # ==========================================
+  # COPIES DATABASE
+  # ==========================================
+
+  copies-db:
+    image: postgres:17-alpine
+    restart: unless-stopped
+
+    environment:
+      POSTGRES_USER: ${COPIES_DB_USER}
+      POSTGRES_PASSWORD: ${COPIES_DB_PASSWORD}
+      POSTGRES_DB: ${COPIES_DB_NAME}
+
+    ports:
+      - "${COPIES_DB_PORT}:5432"
+
+    volumes:
+      - copies_db_data:/var/lib/postgresql/data
+
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U ${COPIES_DB_USER} -d ${COPIES_DB_NAME}"
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+
+  # ==========================================
+  # COPIES SERVICE
+  # ==========================================
+
+  copies-service:
+    build:
+      context: ./services/copies-service
+
+    restart: unless-stopped
+
+    environment:
+      PORT: ${COPIES_SERVICE_PORT}
+
+      DATABASE_URL: postgresql+psycopg://${COPIES_DB_USER}:${COPIES_DB_PASSWORD}@copies-db:5432/${COPIES_DB_NAME}
+
+    ports:
+      - "${COPIES_SERVICE_PORT}:8002"
+
+    depends_on:
+      copies-db:
+        condition: service_healthy
+
 volumes:
   auth_db_data:
   comics_db_data:
   rentals_db_data:
+  copies_db_data: 
