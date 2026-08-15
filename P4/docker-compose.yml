@@ -1,5 +1,9 @@
 services:
 
+  # ==========================================
+  # AUTH DATABASE
+  # ==========================================
+
   auth-db:
     image: postgres:17-alpine
     restart: unless-stopped
@@ -26,6 +30,10 @@ services:
       retries: 10
 
 
+  # ==========================================
+  # AUTH SERVICE
+  # ==========================================
+
   auth-service:
     build:
       context: ./services/auth-service
@@ -38,11 +46,9 @@ services:
       DATABASE_URL: postgresql://${AUTH_DB_USER}:${AUTH_DB_PASSWORD}@auth-db:5432/${AUTH_DB_NAME}?schema=public
 
       JWT_SECRET: ${AUTH_JWT_SECRET}
-
       ENCRYPTION_KEY: ${AUTH_ENCRYPTION_KEY}
 
       JWT_EXPIRES_IN: ${JWT_EXPIRES_IN}
-
       JWT_REFRESH_TIME_SECONDS: ${JWT_REFRESH_TIME_SECONDS}
 
     ports:
@@ -60,5 +66,66 @@ services:
         "
 
 
+  # ==========================================
+  # COMICS DATABASE
+  # ==========================================
+
+  comics-db:
+    image: postgres:17-alpine
+    restart: unless-stopped
+
+    environment:
+      POSTGRES_USER: ${COMICS_DB_USER}
+      POSTGRES_PASSWORD: ${COMICS_DB_PASSWORD}
+      POSTGRES_DB: ${COMICS_DB_NAME}
+
+    ports:
+      - "${COMICS_DB_PORT}:5432"
+
+    volumes:
+      - comics_db_data:/var/lib/postgresql/data
+
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U ${COMICS_DB_USER} -d ${COMICS_DB_NAME}"
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+
+  # ==========================================
+  # COMICS SERVICE
+  # ==========================================
+
+  comics-service:
+    build:
+      context: ./services/comics-service
+
+    restart: unless-stopped
+
+    environment:
+      PORT: ${COMICS_SERVICE_PORT}
+
+      DATABASE_URL: postgresql://${COMICS_DB_USER}:${COMICS_DB_PASSWORD}@comics-db:5432/${COMICS_DB_NAME}?schema=public
+
+    ports:
+      - "${COMICS_SERVICE_PORT}:3002"
+
+    depends_on:
+      comics-db:
+        condition: service_healthy
+
+    command:
+      >
+        sh -c "
+        npx prisma migrate deploy &&
+        npm run start:prod
+        "
+
+
 volumes:
   auth_db_data:
+  comics_db_data:
