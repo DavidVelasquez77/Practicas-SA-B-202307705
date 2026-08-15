@@ -5,16 +5,27 @@ import {
   HttpStatus,
   Post,
   Res,
+  Get,
+  Req,
+  UseGuards,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import type { Response } from 'express';
+import type {
+  Request,
+  Response,
+} from 'express';
 import {
   AuthService,
   type RegisterResult,
 } from './auth.service';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
+import { JwtAuthGuard } from './guards/jwt-auth.guard';
+import type { AuthenticatedUser } from './types/authenticated-user.interface';
 
+type AuthenticatedRequest = Request & {
+  user: AuthenticatedUser;
+};
 @Controller('auth')
 export class AuthController {
   private readonly cookieLifetimeMilliseconds: number;
@@ -111,4 +122,21 @@ export class AuthController {
       user: result.user,
     };
   }
+
+  @Get('validate')
+  @UseGuards(JwtAuthGuard)
+  @HttpCode(HttpStatus.OK)
+  validate(
+    @Req()
+    request: AuthenticatedRequest,
+  ): {
+    valid: true;
+    user: AuthenticatedUser;
+  } {
+    return {
+      valid: true,
+      user: request.user,
+    };
+  }
+
 }
