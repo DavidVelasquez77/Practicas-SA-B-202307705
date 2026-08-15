@@ -1,7 +1,7 @@
 {
-  "name": "practica2-backend",
+  "name": "auth-service",
   "version": "1.0.0",
-  "description": "API REST monolítica de autenticación y autorización con NestJS, Prisma y PostgreSQL",
+  "description": "Microservicio de autenticación y autorización para la Práctica 4",
   "private": true,
   "scripts": {
     "build": "nest build",
