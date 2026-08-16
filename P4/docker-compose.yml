@@ -240,6 +240,45 @@ services:
       copies-db:
         condition: service_healthy
 
+  # ==========================================
+  # API GATEWAY
+  # ==========================================
+
+  api-gateway:
+    build:
+      context: ./api-gateway
+
+    restart: unless-stopped
+
+    environment:
+      PORT: ${GATEWAY_PORT}
+
+      AUTH_SERVICE_URL: ${GATEWAY_AUTH_SERVICE_URL}
+
+      COMICS_SERVICE_URL: ${GATEWAY_COMICS_SERVICE_URL}
+
+      RENTALS_SERVICE_URL: ${GATEWAY_RENTALS_SERVICE_URL}
+
+      COPIES_SERVICE_URL: ${GATEWAY_COPIES_SERVICE_URL}
+
+      HTTP_TIMEOUT_MS: ${GATEWAY_HTTP_TIMEOUT_MS}
+
+    ports:
+      - "${GATEWAY_PORT}:3000"
+
+    depends_on:
+      auth-service:
+        condition: service_started
+
+      comics-service:
+        condition: service_started
+
+      rentals-service:
+        condition: service_started
+
+      copies-service:
+        condition: service_started
+
 volumes:
   auth_db_data:
   comics_db_data:
