@@ -28,7 +28,20 @@ import {
   CreateCopyDto,
 } from './dto/create-copy.dto';
 
+import {
+  ApiCookieAuth,
+  ApiCreatedResponse,
+  ApiForbiddenResponse,
+  ApiNotFoundResponse,
+  ApiOkResponse,
+  ApiOperation,
+  ApiParam,
+  ApiTags,
+  ApiUnauthorizedResponse,
+} from '@nestjs/swagger';
 
+@ApiTags('Copies')
+@ApiCookieAuth('access_token')
 @Controller('api/copies')
 @UseGuards(
   GatewayAuthGuard,
@@ -45,7 +58,22 @@ export class CopiesGatewayController {
       MicroservicesClientService,
   ) {}
 
-
+  @ApiOperation({
+    summary:
+      'Listar ejemplares de un comic',
+  })
+  @ApiParam({
+    name: 'comicId',
+    example: 1,
+  })
+  @ApiOkResponse({
+    description:
+      'Ejemplares obtenidos correctamente.',
+  })
+  @ApiUnauthorizedResponse({
+    description:
+      'Sesión inexistente o expirada.',
+  })
   @Get('by-comic/:comicId')
   async findByComic(
     @Param(
@@ -61,7 +89,22 @@ export class CopiesGatewayController {
       );
   }
 
-
+  @ApiOperation({
+    summary:
+      'Buscar ejemplar disponible',
+  })
+  @ApiParam({
+    name: 'comicId',
+    example: 1,
+  })
+  @ApiOkResponse({
+    description:
+      'Ejemplar disponible encontrado.',
+  })
+  @ApiNotFoundResponse({
+    description:
+      'No existen ejemplares disponibles.',
+  })
   @Get(
     'available/by-comic/:comicId',
   )
@@ -80,7 +123,25 @@ export class CopiesGatewayController {
       );
   }
 
-
+  @ApiOperation({
+    summary: 'Registrar ejemplar',
+    description:
+      'Crea un ejemplar físico '
+      + 'para un comic. Solo Admin.',
+  })
+  @ApiCreatedResponse({
+    description:
+      'Ejemplar registrado correctamente.',
+  })
+  @ApiUnauthorizedResponse({
+    description:
+      'Sesión inexistente o expirada.',
+  })
+  @ApiForbiddenResponse({
+    description:
+      'Solo un Admin puede '
+      + 'registrar ejemplares.',
+  })
   @Post()
   @Roles('Admin')
   async create(

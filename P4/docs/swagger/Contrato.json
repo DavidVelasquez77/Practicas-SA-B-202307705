@@ -1,0 +1,565 @@
+{
+  "openapi": "3.0.0",
+  "paths": {
+    "/api/auth/register": {
+      "post": {
+        "description": "Registra un nuevo usuario con rol Admin o Cliente.",
+        "operationId": "AuthGatewayController_register",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RegisterDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Usuario registrado correctamente."
+          },
+          "400": {
+            "description": "Los datos enviados no son válidos."
+          },
+          "409": {
+            "description": "El correo ya se encuentra registrado."
+          }
+        },
+        "summary": "Registrar usuario",
+        "tags": [
+          "Authentication"
+        ]
+      }
+    },
+    "/api/auth/login": {
+      "post": {
+        "description": "Valida las credenciales y crea la cookie HTTP-only access_token.",
+        "operationId": "AuthGatewayController_login",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LoginDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Inicio de sesión exitoso."
+          },
+          "401": {
+            "description": "Credenciales incorrectas."
+          }
+        },
+        "summary": "Iniciar sesión",
+        "tags": [
+          "Authentication"
+        ]
+      }
+    },
+    "/api/comics": {
+      "get": {
+        "description": "Obtiene todos los comics registrados en el catálogo.",
+        "operationId": "ComicsGatewayController_findAll",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Listado de comics obtenido."
+          },
+          "401": {
+            "description": "Sesión inexistente o expirada."
+          }
+        },
+        "security": [
+          {
+            "access_token": []
+          }
+        ],
+        "summary": "Listar comics",
+        "tags": [
+          "Comics"
+        ]
+      },
+      "post": {
+        "description": "Registra un comic nuevo. Solo disponible para Admin.",
+        "operationId": "ComicsGatewayController_create",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateComicDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Comic creado correctamente."
+          },
+          "401": {
+            "description": "Sesión inexistente o expirada."
+          },
+          "403": {
+            "description": "Solo un Admin puede crear comics."
+          }
+        },
+        "security": [
+          {
+            "access_token": []
+          }
+        ],
+        "summary": "Crear comic",
+        "tags": [
+          "Comics"
+        ]
+      }
+    },
+    "/api/comics/{id}": {
+      "get": {
+        "operationId": "ComicsGatewayController_findOne",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "description": "Identificador del comic.",
+            "schema": {
+              "example": 1,
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Comic encontrado."
+          },
+          "401": {
+            "description": "Sesión inexistente o expirada."
+          },
+          "404": {
+            "description": "Comic no encontrado."
+          }
+        },
+        "security": [
+          {
+            "access_token": []
+          }
+        ],
+        "summary": "Consultar comic por ID",
+        "tags": [
+          "Comics"
+        ]
+      }
+    },
+    "/api/rentals": {
+      "post": {
+        "description": "Crea un alquiler para el usuario autenticado. El precio se obtiene de Comics y el ejemplar disponible se obtiene de Copies.",
+        "operationId": "RentalsGatewayController_create",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateRentalDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Alquiler creado correctamente."
+          },
+          "400": {
+            "description": "Comic inválido o sin ejemplares disponibles."
+          },
+          "401": {
+            "description": "Sesión inexistente o expirada."
+          }
+        },
+        "security": [
+          {
+            "access_token": []
+          }
+        ],
+        "summary": "Crear alquiler",
+        "tags": [
+          "Rentals"
+        ]
+      }
+    },
+    "/api/rentals/me": {
+      "get": {
+        "operationId": "RentalsGatewayController_findMine",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Alquileres correspondientes al usuario autenticado."
+          },
+          "401": {
+            "description": "Sesión inexistente o expirada."
+          }
+        },
+        "security": [
+          {
+            "access_token": []
+          }
+        ],
+        "summary": "Consultar mis alquileres",
+        "tags": [
+          "Rentals"
+        ]
+      }
+    },
+    "/api/rentals/{id}": {
+      "get": {
+        "operationId": "RentalsGatewayController_findOne",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "description": "Identificador del alquiler.",
+            "schema": {
+              "example": 1,
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Alquiler encontrado."
+          },
+          "403": {
+            "description": "El usuario intenta consultar un alquiler ajeno."
+          },
+          "404": {
+            "description": "El alquiler no existe."
+          }
+        },
+        "security": [
+          {
+            "access_token": []
+          }
+        ],
+        "summary": "Consultar alquiler",
+        "tags": [
+          "Rentals"
+        ]
+      }
+    },
+    "/api/rentals/{id}/return": {
+      "patch": {
+        "description": "Finaliza el alquiler y libera automáticamente el ejemplar en Copies Service.",
+        "operationId": "RentalsGatewayController_returnRental",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "example": 1,
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Devolución completada."
+          },
+          "400": {
+            "description": "El alquiler ya fue devuelto."
+          },
+          "403": {
+            "description": "El usuario no puede devolver un alquiler ajeno."
+          },
+          "404": {
+            "description": "El alquiler no existe."
+          }
+        },
+        "security": [
+          {
+            "access_token": []
+          }
+        ],
+        "summary": "Devolver comic",
+        "tags": [
+          "Rentals"
+        ]
+      }
+    },
+    "/api/copies/by-comic/{comicId}": {
+      "get": {
+        "operationId": "CopiesGatewayController_findByComic",
+        "parameters": [
+          {
+            "name": "comicId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "example": 1,
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Ejemplares obtenidos correctamente."
+          },
+          "401": {
+            "description": "Sesión inexistente o expirada."
+          }
+        },
+        "security": [
+          {
+            "access_token": []
+          }
+        ],
+        "summary": "Listar ejemplares de un comic",
+        "tags": [
+          "Copies"
+        ]
+      }
+    },
+    "/api/copies/available/by-comic/{comicId}": {
+      "get": {
+        "operationId": "CopiesGatewayController_findAvailable",
+        "parameters": [
+          {
+            "name": "comicId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "example": 1,
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Ejemplar disponible encontrado."
+          },
+          "404": {
+            "description": "No existen ejemplares disponibles."
+          }
+        },
+        "security": [
+          {
+            "access_token": []
+          }
+        ],
+        "summary": "Buscar ejemplar disponible",
+        "tags": [
+          "Copies"
+        ]
+      }
+    },
+    "/api/copies": {
+      "post": {
+        "description": "Crea un ejemplar físico para un comic. Solo Admin.",
+        "operationId": "CopiesGatewayController_create",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateCopyDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Ejemplar registrado correctamente."
+          },
+          "401": {
+            "description": "Sesión inexistente o expirada."
+          },
+          "403": {
+            "description": "Solo un Admin puede registrar ejemplares."
+          }
+        },
+        "security": [
+          {
+            "access_token": []
+          }
+        ],
+        "summary": "Registrar ejemplar",
+        "tags": [
+          "Copies"
+        ]
+      }
+    }
+  },
+  "info": {
+    "title": "ComicRent API",
+    "description": "Contrato público del sistema de alquiler de comics. Todas las solicitudes externas se realizan mediante el API Gateway.",
+    "version": "1.0",
+    "contact": {
+
+    }
+  },
+  "tags": [
+    {
+      "name": "Authentication",
+      "description": "Registro e inicio de sesión."
+    },
+    {
+      "name": "Comics",
+      "description": "Gestión del catálogo de comics."
+    },
+    {
+      "name": "Rentals",
+      "description": "Gestión de alquileres y devoluciones."
+    },
+    {
+      "name": "Copies",
+      "description": "Gestión de ejemplares físicos."
+    }
+  ],
+  "servers": [],
+  "components": {
+    "securitySchemes": {
+      "cookie": {
+        "type": "apiKey",
+        "in": "cookie",
+        "name": "access_token"
+      }
+    },
+    "schemas": {
+      "RegisterDto": {
+        "type": "object",
+        "properties": {
+          "nombre": {
+            "type": "string",
+            "example": "David Velasquez",
+            "description": "Nombre completo del usuario."
+          },
+          "correo": {
+            "type": "string",
+            "example": "cliente@comicrent.com",
+            "description": "Correo electrónico del usuario."
+          },
+          "contrasena": {
+            "type": "string",
+            "example": "Clave123!",
+            "description": "Contraseña del usuario."
+          },
+          "rol": {
+            "type": "string",
+            "enum": [
+              "Admin",
+              "Cliente"
+            ],
+            "example": "Cliente",
+            "description": "Rol asignado al usuario."
+          }
+        },
+        "required": [
+          "nombre",
+          "correo",
+          "contrasena",
+          "rol"
+        ]
+      },
+      "LoginDto": {
+        "type": "object",
+        "properties": {
+          "correo": {
+            "type": "string",
+            "example": "admin@p4.com",
+            "description": "Correo electrónico registrado."
+          },
+          "contrasena": {
+            "type": "string",
+            "example": "Clave123!",
+            "description": "Contraseña del usuario."
+          }
+        },
+        "required": [
+          "correo",
+          "contrasena"
+        ]
+      },
+      "CreateComicDto": {
+        "type": "object",
+        "properties": {
+          "titulo": {
+            "type": "string",
+            "example": "Batman: Año Uno"
+          },
+          "autor": {
+            "type": "string",
+            "example": "Frank Miller"
+          },
+          "editorial": {
+            "type": "string",
+            "example": "DC Comics"
+          },
+          "genero": {
+            "type": "string",
+            "example": "Superheroes"
+          },
+          "precioAlquiler": {
+            "type": "number",
+            "example": 25,
+            "description": "Precio de alquiler en quetzales."
+          }
+        },
+        "required": [
+          "titulo",
+          "autor",
+          "editorial",
+          "genero",
+          "precioAlquiler"
+        ]
+      },
+      "CreateRentalDto": {
+        "type": "object",
+        "properties": {
+          "comicId": {
+            "type": "number",
+            "example": 1,
+            "description": "Identificador del comic que se desea alquilar."
+          },
+          "dias": {
+            "type": "object",
+            "example": 7,
+            "default": 7,
+            "description": "Cantidad de días del alquiler."
+          }
+        },
+        "required": [
+          "comicId"
+        ]
+      },
+      "CreateCopyDto": {
+        "type": "object",
+        "properties": {
+          "comicId": {
+            "type": "number",
+            "example": 1,
+            "description": "Identificador del comic al que pertenece el ejemplar."
+          },
+          "codigo": {
+            "type": "string",
+            "example": "BAT-004",
+            "description": "Código único del ejemplar físico."
+          }
+        },
+        "required": [
+          "comicId",
+          "codigo"
+        ]
+      }
+    }
+  }
+}

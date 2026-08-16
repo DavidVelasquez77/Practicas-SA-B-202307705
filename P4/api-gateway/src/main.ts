@@ -10,6 +10,10 @@ import {
   AppModule,
 } from './app.module';
 
+import {
+  DocumentBuilder,
+  SwaggerModule,
+} from '@nestjs/swagger';
 
 async function bootstrap():
 Promise<void> {
@@ -29,6 +33,60 @@ Promise<void> {
     }),
   );
 
+  const swaggerConfig =
+    new DocumentBuilder()
+      .setTitle(
+        'ComicRent API',
+      )
+      .setDescription(
+        'Contrato público del sistema '
+        + 'de alquiler de comics. '
+        + 'Todas las solicitudes externas '
+        + 'se realizan mediante '
+        + 'el API Gateway.',
+      )
+      .setVersion('1.0')
+      .addTag(
+        'Authentication',
+        'Registro e inicio de sesión.',
+      )
+      .addTag(
+        'Comics',
+        'Gestión del catálogo de comics.',
+      )
+      .addTag(
+        'Rentals',
+        'Gestión de alquileres '
+        + 'y devoluciones.',
+      )
+      .addTag(
+        'Copies',
+        'Gestión de ejemplares físicos.',
+      )
+      .addCookieAuth(
+        'access_token',
+      )
+      .build();
+
+
+  const document =
+    SwaggerModule.createDocument(
+      app,
+      swaggerConfig,
+    );
+
+
+  SwaggerModule.setup(
+    'docs',
+    app,
+    document,
+    {
+      swaggerOptions: {
+        withCredentials: true,
+        persistAuthorization: true,
+      },
+    },
+  );
 
   const port =
     process.env.PORT ?? 3000;

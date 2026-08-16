@@ -28,7 +28,20 @@ import {
   CreateComicDto,
 } from './dto/create-comic.dto';
 
+import {
+  ApiCookieAuth,
+  ApiCreatedResponse,
+  ApiForbiddenResponse,
+  ApiNotFoundResponse,
+  ApiOkResponse,
+  ApiOperation,
+  ApiParam,
+  ApiTags,
+  ApiUnauthorizedResponse,
+} from '@nestjs/swagger';
 
+@ApiTags('Comics')
+@ApiCookieAuth('access_token')
 @Controller('api/comics')
 @UseGuards(
   GatewayAuthGuard,
@@ -46,6 +59,20 @@ export class ComicsGatewayController {
   ) {}
 
 
+  @ApiOperation({
+    summary: 'Listar comics',
+    description:
+      'Obtiene todos los comics '
+      + 'registrados en el catálogo.',
+  })
+  @ApiOkResponse({
+    description:
+      'Listado de comics obtenido.',
+  })
+  @ApiUnauthorizedResponse({
+    description:
+      'Sesión inexistente o expirada.',
+  })
   @Get()
   async findAll() {
 
@@ -73,7 +100,27 @@ export class ComicsGatewayController {
     return data.comics;
   }
 
-
+  @ApiOperation({
+    summary: 'Consultar comic por ID',
+  })
+  @ApiParam({
+    name: 'id',
+    example: 1,
+    description:
+      'Identificador del comic.',
+  })
+  @ApiOkResponse({
+    description:
+      'Comic encontrado.',
+  })
+  @ApiNotFoundResponse({
+    description:
+      'Comic no encontrado.',
+  })
+  @ApiUnauthorizedResponse({
+    description:
+      'Sesión inexistente o expirada.',
+  })
   @Get(':id')
   async findOne(
     @Param(
@@ -110,7 +157,24 @@ export class ComicsGatewayController {
     return data.comic;
   }
 
-
+  @ApiOperation({
+    summary: 'Crear comic',
+    description:
+      'Registra un comic nuevo. '
+      + 'Solo disponible para Admin.',
+  })
+  @ApiCreatedResponse({
+    description:
+      'Comic creado correctamente.',
+  })
+  @ApiUnauthorizedResponse({
+    description:
+      'Sesión inexistente o expirada.',
+  })
+  @ApiForbiddenResponse({
+    description:
+      'Solo un Admin puede crear comics.',
+  })
   @Post()
   @Roles('Admin')
   async create(

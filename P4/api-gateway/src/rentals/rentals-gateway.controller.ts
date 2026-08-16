@@ -39,6 +39,18 @@ import {
   CreateRentalDto,
 } from './dto/create-rental.dto';
 
+import {
+  ApiBadRequestResponse,
+  ApiCookieAuth,
+  ApiCreatedResponse,
+  ApiForbiddenResponse,
+  ApiNotFoundResponse,
+  ApiOkResponse,
+  ApiOperation,
+  ApiParam,
+  ApiTags,
+  ApiUnauthorizedResponse,
+} from '@nestjs/swagger';
 
 interface RentalResult {
   id: number;
@@ -52,7 +64,8 @@ interface RentalResult {
   estado: string;
 }
 
-
+@ApiTags('Rentals')
+@ApiCookieAuth('access_token')
 @Controller('api/rentals')
 @UseGuards(
   GatewayAuthGuard,
@@ -69,7 +82,28 @@ export class RentalsGatewayController {
       MicroservicesClientService,
   ) {}
 
-
+  @ApiOperation({
+    summary: 'Crear alquiler',
+    description:
+      'Crea un alquiler para el '
+      + 'usuario autenticado. '
+      + 'El precio se obtiene de Comics '
+      + 'y el ejemplar disponible '
+      + 'se obtiene de Copies.',
+  })
+  @ApiCreatedResponse({
+    description:
+      'Alquiler creado correctamente.',
+  })
+  @ApiBadRequestResponse({
+    description:
+      'Comic inválido o sin '
+      + 'ejemplares disponibles.',
+  })
+  @ApiUnauthorizedResponse({
+    description:
+      'Sesión inexistente o expirada.',
+  })
   @Post()
   async create(
     @CurrentUser()
@@ -118,7 +152,19 @@ export class RentalsGatewayController {
     return data.createRental;
   }
 
-
+  @ApiOperation({
+    summary:
+      'Consultar mis alquileres',
+  })
+  @ApiOkResponse({
+    description:
+      'Alquileres correspondientes '
+      + 'al usuario autenticado.',
+  })
+  @ApiUnauthorizedResponse({
+    description:
+      'Sesión inexistente o expirada.',
+  })
   @Get('me')
   async findMine(
     @CurrentUser()
@@ -203,7 +249,28 @@ export class RentalsGatewayController {
     return data.rental;
   }
 
-
+  @ApiOperation({
+    summary: 'Consultar alquiler',
+  })
+  @ApiParam({
+    name: 'id',
+    example: 1,
+    description:
+      'Identificador del alquiler.',
+  })
+  @ApiOkResponse({
+    description:
+      'Alquiler encontrado.',
+  })
+  @ApiNotFoundResponse({
+    description:
+      'El alquiler no existe.',
+  })
+  @ApiForbiddenResponse({
+    description:
+      'El usuario intenta consultar '
+      + 'un alquiler ajeno.',
+  })
   @Get(':id')
   async findOne(
     @Param(
@@ -236,7 +303,34 @@ export class RentalsGatewayController {
     return rental;
   }
 
-
+  @ApiOperation({
+    summary: 'Devolver comic',
+    description:
+      'Finaliza el alquiler y '
+      + 'libera automáticamente '
+      + 'el ejemplar en Copies Service.',
+  })
+  @ApiParam({
+    name: 'id',
+    example: 1,
+  })
+  @ApiOkResponse({
+    description:
+      'Devolución completada.',
+  })
+  @ApiNotFoundResponse({
+    description:
+      'El alquiler no existe.',
+  })
+  @ApiForbiddenResponse({
+    description:
+      'El usuario no puede devolver '
+      + 'un alquiler ajeno.',
+  })
+  @ApiBadRequestResponse({
+    description:
+      'El alquiler ya fue devuelto.',
+  })
   @Patch(':id/return')
   async returnRental(
     @Param(
