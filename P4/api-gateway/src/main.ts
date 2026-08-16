@@ -65,6 +65,10 @@ Promise<void> {
       )
       .addCookieAuth(
         'access_token',
+        {
+          type: 'apiKey',
+        },
+        'access_token',
       )
       .build();
 

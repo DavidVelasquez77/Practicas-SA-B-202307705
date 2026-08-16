@@ -428,7 +428,7 @@
   "servers": [],
   "components": {
     "securitySchemes": {
-      "cookie": {
+      "access_token": {
         "type": "apiKey",
         "in": "cookie",
         "name": "access_token"
