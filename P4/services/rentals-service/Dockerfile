@@ -1,9 +1,8 @@
-# =========================
-# STAGE 1 - BUILDER
-# =========================
-FROM python:3.12-slim AS builder
+FROM python:3.12-alpine AS builder
 
 WORKDIR /app
+
+RUN apk add --no-cache gcc musl-dev libffi-dev
 
 COPY requirements.txt .
 
@@ -13,19 +12,12 @@ RUN pip install \
     -r requirements.txt
 
 
-# =========================
-# STAGE 2 - RUNTIME
-# =========================
-FROM python:3.12-slim
+FROM python:3.12-alpine
 
 WORKDIR /app
 
-RUN groupadd --system appgroup \
-    && useradd \
-        --system \
-        --gid appgroup \
-        --create-home \
-        appuser
+RUN addgroup -S appgroup \
+    && adduser -S appuser -G appgroup
 
 COPY --from=builder /install /usr/local
 
@@ -36,5 +28,6 @@ RUN chown -R appuser:appgroup /app
 USER appuser
 
 EXPOSE 8001
+
 
 CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8001"]

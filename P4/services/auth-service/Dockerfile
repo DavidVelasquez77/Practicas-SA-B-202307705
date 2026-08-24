@@ -1,9 +1,8 @@
-# =========================
-# STAGE 1 - BUILDER
-# =========================
-FROM node:22-slim AS builder
+FROM node:22-alpine AS builder
 
 WORKDIR /app
+
+RUN apk add --no-cache openssl
 
 COPY package*.json ./
 
@@ -20,37 +19,27 @@ RUN npx prisma generate
 RUN npm run build
 
 
-# =========================
-# STAGE 2 - RUNTIME
-# =========================
-FROM node:22-slim
+FROM node:22-alpine
 
 WORKDIR /app
 
 ENV NODE_ENV=production
 
+RUN apk add --no-cache openssl
+
 COPY package*.json ./
 
-# Dependencias productivas + CLI Prisma
-# porque docker-compose ejecuta prisma migrate deploy
 RUN npm ci --omit=dev \
     && npm install --no-save prisma@7.9.1 \
     && npm cache clean --force
 
 COPY --from=builder /app/dist ./dist
-
-# Necesarios para "prisma migrate deploy"
 COPY --from=builder /app/prisma ./prisma
 COPY --from=builder /app/prisma.config.ts ./prisma.config.ts
 
-RUN groupadd --system appgroup \
-    && useradd \
-        --system \
-        --gid appgroup \
-        appuser \
-    && chown -R appuser:appgroup /app
+RUN chown -R node:node /app
 
-USER appuser
+USER node
 
 EXPOSE 3001
 
