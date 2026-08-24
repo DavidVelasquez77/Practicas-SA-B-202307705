@@ -1,0 +1,6 @@
+postgresqlSecrets:
+  postgresPassword: "CHANGE_ME"
+  userPassword: "CHANGE_ME"
+
+rabbitmqSecrets:
+  password: "CHANGE_ME"

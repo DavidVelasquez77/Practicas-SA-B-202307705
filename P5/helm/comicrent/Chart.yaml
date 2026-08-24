@@ -28,3 +28,11 @@ dependencies:
 
   - name: copies-consumer
     version: 0.1.0
+
+  - name: postgresql
+    version: 18.8.9
+    repository: "https://charts.bitnami.com/bitnami"
+
+  - name: rabbitmq
+    version: 14.6.3
+    repository: "https://charts.bitnami.com/bitnami"

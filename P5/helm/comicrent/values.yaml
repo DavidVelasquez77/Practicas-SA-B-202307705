@@ -1,1 +1,91 @@
 namespace: sa-p5
+
+global:
+  environment: base
+  namespace: sa-p5
+
+
+# ==================================================
+# PostgreSQL credentials
+# Los valores reales se sobrescriben por ambiente.
+# ==================================================
+
+postgresqlSecrets:
+  postgresPassword: ""
+  userPassword: ""
+
+
+# ==================================================
+# RabbitMQ credentials
+# ==================================================
+
+rabbitmqSecrets:
+  password: ""
+
+
+# ==================================================
+# PostgreSQL
+# ==================================================
+
+postgresql:
+  namespaceOverride: sa-p5
+
+  fullnameOverride: comicrent-postgresql
+
+  architecture: standalone
+
+  auth:
+    enablePostgresUser: true
+    username: comicrent_user
+    database: auth_db
+
+    existingSecret: comicrent-postgresql-secret
+
+    secretKeys:
+      adminPasswordKey: postgres-password
+      userPasswordKey: password
+
+  primary:
+
+    service:
+      type: ClusterIP
+      ports:
+        postgresql: 5432
+
+    persistence:
+      enabled: true
+      size: 2Gi
+
+    initdb:
+      scripts:
+
+        01-create-databases.sql: |
+          CREATE DATABASE comics_db OWNER comicrent_user;
+          CREATE DATABASE rentals_db OWNER comicrent_user;
+          CREATE DATABASE copies_db OWNER comicrent_user;
+          CREATE DATABASE operations_db OWNER comicrent_user;
+
+
+# ==================================================
+# RabbitMQ
+# ==================================================
+
+rabbitmq:
+  namespaceOverride: sa-p5
+
+  fullnameOverride: comicrent-rabbitmq
+
+  replicaCount: 1
+
+  auth:
+    username: comicrent
+
+    existingPasswordSecret: comicrent-rabbitmq-secret
+    existingSecretPasswordKey: rabbitmq-password
+
+  service:
+    type: ClusterIP
+
+  persistence:
+    enabled: true
+    size: 1Gi

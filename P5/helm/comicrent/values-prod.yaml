@@ -1,0 +1,9 @@
+global:
+  environment: prod
+
+postgresqlSecrets:
+  postgresPassword: ""
+  userPassword: ""
+
+rabbitmqSecrets:
+  password: ""
