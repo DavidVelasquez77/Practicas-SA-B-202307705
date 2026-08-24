@@ -10,8 +10,10 @@ COPY package*.json ./
 RUN npm ci
 
 COPY prisma ./prisma
-
+COPY prisma.config.ts ./
 COPY . .
+
+ENV DATABASE_URL="postgresql://dummy:dummy@localhost:5432/dummy"
 
 RUN npx prisma generate
 
@@ -29,10 +31,17 @@ ENV NODE_ENV=production
 
 COPY package*.json ./
 
+# Dependencias productivas + CLI Prisma
+# porque docker-compose ejecuta prisma migrate deploy
 RUN npm ci --omit=dev \
+    && npm install --no-save prisma@7.9.1 \
     && npm cache clean --force
 
 COPY --from=builder /app/dist ./dist
+
+# Necesarios para "prisma migrate deploy"
+COPY --from=builder /app/prisma ./prisma
+COPY --from=builder /app/prisma.config.ts ./prisma.config.ts
 
 RUN groupadd --system appgroup \
     && useradd \
