@@ -177,7 +177,7 @@ metadata:
     helm.sh/chart: rabbitmq-14.6.3
 type: Opaque
 data:
-  rabbitmq-erlang-cookie: "SjhieFg0bFdHckRmZm1ldVpJV2s0NzNQWExzckVDNjA="
+  rabbitmq-erlang-cookie: "dmhLYk9SRk5GU25rNFFaRGtUWnpuQkF5dVhlM2drdkU="
 
 ---
 # Source: comicrent/templates/secrets.yaml
@@ -279,6 +279,37 @@ data:
     CREATE DATABASE copies_db OWNER comicrent_user;
     CREATE DATABASE operations_db OWNER comicrent_user;
 
+---
+# Source: comicrent/charts/rentals-service/templates/configmap.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: comicrent-rentals-service-config
+  namespace: "sa-p5"
+  labels:
+    helm.sh/chart: rentals-service-0.1.0
+    app.kubernetes.io/name: rentals-service
+    app.kubernetes.io/instance: comicrent
+    app.kubernetes.io/version: "1.0.0"
+    app.kubernetes.io/managed-by: Helm
+data:
+  PORT: "8001"
+
+  HTTP_TIMEOUT_SECONDS: "5"
+
+  COMICS_SERVICE_URL: "http://comicrent-comics-service:3002"
+
+  COPIES_SERVICE_URL: "http://comicrent-copies-service:8002"
+
+  RABBITMQ_HOST: "comicrent-rabbitmq"
+
+  RABBITMQ_PORT: "5672"
+
+  RABBITMQ_USER: "comicrent"
+
+  RABBITMQ_EXCHANGE: "comicrent.events"
+
+  RABBITMQ_RETURN_ROUTING_KEY: "copy.return.requested"
 ---
 # Source: comicrent/charts/rabbitmq/templates/role.yaml
 kind: Role
@@ -518,6 +549,29 @@ spec:
     app.kubernetes.io/name: rabbitmq
 
 ---
+# Source: comicrent/charts/rentals-service/templates/service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: comicrent-rentals-service
+  namespace: "sa-p5"
+  labels:
+    helm.sh/chart: rentals-service-0.1.0
+    app.kubernetes.io/name: rentals-service
+    app.kubernetes.io/instance: comicrent
+    app.kubernetes.io/version: "1.0.0"
+    app.kubernetes.io/managed-by: Helm
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: rentals-service
+    app.kubernetes.io/instance: comicrent
+  ports:
+    - name: http
+      port: 8001
+      targetPort: http
+      protocol: TCP
+---
 # Source: comicrent/charts/api-gateway/templates/deployment.yaml
 apiVersion: apps/v1
 kind: Deployment
@@ -694,6 +748,75 @@ spec:
 
             - name: DATABASE_URL
               value: "postgresql://comicrent_user:$(DB_PASSWORD)@comicrent-postgresql:5432/comics_db?schema=public"
+
+          resources:
+            {}
+---
+# Source: comicrent/charts/rentals-service/templates/deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: comicrent-rentals-service
+  namespace: "sa-p5"
+  labels:
+    helm.sh/chart: rentals-service-0.1.0
+    app.kubernetes.io/name: rentals-service
+    app.kubernetes.io/instance: comicrent
+    app.kubernetes.io/version: "1.0.0"
+    app.kubernetes.io/managed-by: Helm
+spec:
+  replicas: 1
+
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0
+      maxSurge: 1
+
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: rentals-service
+      app.kubernetes.io/instance: comicrent
+
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: rentals-service
+        app.kubernetes.io/instance: comicrent
+      annotations:
+        checksum/config: 1dea4d798c40273b0ab76afc2b676fcda138d6d1ebee05b2e14d725a803de00d
+
+    spec:
+      containers:
+        - name: rentals-service
+
+          image: "comicrent/rentals-service:1.0.0"
+          imagePullPolicy: IfNotPresent
+
+          ports:
+            - name: http
+              containerPort: 8001
+              protocol: TCP
+
+          envFrom:
+            - configMapRef:
+                name: comicrent-rentals-service-config
+
+          env:
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: comicrent-postgresql-secret
+                  key: password
+
+            - name: DATABASE_URL
+              value: "postgresql+psycopg://comicrent_user:$(DB_PASSWORD)@comicrent-postgresql:5432/rentals_db"
+
+            - name: RABBITMQ_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: comicrent-rabbitmq-secret
+                  key: rabbitmq-password
 
           resources:
             {}
@@ -930,7 +1053,7 @@ spec:
         helm.sh/chart: rabbitmq-14.6.3
       annotations:
         checksum/config: ac47f041bb210ca9209afa42c26567d328c1e6c1d065070bd59f2313a36bc3a2
-        checksum/secret: ba7f17c0314e61e5e631f121e7529c1c7f2b1fd40451b3051ed18f16e7012b55
+        checksum/secret: fbfb2a8555cf4b6877d7c06adaa41ef0927b61f4b9b96aa5782ef3c53ddcae9f
     spec:
       
       serviceAccountName: comicrent-rabbitmq
