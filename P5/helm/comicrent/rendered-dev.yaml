@@ -177,7 +177,7 @@ metadata:
     helm.sh/chart: rabbitmq-14.6.3
 type: Opaque
 data:
-  rabbitmq-erlang-cookie: "T3VLa2dEUzhDOVhwTFZVaTEyYU5OaWdPQ0FxT3NrYzA="
+  rabbitmq-erlang-cookie: "cUpFbmdCWnE3TVdNVjFPbFN3UU5OaDlDNnNQMjF5bng="
 
 ---
 # Source: comicrent/templates/secrets.yaml
@@ -628,7 +628,7 @@ spec:
         helm.sh/chart: rabbitmq-14.6.3
       annotations:
         checksum/config: ac47f041bb210ca9209afa42c26567d328c1e6c1d065070bd59f2313a36bc3a2
-        checksum/secret: a9b9fd42b64742c6bdf2fc48b820c2784ad779c0688b76b0c378b4ed3ceeebfe
+        checksum/secret: f8d647e7f4919bb2946e92466eaf37ad9aa0d0291d7461c90186c11b51cda7fa
     spec:
       
       serviceAccountName: comicrent-rabbitmq
