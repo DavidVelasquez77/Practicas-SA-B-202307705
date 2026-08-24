@@ -14,6 +14,9 @@ from app.routers.copies_router import (
     router as copies_router,
 )
 
+from app.models.processed_event import (
+    ProcessedEventModel,
+)
 
 @asynccontextmanager
 async def lifespan(

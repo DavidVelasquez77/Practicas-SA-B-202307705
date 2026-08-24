@@ -161,7 +161,6 @@ services:
   rentals-service:
     build:
       context: ./services/rentals-service
-
     restart: unless-stopped
 
     environment:
@@ -175,6 +174,13 @@ services:
 
       HTTP_TIMEOUT_SECONDS: ${RENTALS_HTTP_TIMEOUT_SECONDS}
 
+      RABBITMQ_HOST: ${RABBITMQ_HOST}
+      RABBITMQ_PORT: ${RABBITMQ_PORT}
+      RABBITMQ_USER: ${RABBITMQ_USER}
+      RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD}
+      RABBITMQ_EXCHANGE: ${RABBITMQ_EXCHANGE}
+      RABBITMQ_RETURN_ROUTING_KEY: ${RABBITMQ_RETURN_ROUTING_KEY}
+
     ports:
       - "${RENTALS_SERVICE_PORT}:8001"
 
@@ -187,6 +193,9 @@ services:
 
       copies-service:
         condition: service_started
+
+      rabbitmq:
+        condition: service_healthy
 
   # ==========================================
   # COPIES DATABASE
@@ -233,6 +242,14 @@ services:
 
       DATABASE_URL: postgresql+psycopg://${COPIES_DB_USER}:${COPIES_DB_PASSWORD}@copies-db:5432/${COPIES_DB_NAME}
 
+      RABBITMQ_HOST: ${RABBITMQ_HOST}
+      RABBITMQ_PORT: ${RABBITMQ_PORT}
+      RABBITMQ_USER: ${RABBITMQ_USER}
+      RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD}
+      RABBITMQ_EXCHANGE: ${RABBITMQ_EXCHANGE}
+      RABBITMQ_RETURN_QUEUE: ${RABBITMQ_RETURN_QUEUE}
+      RABBITMQ_RETURN_ROUTING_KEY: ${RABBITMQ_RETURN_ROUTING_KEY}
+
     ports:
       - "${COPIES_SERVICE_PORT}:8002"
 
@@ -240,6 +257,39 @@ services:
       copies-db:
         condition: service_healthy
 
+
+  # ==========================================
+  # COPIES CONSUMER
+  # ==========================================
+
+  copies-consumer:
+    build:
+      context: ./services/copies-service
+
+    restart: unless-stopped
+
+    command:
+      python -m app.messaging.consumer
+
+    environment:
+      DATABASE_URL: postgresql+psycopg://${COPIES_DB_USER}:${COPIES_DB_PASSWORD}@copies-db:5432/${COPIES_DB_NAME}
+
+      RABBITMQ_HOST: ${RABBITMQ_HOST}
+      RABBITMQ_PORT: ${RABBITMQ_PORT}
+      RABBITMQ_USER: ${RABBITMQ_USER}
+      RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD}
+
+      RABBITMQ_EXCHANGE: ${RABBITMQ_EXCHANGE}
+      RABBITMQ_RETURN_QUEUE: ${RABBITMQ_RETURN_QUEUE}
+      RABBITMQ_RETURN_ROUTING_KEY: ${RABBITMQ_RETURN_ROUTING_KEY}
+
+    depends_on:
+      copies-db:
+        condition: service_healthy
+
+      rabbitmq:
+        condition: service_healthy
+        
   # ==========================================
   # API GATEWAY
   # ==========================================

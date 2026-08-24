@@ -306,9 +306,7 @@ class RentalsService:
     async def return_rental(
         rental_id: int,
     ) -> Rental:
-
         async with SessionLocal() as session:
-
             rental = await session.get(
                 RentalModel,
                 rental_id,
@@ -321,21 +319,16 @@ class RentalsService:
 
             if rental.estado != "ACTIVO":
                 raise GraphQLError(
-                    "El alquiler ya fue "
-                    "devuelto."
+                    "El alquiler ya fue devuelto."
                 )
 
             copy_id = rental.copy_id
 
             # ==================================
-            # 1. DEVOLVER COPY
-            # ==================================
-            # ==================================
-            # 2. ACTUALIZAR RENTAL
+            # 1. ACTUALIZAR RENTAL LOCAL
             # ==================================
 
             rental.estado = "DEVUELTO"
-
             rental.fecha_devolucion = (
                 datetime.now(
                     timezone.utc
@@ -344,35 +337,48 @@ class RentalsService:
 
             try:
                 await session.commit()
-
                 await session.refresh(
                     rental
                 )
 
             except Exception as exc:
-
                 await session.rollback()
-
-                # Compensación:
-                # si no pudimos actualizar
-                # el alquiler, intentamos
-                # volver a marcar la copia
-                # como alquilada.
-
-                try:
-                    await (
-                        CopiesClient
-                        .mark_as_rented(
-                            copy_id
-                        )
-                    )
-
-                except RemoteServiceError:
-                    pass
 
                 raise GraphQLError(
                     "No se pudo completar "
                     "la devolución."
+                ) from exc
+
+            # ==================================
+            # 2. PUBLICAR EVENTO EN RABBITMQ
+            # ==================================
+
+            event = {
+                "eventId": str(
+                    uuid4()
+                ),
+                "rentalId": rental.id,
+                "copyId": copy_id,
+                "occurredAt": (
+                    datetime.now(
+                        timezone.utc
+                    ).isoformat()
+                ),
+            }
+
+            try:
+                await (
+                    publish_copy_return_requested(
+                        event
+                    )
+                )
+
+            except Exception as exc:
+                raise GraphQLError(
+                    "El alquiler fue marcado "
+                    "como devuelto, pero no "
+                    "se pudo publicar el evento "
+                    "de devolución."
                 ) from exc
 
             return to_graphql(
