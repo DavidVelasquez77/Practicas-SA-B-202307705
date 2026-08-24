@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "api-gateway.fullname" . }}-config
+  namespace: {{ .Values.global.namespace | default "sa-p5" | quote }}
+  labels:
+    {{- include "api-gateway.labels" . | nindent 4 }}
+data:
+  PORT: {{ .Values.config.port | default "3000" | quote }}
+
+  AUTH_SERVICE_URL: "http://comicrent-auth-service:3001"
+
+  COMICS_SERVICE_URL: "http://comicrent-comics-service:3002"
+
+  RENTALS_SERVICE_URL: "http://comicrent-rentals-service:8001"
+
+  COPIES_SERVICE_URL: "http://comicrent-copies-service:8002"

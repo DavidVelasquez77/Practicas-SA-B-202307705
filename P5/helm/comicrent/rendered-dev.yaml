@@ -177,7 +177,7 @@ metadata:
     helm.sh/chart: rabbitmq-14.6.3
 type: Opaque
 data:
-  rabbitmq-erlang-cookie: "cUpFbmdCWnE3TVdNVjFPbFN3UU5OaDlDNnNQMjF5bng="
+  rabbitmq-erlang-cookie: "enVxUFRUM2dleUNxUGFjODVSdVBzdTAzSmFLWVhjWUQ="
 
 ---
 # Source: comicrent/templates/secrets.yaml
@@ -206,6 +206,29 @@ metadata:
 type: Opaque
 stringData:
   rabbitmq-password: "dev-rabbitmq-change-me"
+---
+# Source: comicrent/charts/api-gateway/templates/configmap.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: comicrent-api-gateway-config
+  namespace: "sa-p5"
+  labels:
+    helm.sh/chart: api-gateway-0.1.0
+    app.kubernetes.io/name: api-gateway
+    app.kubernetes.io/instance: comicrent
+    app.kubernetes.io/version: "1.0.0"
+    app.kubernetes.io/managed-by: Helm
+data:
+  PORT: "3000"
+
+  AUTH_SERVICE_URL: "http://comicrent-auth-service:3001"
+
+  COMICS_SERVICE_URL: "http://comicrent-comics-service:3002"
+
+  RENTALS_SERVICE_URL: "http://comicrent-rentals-service:8001"
+
+  COPIES_SERVICE_URL: "http://comicrent-copies-service:8002"
 ---
 # Source: comicrent/charts/postgresql/templates/primary/initialization-configmap.yaml
 apiVersion: v1
@@ -268,6 +291,29 @@ roleRef:
   kind: Role
   name: comicrent-rabbitmq-endpoint-reader
 
+---
+# Source: comicrent/charts/api-gateway/templates/service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: comicrent-api-gateway
+  namespace: "sa-p5"
+  labels:
+    helm.sh/chart: api-gateway-0.1.0
+    app.kubernetes.io/name: api-gateway
+    app.kubernetes.io/instance: comicrent
+    app.kubernetes.io/version: "1.0.0"
+    app.kubernetes.io/managed-by: Helm
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: api-gateway
+    app.kubernetes.io/instance: comicrent
+  ports:
+    - name: http
+      port: 3000
+      targetPort: http
+      protocol: TCP
 ---
 # Source: comicrent/charts/postgresql/templates/primary/svc-headless.yaml
 apiVersion: v1
@@ -395,6 +441,60 @@ spec:
     app.kubernetes.io/instance: comicrent
     app.kubernetes.io/name: rabbitmq
 
+---
+# Source: comicrent/charts/api-gateway/templates/deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: comicrent-api-gateway
+  namespace: "sa-p5"
+  labels:
+    helm.sh/chart: api-gateway-0.1.0
+    app.kubernetes.io/name: api-gateway
+    app.kubernetes.io/instance: comicrent
+    app.kubernetes.io/version: "1.0.0"
+    app.kubernetes.io/managed-by: Helm
+spec:
+  replicas: 1
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0
+      maxSurge: 1
+
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: api-gateway
+      app.kubernetes.io/instance: comicrent
+
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: api-gateway
+        app.kubernetes.io/instance: comicrent
+
+      annotations:
+        checksum/config: eb41f8d92858e01d417176d5a750b837e265ee3a85637dbe0a81bb2d4e48666e
+
+    spec:
+      containers:
+        - name: api-gateway
+
+          image: "comicrent/api-gateway:1.0.0"
+
+          imagePullPolicy: IfNotPresent
+
+          ports:
+            - name: http
+              containerPort: 3000
+              protocol: TCP
+
+          envFrom:
+            - configMapRef:
+                name: comicrent-api-gateway-config
+
+          resources:
+            {}
 ---
 # Source: comicrent/charts/postgresql/templates/primary/statefulset.yaml
 apiVersion: apps/v1
@@ -628,7 +728,7 @@ spec:
         helm.sh/chart: rabbitmq-14.6.3
       annotations:
         checksum/config: ac47f041bb210ca9209afa42c26567d328c1e6c1d065070bd59f2313a36bc3a2
-        checksum/secret: f8d647e7f4919bb2946e92466eaf37ad9aa0d0291d7461c90186c11b51cda7fa
+        checksum/secret: 65cd7f6e7b2b3af49b9a0fbd30ba5b4ad6f44c1508face63dd1c59421fa5dcdb
     spec:
       
       serviceAccountName: comicrent-rabbitmq
