@@ -177,7 +177,7 @@ metadata:
     helm.sh/chart: rabbitmq-14.6.3
 type: Opaque
 data:
-  rabbitmq-erlang-cookie: "dmhLYk9SRk5GU25rNFFaRGtUWnpuQkF5dVhlM2drdkU="
+  rabbitmq-erlang-cookie: "RFJjaXl0aWY5aDlJQ1dIb0N4QUI1YmV1UlZYc2RFR1Y="
 
 ---
 # Source: comicrent/templates/secrets.yaml
@@ -259,6 +259,50 @@ metadata:
     app.kubernetes.io/managed-by: Helm
 data:
   PORT: "3002"
+---
+# Source: comicrent/charts/copies-consumer/templates/configmap.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: comicrent-copies-consumer-config
+  namespace: "sa-p5"
+  labels:
+    helm.sh/chart: copies-consumer-0.1.0
+    app.kubernetes.io/name: copies-consumer
+    app.kubernetes.io/instance: comicrent
+    app.kubernetes.io/version: "1.0.0"
+    app.kubernetes.io/managed-by: Helm
+data:
+  RABBITMQ_HOST: "comicrent-rabbitmq"
+  RABBITMQ_PORT: "5672"
+  RABBITMQ_USER: "comicrent"
+
+  RABBITMQ_EXCHANGE: "comicrent.events"
+  RABBITMQ_RETURN_QUEUE: "copies.return.requested"
+  RABBITMQ_RETURN_ROUTING_KEY: "copy.return.requested"
+---
+# Source: comicrent/charts/copies-service/templates/configmap.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: comicrent-copies-service-config
+  namespace: "sa-p5"
+  labels:
+    helm.sh/chart: copies-service-0.1.0
+    app.kubernetes.io/name: copies-service
+    app.kubernetes.io/instance: comicrent
+    app.kubernetes.io/version: "1.0.0"
+    app.kubernetes.io/managed-by: Helm
+data:
+  PORT: "8002"
+
+  RABBITMQ_HOST: "comicrent-rabbitmq"
+  RABBITMQ_PORT: "5672"
+  RABBITMQ_USER: "comicrent"
+
+  RABBITMQ_EXCHANGE: "comicrent.events"
+  RABBITMQ_RETURN_QUEUE: "copies.return.requested"
+  RABBITMQ_RETURN_ROUTING_KEY: "copy.return.requested"
 ---
 # Source: comicrent/charts/postgresql/templates/primary/initialization-configmap.yaml
 apiVersion: v1
@@ -419,6 +463,29 @@ spec:
   ports:
     - name: http
       port: 3002
+      targetPort: http
+      protocol: TCP
+---
+# Source: comicrent/charts/copies-service/templates/service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: comicrent-copies-service
+  namespace: "sa-p5"
+  labels:
+    helm.sh/chart: copies-service-0.1.0
+    app.kubernetes.io/name: copies-service
+    app.kubernetes.io/instance: comicrent
+    app.kubernetes.io/version: "1.0.0"
+    app.kubernetes.io/managed-by: Helm
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: copies-service
+    app.kubernetes.io/instance: comicrent
+  ports:
+    - name: http
+      port: 8002
       targetPort: http
       protocol: TCP
 ---
@@ -752,6 +819,145 @@ spec:
           resources:
             {}
 ---
+# Source: comicrent/charts/copies-consumer/templates/deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: comicrent-copies-consumer
+  namespace: "sa-p5"
+  labels:
+    helm.sh/chart: copies-consumer-0.1.0
+    app.kubernetes.io/name: copies-consumer
+    app.kubernetes.io/instance: comicrent
+    app.kubernetes.io/version: "1.0.0"
+    app.kubernetes.io/managed-by: Helm
+spec:
+  replicas: 1
+
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0
+      maxSurge: 1
+
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: copies-consumer
+      app.kubernetes.io/instance: comicrent
+
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: copies-consumer
+        app.kubernetes.io/instance: comicrent
+      annotations:
+        checksum/config: 7e5a7f061dbd75b7b7f795ca1932fcf2cf5734b59bc980c3385d4e8ad3ada736
+
+    spec:
+      containers:
+        - name: copies-consumer
+
+          image: "comicrent/copies-service:1.0.0"
+          imagePullPolicy: IfNotPresent
+
+          command:
+            - python
+            - -u
+            - -m
+            - app.messaging.consumer
+
+          envFrom:
+            - configMapRef:
+                name: comicrent-copies-consumer-config
+
+          env:
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: comicrent-postgresql-secret
+                  key: password
+
+            - name: DATABASE_URL
+              value: "postgresql+psycopg://comicrent_user:$(DB_PASSWORD)@comicrent-postgresql:5432/copies_db"
+
+            - name: RABBITMQ_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: comicrent-rabbitmq-secret
+                  key: rabbitmq-password
+
+          resources:
+            {}
+---
+# Source: comicrent/charts/copies-service/templates/deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: comicrent-copies-service
+  namespace: "sa-p5"
+  labels:
+    helm.sh/chart: copies-service-0.1.0
+    app.kubernetes.io/name: copies-service
+    app.kubernetes.io/instance: comicrent
+    app.kubernetes.io/version: "1.0.0"
+    app.kubernetes.io/managed-by: Helm
+spec:
+  replicas: 1
+
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0
+      maxSurge: 1
+
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: copies-service
+      app.kubernetes.io/instance: comicrent
+
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: copies-service
+        app.kubernetes.io/instance: comicrent
+      annotations:
+        checksum/config: 60acab16bb94c8e5b0f6807ae9015c92dc896dd1dad811d2e639d577c24e5500
+
+    spec:
+      containers:
+        - name: copies-service
+
+          image: "comicrent/copies-service:1.0.0"
+          imagePullPolicy: IfNotPresent
+
+          ports:
+            - name: http
+              containerPort: 8002
+              protocol: TCP
+
+          envFrom:
+            - configMapRef:
+                name: comicrent-copies-service-config
+
+          env:
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: comicrent-postgresql-secret
+                  key: password
+
+            - name: DATABASE_URL
+              value: "postgresql+psycopg://comicrent_user:$(DB_PASSWORD)@comicrent-postgresql:5432/copies_db"
+
+            - name: RABBITMQ_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: comicrent-rabbitmq-secret
+                  key: rabbitmq-password
+
+          resources:
+            {}
+---
 # Source: comicrent/charts/rentals-service/templates/deployment.yaml
 apiVersion: apps/v1
 kind: Deployment
@@ -1053,7 +1259,7 @@ spec:
         helm.sh/chart: rabbitmq-14.6.3
       annotations:
         checksum/config: ac47f041bb210ca9209afa42c26567d328c1e6c1d065070bd59f2313a36bc3a2
-        checksum/secret: fbfb2a8555cf4b6877d7c06adaa41ef0927b61f4b9b96aa5782ef3c53ddcae9f
+        checksum/secret: c72e3b307648b5eb9080f04c16c83c00622f7ce21a13bceb2e258d827bfd46f0
     spec:
       
       serviceAccountName: comicrent-rabbitmq

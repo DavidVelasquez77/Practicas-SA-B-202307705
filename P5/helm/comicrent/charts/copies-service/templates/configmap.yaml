@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "copies-service.fullname" . }}-config
+  namespace: {{ .Values.global.namespace | default "sa-p5" | quote }}
+  labels:
+    {{- include "copies-service.labels" . | nindent 4 }}
+data:
+  PORT: {{ .Values.config.port | default "8002" | quote }}
+
+  RABBITMQ_HOST: "comicrent-rabbitmq"
+  RABBITMQ_PORT: "5672"
+  RABBITMQ_USER: "comicrent"
+
+  RABBITMQ_EXCHANGE: "comicrent.events"
+  RABBITMQ_RETURN_QUEUE: "copies.return.requested"
+  RABBITMQ_RETURN_ROUTING_KEY: "copy.return.requested"
