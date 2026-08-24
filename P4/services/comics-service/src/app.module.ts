@@ -23,6 +23,7 @@ import {
   ComicsModule,
 } from './comics/comics.module';
 
+import { HealthController } from './health.controller';
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -37,6 +38,9 @@ import {
 
     PrismaModule,
     ComicsModule,
+  ],
+  controllers: [
+    HealthController,
   ],
 })
 export class AppModule {}

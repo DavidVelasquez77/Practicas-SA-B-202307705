@@ -4,6 +4,7 @@ import { ConfigModule } from '@nestjs/config';
 import { PrismaModule } from './prisma/prisma.module';
 import { EncryptionModule } from './encryption/encryption.module';
 import { AuthModule } from './auth/auth.module';
+import { HealthController } from './health.controller';
 
 @Module({
   imports: [
@@ -13,6 +14,9 @@ import { AuthModule } from './auth/auth.module';
     PrismaModule,
     EncryptionModule,
     AuthModule,
+  ],
+  controllers: [
+    HealthController,
   ],
 })
 export class AppModule {}

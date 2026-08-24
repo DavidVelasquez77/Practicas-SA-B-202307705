@@ -34,6 +34,7 @@ import {
   CopiesGatewayController,
 } from './copies/copies-gateway.controller';
 
+import { HealthController } from './health.controller';
 
 @Module({
   imports: [
@@ -43,6 +44,7 @@ import {
   ],
 
   controllers: [
+    HealthController,
     AuthGatewayController,
     ComicsGatewayController,
     RentalsGatewayController,

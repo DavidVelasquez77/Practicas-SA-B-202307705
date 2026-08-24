@@ -24,6 +24,11 @@ from app.graphql.inputs import (
 from app.graphql.types import Rental
 from app.models.rental import RentalModel
 
+from uuid import uuid4
+
+from app.messaging.rabbitmq_publisher import (
+    publish_copy_return_requested,
+)
 
 def to_graphql(
     rental: RentalModel,
@@ -325,20 +330,6 @@ class RentalsService:
             # ==================================
             # 1. DEVOLVER COPY
             # ==================================
-
-            try:
-                await (
-                    CopiesClient
-                    .mark_as_available(
-                        copy_id
-                    )
-                )
-
-            except RemoteServiceError as exc:
-                raise GraphQLError(
-                    str(exc)
-                ) from exc
-
             # ==================================
             # 2. ACTUALIZAR RENTAL
             # ==================================
