@@ -1,16 +1,26 @@
 import os
 
 
-DATABASE_URL = os.getenv("DATABASE_URL")
+def required_env(name: str) -> str:
+    value = os.getenv(name)
 
-if not DATABASE_URL:
-    raise RuntimeError(
-        "La variable de entorno DATABASE_URL es obligatoria."
-    )
+    if not value:
+        raise RuntimeError(
+            f"La variable de entorno {name} es obligatoria."
+        )
 
+    return value
+
+
+DATABASE_URL = required_env(
+    "DATABASE_URL"
+)
 
 PORT = int(
-    os.getenv("PORT", "8002")
+    os.getenv(
+        "PORT",
+        "8002",
+    )
 )
 
 RABBITMQ_HOST = required_env(

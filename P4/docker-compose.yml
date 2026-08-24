@@ -269,7 +269,7 @@ services:
     restart: unless-stopped
 
     command:
-      python -m app.messaging.consumer
+      python -u -m app.messaging.consumer
 
     environment:
       DATABASE_URL: postgresql+psycopg://${COPIES_DB_USER}:${COPIES_DB_PASSWORD}@copies-db:5432/${COPIES_DB_NAME}
