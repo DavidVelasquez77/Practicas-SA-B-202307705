@@ -177,7 +177,7 @@ metadata:
     helm.sh/chart: rabbitmq-14.6.3
 type: Opaque
 data:
-  rabbitmq-erlang-cookie: "enVxUFRUM2dleUNxUGFjODVSdVBzdTAzSmFLWVhjWUQ="
+  rabbitmq-erlang-cookie: "SjhieFg0bFdHckRmZm1ldVpJV2s0NzNQWExzckVDNjA="
 
 ---
 # Source: comicrent/templates/secrets.yaml
@@ -229,6 +229,36 @@ data:
   RENTALS_SERVICE_URL: "http://comicrent-rentals-service:8001"
 
   COPIES_SERVICE_URL: "http://comicrent-copies-service:8002"
+---
+# Source: comicrent/charts/auth-service/templates/configmap.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: comicrent-auth-service-config
+  namespace: "sa-p5"
+  labels:
+    helm.sh/chart: auth-service-0.1.0
+    app.kubernetes.io/name: auth-service
+    app.kubernetes.io/instance: comicrent
+    app.kubernetes.io/version: "1.0.0"
+    app.kubernetes.io/managed-by: Helm
+data:
+  PORT: "3001"
+---
+# Source: comicrent/charts/comics-service/templates/configmap.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: comicrent-comics-service-config
+  namespace: "sa-p5"
+  labels:
+    helm.sh/chart: comics-service-0.1.0
+    app.kubernetes.io/name: comics-service
+    app.kubernetes.io/instance: comicrent
+    app.kubernetes.io/version: "1.0.0"
+    app.kubernetes.io/managed-by: Helm
+data:
+  PORT: "3002"
 ---
 # Source: comicrent/charts/postgresql/templates/primary/initialization-configmap.yaml
 apiVersion: v1
@@ -312,6 +342,52 @@ spec:
   ports:
     - name: http
       port: 3000
+      targetPort: http
+      protocol: TCP
+---
+# Source: comicrent/charts/auth-service/templates/service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: comicrent-auth-service
+  namespace: "sa-p5"
+  labels:
+    helm.sh/chart: auth-service-0.1.0
+    app.kubernetes.io/name: auth-service
+    app.kubernetes.io/instance: comicrent
+    app.kubernetes.io/version: "1.0.0"
+    app.kubernetes.io/managed-by: Helm
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: auth-service
+    app.kubernetes.io/instance: comicrent
+  ports:
+    - name: http
+      port: 3001
+      targetPort: http
+      protocol: TCP
+---
+# Source: comicrent/charts/comics-service/templates/service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: comicrent-comics-service
+  namespace: "sa-p5"
+  labels:
+    helm.sh/chart: comics-service-0.1.0
+    app.kubernetes.io/name: comics-service
+    app.kubernetes.io/instance: comicrent
+    app.kubernetes.io/version: "1.0.0"
+    app.kubernetes.io/managed-by: Helm
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: comics-service
+    app.kubernetes.io/instance: comicrent
+  ports:
+    - name: http
+      port: 3002
       targetPort: http
       protocol: TCP
 ---
@@ -492,6 +568,132 @@ spec:
           envFrom:
             - configMapRef:
                 name: comicrent-api-gateway-config
+
+          resources:
+            {}
+---
+# Source: comicrent/charts/auth-service/templates/deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: comicrent-auth-service
+  namespace: "sa-p5"
+  labels:
+    helm.sh/chart: auth-service-0.1.0
+    app.kubernetes.io/name: auth-service
+    app.kubernetes.io/instance: comicrent
+    app.kubernetes.io/version: "1.0.0"
+    app.kubernetes.io/managed-by: Helm
+spec:
+  replicas: 1
+
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0
+      maxSurge: 1
+
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: auth-service
+      app.kubernetes.io/instance: comicrent
+
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: auth-service
+        app.kubernetes.io/instance: comicrent
+      annotations:
+        checksum/config: 35bc0d26116136c06816657dfa84747976c3d0c246ccf00f8d13e0fa28ff99c2
+
+    spec:
+      containers:
+        - name: auth-service
+
+          image: "comicrent/auth-service:1.0.0"
+          imagePullPolicy: IfNotPresent
+
+          ports:
+            - name: http
+              containerPort: 3001
+              protocol: TCP
+
+          envFrom:
+            - configMapRef:
+                name: comicrent-auth-service-config
+
+          env:
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: comicrent-postgresql-secret
+                  key: password
+
+            - name: DATABASE_URL
+              value: "postgresql://comicrent_user:$(DB_PASSWORD)@comicrent-postgresql:5432/auth_db?schema=public"
+
+          resources:
+            {}
+---
+# Source: comicrent/charts/comics-service/templates/deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: comicrent-comics-service
+  namespace: "sa-p5"
+  labels:
+    helm.sh/chart: comics-service-0.1.0
+    app.kubernetes.io/name: comics-service
+    app.kubernetes.io/instance: comicrent
+    app.kubernetes.io/version: "1.0.0"
+    app.kubernetes.io/managed-by: Helm
+spec:
+  replicas: 1
+
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0
+      maxSurge: 1
+
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: comics-service
+      app.kubernetes.io/instance: comicrent
+
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: comics-service
+        app.kubernetes.io/instance: comicrent
+      annotations:
+        checksum/config: 6378da4046deaf644ad31e5c7fb0297793b13fae37784265173a01075e79a1b5
+
+    spec:
+      containers:
+        - name: comics-service
+
+          image: "comicrent/comics-service:1.0.0"
+          imagePullPolicy: IfNotPresent
+
+          ports:
+            - name: http
+              containerPort: 3002
+              protocol: TCP
+
+          envFrom:
+            - configMapRef:
+                name: comicrent-comics-service-config
+
+          env:
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: comicrent-postgresql-secret
+                  key: password
+
+            - name: DATABASE_URL
+              value: "postgresql://comicrent_user:$(DB_PASSWORD)@comicrent-postgresql:5432/comics_db?schema=public"
 
           resources:
             {}
@@ -728,7 +930,7 @@ spec:
         helm.sh/chart: rabbitmq-14.6.3
       annotations:
         checksum/config: ac47f041bb210ca9209afa42c26567d328c1e6c1d065070bd59f2313a36bc3a2
-        checksum/secret: 65cd7f6e7b2b3af49b9a0fbd30ba5b4ad6f44c1508face63dd1c59421fa5dcdb
+        checksum/secret: ba7f17c0314e61e5e631f121e7529c1c7f2b1fd40451b3051ed18f16e7012b55
     spec:
       
       serviceAccountName: comicrent-rabbitmq
