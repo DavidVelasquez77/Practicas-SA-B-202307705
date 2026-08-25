@@ -261,7 +261,7 @@ metadata:
     helm.sh/chart: rabbitmq-14.6.3
 type: Opaque
 data:
-  rabbitmq-erlang-cookie: "V2Q5VEF5aWJ0YWxCVGVqVHR3QVUxakY3dkdWUndMTnM="
+  rabbitmq-erlang-cookie: "ZVNVY08wZEk3ZElpUURWRURYWjN1TVhNbEpjYkN0S0I="
 
 ---
 # Source: comicrent/templates/secrets.yaml
@@ -1011,8 +1011,36 @@ spec:
             - configMapRef:
                 name: comicrent-api-gateway-config
 
+          startupProbe:
+            httpGet:
+              path: /health
+              port: http
+            failureThreshold: 30
+            periodSeconds: 2
+
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: 2
+            periodSeconds: 5
+            failureThreshold: 3
+
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            failureThreshold: 3
+
           resources:
-            {}
+            limits:
+              cpu: 300m
+              memory: 256Mi
+            requests:
+              cpu: 100m
+              memory: 128Mi
 ---
 # Source: comicrent/charts/auth-service/templates/deployment.yaml
 apiVersion: apps/v1
@@ -1091,8 +1119,35 @@ spec:
             - name: DATABASE_URL
               value: "postgresql://comicrent_user:$(DB_PASSWORD)@comicrent-postgresql:5432/auth_db?schema=public"
 
+          startupProbe:
+            httpGet:
+              path: /health
+              port: http
+            failureThreshold: 30
+            periodSeconds: 2
+
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: 2
+            periodSeconds: 5
+            failureThreshold: 3
+
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            failureThreshold: 3
           resources:
-            {}
+            limits:
+              cpu: 300m
+              memory: 256Mi
+            requests:
+              cpu: 100m
+              memory: 128Mi
 ---
 # Source: comicrent/charts/comics-service/templates/deployment.yaml
 apiVersion: apps/v1
@@ -1171,8 +1226,36 @@ spec:
             - name: DATABASE_URL
               value: "postgresql://comicrent_user:$(DB_PASSWORD)@comicrent-postgresql:5432/comics_db?schema=public"
 
+          startupProbe:
+            httpGet:
+              path: /health
+              port: http
+            failureThreshold: 30
+            periodSeconds: 2
+
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: 2
+            periodSeconds: 5
+            failureThreshold: 3
+
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            failureThreshold: 3
+
           resources:
-            {}
+            limits:
+              cpu: 300m
+              memory: 256Mi
+            requests:
+              cpu: 100m
+              memory: 128Mi
 ---
 # Source: comicrent/charts/copies-consumer/templates/deployment.yaml
 apiVersion: apps/v1
@@ -1344,8 +1427,36 @@ spec:
                   name: comicrent-rabbitmq-secret
                   key: rabbitmq-password
 
+          startupProbe:
+            httpGet:
+              path: /health
+              port: http
+            failureThreshold: 30
+            periodSeconds: 2
+
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: 2
+            periodSeconds: 5
+            failureThreshold: 3
+
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            failureThreshold: 3
+
           resources:
-            {}
+            limits:
+              cpu: 300m
+              memory: 256Mi
+            requests:
+              cpu: 100m
+              memory: 128Mi
 ---
 # Source: comicrent/charts/rentals-service/templates/deployment.yaml
 apiVersion: apps/v1
@@ -1430,8 +1541,36 @@ spec:
                   name: comicrent-rabbitmq-secret
                   key: rabbitmq-password
 
+          startupProbe:
+            httpGet:
+              path: /health
+              port: http
+            failureThreshold: 30
+            periodSeconds: 2
+
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: 2
+            periodSeconds: 5
+            failureThreshold: 3
+
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            failureThreshold: 3
+
           resources:
-            {}
+            limits:
+              cpu: 300m
+              memory: 256Mi
+            requests:
+              cpu: 100m
+              memory: 128Mi
 ---
 # Source: comicrent/charts/postgresql/templates/primary/statefulset.yaml
 apiVersion: apps/v1
@@ -1665,7 +1804,7 @@ spec:
         helm.sh/chart: rabbitmq-14.6.3
       annotations:
         checksum/config: ac47f041bb210ca9209afa42c26567d328c1e6c1d065070bd59f2313a36bc3a2
-        checksum/secret: 1ee74d2d56a0b16bb84bf1202528efee72279f0b3af94a0e6db40a1013690464
+        checksum/secret: 957eed7294496e5656d6cd64cf34510153ec66487238d2c3b787df4a7ff94925
     spec:
       
       serviceAccountName: comicrent-rabbitmq
