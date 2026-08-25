@@ -26,6 +26,7 @@ spec:
 
       annotations:
         checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
+        checksum/secret: {{ .Values.global.secrets.postgresUserPassword | sha256sum | quote }}
 
     spec:
       serviceAccountName: {{ include "auth-service.fullname" . }}

@@ -4,23 +4,10 @@ global:
   environment: base
   namespace: sa-p5
 
-
-# ==================================================
-# PostgreSQL credentials
-# Los valores reales se sobrescriben por ambiente.
-# ==================================================
-
-postgresqlSecrets:
-  postgresPassword: ""
-  userPassword: ""
-
-
-# ==================================================
-# RabbitMQ credentials
-# ==================================================
-
-rabbitmqSecrets:
-  password: ""
+  secrets:
+    postgresPassword: ""
+    postgresUserPassword: ""
+    rabbitmqPassword: ""
 
 
 # ==================================================

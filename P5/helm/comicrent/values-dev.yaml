@@ -1,9 +1,7 @@
 global:
   environment: dev
 
-postgresqlSecrets:
-  postgresPassword: "dev-postgres-change-me"
-  userPassword: "dev-comicrent-change-me"
-
-rabbitmqSecrets:
-  password: "dev-rabbitmq-change-me"
+  secrets:
+    postgresPassword: "dev-postgres-change-me"
+    postgresUserPassword: "dev-comicrent-change-me"
+    rabbitmqPassword: "dev-rabbitmq-change-me"

@@ -846,7 +846,7 @@ metadata:
     helm.sh/chart: rabbitmq-14.6.3
 type: Opaque
 data:
-  rabbitmq-erlang-cookie: "NTJhYU94Z2wzTzdOaWpmbTQ0OXBDaHZMTnJaWTQ0OW4="
+  rabbitmq-erlang-cookie: "akNiVlRRNk5Sa3RuZk80YTRNNEtvWnk0TFd6eDBhaGI="
 
 ---
 # Source: comicrent/templates/secrets.yaml
@@ -1661,6 +1661,7 @@ spec:
 
       annotations:
         checksum/config: 35bc0d26116136c06816657dfa84747976c3d0c246ccf00f8d13e0fa28ff99c2
+        checksum/secret: "9cc1ec1fefcf02364854e853e3d314c139b70d384485ca5074977d3706e563fd"
 
     spec:
       serviceAccountName: comicrent-auth-service
@@ -1766,8 +1767,9 @@ spec:
         app.kubernetes.io/name: comics-service
         app.kubernetes.io/instance: comicrent
 
-      annotations:
-        checksum/config: 6378da4046deaf644ad31e5c7fb0297793b13fae37784265173a01075e79a1b5
+    annotations:
+      checksum/config: 6378da4046deaf644ad31e5c7fb0297793b13fae37784265173a01075e79a1b5
+      checksum/secret: "9cc1ec1fefcf02364854e853e3d314c139b70d384485ca5074977d3706e563fd"
 
     spec:
       serviceAccountName: comicrent-comics-service
@@ -1874,8 +1876,9 @@ spec:
         app.kubernetes.io/name: copies-consumer
         app.kubernetes.io/instance: comicrent
 
-      annotations:
-        checksum/config: 7e5a7f061dbd75b7b7f795ca1932fcf2cf5734b59bc980c3385d4e8ad3ada736
+    annotations:
+      checksum/config: 7e5a7f061dbd75b7b7f795ca1932fcf2cf5734b59bc980c3385d4e8ad3ada736
+      checksum/secret: "ad44adf37112217ecaf54ca75da801e0ce00fb0444b97dfbb5b1f288d31f07f6"
 
     spec:
       serviceAccountName: comicrent-copies-consumer
@@ -1987,6 +1990,7 @@ spec:
 
       annotations:
         checksum/config: 60acab16bb94c8e5b0f6807ae9015c92dc896dd1dad811d2e639d577c24e5500
+        checksum/secret: "ad44adf37112217ecaf54ca75da801e0ce00fb0444b97dfbb5b1f288d31f07f6"
 
     spec:
       serviceAccountName: comicrent-copies-service
@@ -2099,8 +2103,9 @@ spec:
         app.kubernetes.io/name: rentals-service
         app.kubernetes.io/instance: comicrent
 
-      annotations:
-        checksum/config: 1dea4d798c40273b0ab76afc2b676fcda138d6d1ebee05b2e14d725a803de00d
+    annotations:
+      checksum/config: 1dea4d798c40273b0ab76afc2b676fcda138d6d1ebee05b2e14d725a803de00d
+      checksum/secret: "ad44adf37112217ecaf54ca75da801e0ce00fb0444b97dfbb5b1f288d31f07f6"
 
     spec:
       serviceAccountName: comicrent-rentals-service
@@ -2442,7 +2447,7 @@ spec:
         helm.sh/chart: rabbitmq-14.6.3
       annotations:
         checksum/config: ac47f041bb210ca9209afa42c26567d328c1e6c1d065070bd59f2313a36bc3a2
-        checksum/secret: d5a10f406aa663c1ea2b460d54efd58580660b36d058873317771ce47a366e08
+        checksum/secret: e8983846ee78dcb0a021194aef01f3e9995da680d70fb58cf0cc1e80b859044c
     spec:
       
       serviceAccountName: comicrent-rabbitmq

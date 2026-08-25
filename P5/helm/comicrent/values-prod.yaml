@@ -1,9 +1,7 @@
 global:
   environment: prod
 
-postgresqlSecrets:
-  postgresPassword: ""
-  userPassword: ""
-
-rabbitmqSecrets:
-  password: ""
+  secrets:
+    postgresPassword: ""
+    postgresUserPassword: ""
+    rabbitmqPassword: ""

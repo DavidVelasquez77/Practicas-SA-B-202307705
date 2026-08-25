@@ -1,6 +1,5 @@
-postgresqlSecrets:
-  postgresPassword: "CHANGE_ME"
-  userPassword: "CHANGE_ME"
-
-rabbitmqSecrets:
-  password: "CHANGE_ME"
+global:
+  secrets:
+    postgresPassword: "CHANGE_ME"
+    postgresUserPassword: "CHANGE_ME"
+    rabbitmqPassword: "CHANGE_ME"
