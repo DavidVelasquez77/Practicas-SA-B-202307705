@@ -497,7 +497,11 @@ spec:
 # Rentals
 # Copies Consumer
 #
-# RabbitMQ mantiene sus conexiones internas necesarias.
+# Comunicación interna:
+# RabbitMQ -> RabbitMQ
+#
+# Infraestructura:
+# RabbitMQ -> Kubernetes API
 # ============================================================
 
 apiVersion: networking.k8s.io/v1
@@ -507,6 +511,7 @@ metadata:
   namespace: "sa-p5"
   labels:
     app.kubernetes.io/part-of: "comicrent"
+
 spec:
   podSelector:
     matchLabels:
@@ -515,8 +520,10 @@ spec:
 
   policyTypes:
     - Ingress
+    - Egress
 
   ingress:
+    # Rentals -> RabbitMQ AMQP
     - from:
         - podSelector:
             matchLabels:
@@ -531,6 +538,46 @@ spec:
       ports:
         - protocol: TCP
           port: 5672
+
+    # Comunicación RabbitMQ -> RabbitMQ
+    - from:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: rabbitmq
+              app.kubernetes.io/instance: comicrent
+
+      ports:
+        - protocol: TCP
+          port: 4369
+
+        - protocol: TCP
+          port: 25672
+
+  egress:
+    # Comunicación interna entre Pods RabbitMQ
+    - to:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: rabbitmq
+              app.kubernetes.io/instance: comicrent
+
+      ports:
+        - protocol: TCP
+          port: 4369
+
+        - protocol: TCP
+          port: 25672
+
+    # Kubernetes API para peer discovery
+    - ports:
+        - protocol: TCP
+          port: 443
+
+        - protocol: TCP
+          port: 6443
+
+        - protocol: TCP
+          port: 8443
 ---
 # Source: comicrent/templates/resourcequota.yaml
 apiVersion: v1
@@ -799,7 +846,7 @@ metadata:
     helm.sh/chart: rabbitmq-14.6.3
 type: Opaque
 data:
-  rabbitmq-erlang-cookie: "MjR1cFZFcG52dGZQVUV3MVcyZXM2QUZSVFYzU3pseW4="
+  rabbitmq-erlang-cookie: "NTJhYU94Z2wzTzdOaWpmbTQ0OXBDaHZMTnJaWTQ0OW4="
 
 ---
 # Source: comicrent/templates/secrets.yaml
@@ -2395,7 +2442,7 @@ spec:
         helm.sh/chart: rabbitmq-14.6.3
       annotations:
         checksum/config: ac47f041bb210ca9209afa42c26567d328c1e6c1d065070bd59f2313a36bc3a2
-        checksum/secret: 6186ff26c1fb2aa77f71304abadba1664e30e74bd7f907f11d84826afad52293
+        checksum/secret: d5a10f406aa663c1ea2b460d54efd58580660b36d058873317771ce47a366e08
     spec:
       
       serviceAccountName: comicrent-rabbitmq

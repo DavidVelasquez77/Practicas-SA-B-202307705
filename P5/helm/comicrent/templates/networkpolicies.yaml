@@ -467,7 +467,11 @@ spec:
 # Rentals
 # Copies Consumer
 #
-# RabbitMQ mantiene sus conexiones internas necesarias.
+# Comunicación interna:
+# RabbitMQ -> RabbitMQ
+#
+# Infraestructura:
+# RabbitMQ -> Kubernetes API
 # ============================================================
 
 apiVersion: networking.k8s.io/v1
@@ -477,6 +481,7 @@ metadata:
   namespace: {{ .Values.namespace | default "sa-p5" | quote }}
   labels:
     app.kubernetes.io/part-of: "comicrent"
+
 spec:
   podSelector:
     matchLabels:
@@ -485,8 +490,10 @@ spec:
 
   policyTypes:
     - Ingress
+    - Egress
 
   ingress:
+    # Rentals -> RabbitMQ AMQP
     - from:
         - podSelector:
             matchLabels:
@@ -501,3 +508,43 @@ spec:
       ports:
         - protocol: TCP
           port: 5672
+
+    # Comunicación RabbitMQ -> RabbitMQ
+    - from:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: rabbitmq
+              app.kubernetes.io/instance: comicrent
+
+      ports:
+        - protocol: TCP
+          port: 4369
+
+        - protocol: TCP
+          port: 25672
+
+  egress:
+    # Comunicación interna entre Pods RabbitMQ
+    - to:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: rabbitmq
+              app.kubernetes.io/instance: comicrent
+
+      ports:
+        - protocol: TCP
+          port: 4369
+
+        - protocol: TCP
+          port: 25672
+
+    # Kubernetes API para peer discovery
+    - ports:
+        - protocol: TCP
+          port: 443
+
+        - protocol: TCP
+          port: 6443
+
+        - protocol: TCP
+          port: 8443
