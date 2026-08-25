@@ -103,7 +103,7 @@ spec:
               command:
                 - python
                 - -c
-                - "import os; assert os.getenv('RABBITMQ_URL')"
+                - "import os; assert os.getenv('RABBITMQ_HOST')"
             initialDelaySeconds: {{ .Values.probes.readiness.initialDelaySeconds }}
             periodSeconds: {{ .Values.probes.readiness.periodSeconds }}
             failureThreshold: {{ .Values.probes.readiness.failureThreshold }}
