@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: comicrent-operations-config
+  namespace: {{ .Values.global.namespace | quote }}
+data:
+  DB_HOST: {{ .Values.database.host | quote }}
+  DB_PORT: {{ .Values.database.port | quote }}
+  DB_USER: {{ .Values.database.username | quote }}
+  DB_NAME: {{ .Values.database.name | quote }}
+
+  RABBITMQ_HOST: {{ .Values.rabbitmq.host | quote }}
+  RABBITMQ_PORT: {{ .Values.rabbitmq.port | quote }}
+  RABBITMQ_USER: {{ .Values.rabbitmq.username | quote }}
+  RABBITMQ_EXCHANGE: {{ .Values.rabbitmq.exchange | quote }}
+  SUMMARY_ROUTING_KEY: {{ .Values.rabbitmq.routingKey | quote }}
+  SUMMARY_QUEUE: {{ .Values.rabbitmq.queue | quote }}

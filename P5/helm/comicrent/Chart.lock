@@ -23,5 +23,8 @@ dependencies:
 - name: rabbitmq
   repository: https://charts.bitnami.com/bitnami
   version: 14.6.3
-digest: sha256:a0112a07e83f6512ffda155372a74f3875206e9150432d7c66b0ed2a379f6d23
-generated: "2026-08-24T16:40:06.1662538-06:00"
+- name: operations-jobs
+  repository: file://charts/operations-jobs
+  version: 0.1.0
+digest: sha256:bd4674515717ebff4bba1261eee451226c0ee62cc7842cd51b88ba8f59708b2a
+generated: "2026-08-24T23:29:40.4231737-06:00"

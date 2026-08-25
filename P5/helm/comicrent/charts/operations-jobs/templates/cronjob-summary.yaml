@@ -1,0 +1,81 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: comicrent-cron-summary
+  namespace: {{ .Values.global.namespace | quote }}
+spec:
+  schedule: {{ .Values.cronSummary.schedule | quote }}
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+
+  jobTemplate:
+    spec:
+      template:
+        metadata:
+          labels:
+            app.kubernetes.io/name: cron-summary
+            app.kubernetes.io/part-of: comicrent
+        spec:
+          serviceAccountName: comicrent-operations
+          automountServiceAccountToken: false
+          restartPolicy: Never
+
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 100
+            runAsGroup: 101
+            fsGroup: 101
+            seccompProfile:
+              type: RuntimeDefault
+
+          containers:
+            - name: cron-summary
+              image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+              imagePullPolicy: {{ .Values.image.pullPolicy }}
+
+              command:
+                - python
+                - cron_summary.py
+
+              env:
+                - name: DB_PASSWORD
+                  valueFrom:
+                    secretKeyRef:
+                      name: {{ .Values.database.secretName }}
+                      key: {{ .Values.database.passwordKey }}
+
+                - name: DATABASE_URL
+                  value: >-
+                    postgresql://{{ .Values.database.username }}:$(DB_PASSWORD)@{{ .Values.database.host }}:{{ .Values.database.port }}/{{ .Values.database.name }}
+
+                - name: RABBITMQ_PASSWORD
+                  valueFrom:
+                    secretKeyRef:
+                      name: {{ .Values.rabbitmq.secretName }}
+                      key: {{ .Values.rabbitmq.passwordKey }}
+
+                - name: RABBITMQ_HOST
+                  value: {{ .Values.rabbitmq.host | quote }}
+
+                - name: RABBITMQ_PORT
+                  value: {{ .Values.rabbitmq.port | quote }}
+
+                - name: RABBITMQ_USER
+                  value: {{ .Values.rabbitmq.username | quote }}
+
+                - name: RABBITMQ_EXCHANGE
+                  value: {{ .Values.rabbitmq.exchange | quote }}
+
+                - name: SUMMARY_ROUTING_KEY
+                  value: {{ .Values.rabbitmq.routingKey | quote }}
+
+              securityContext:
+                allowPrivilegeEscalation: false
+                readOnlyRootFilesystem: true
+                capabilities:
+                  drop:
+                    - ALL
+
+              resources:
+{{ toYaml .Values.resources | indent 16 }}

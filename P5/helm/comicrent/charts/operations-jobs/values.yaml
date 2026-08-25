@@ -1,0 +1,39 @@
+global:
+  namespace: sa-p5
+
+image:
+  repository: comicrent/operations-jobs
+  tag: "1.0.0"
+  pullPolicy: IfNotPresent
+
+database:
+  host: comicrent-postgresql
+  port: 5432
+  username: comicrent_user
+  name: operations_db
+  secretName: comicrent-postgresql-secret
+  passwordKey: password
+
+rabbitmq:
+  host: comicrent-rabbitmq
+  port: 5672
+  username: comicrent
+  exchange: comicrent.events
+  routingKey: operations.hourly.summary
+  queue: operations.hourly.summary
+  secretName: comicrent-rabbitmq-secret
+  passwordKey: rabbitmq-password
+
+cronTick:
+  schedule: "*/2 * * * *"
+
+cronSummary:
+  schedule: "*/10 * * * *"
+
+resources:
+  requests:
+    cpu: 25m
+    memory: 64Mi
+  limits:
+    cpu: 150m
+    memory: 128Mi
