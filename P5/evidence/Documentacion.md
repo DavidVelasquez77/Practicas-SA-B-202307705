@@ -1,321 +1,1546 @@
-PS C:\Users\Vela\Desktop\SA\LAB\PRACTICAS\P5\helm\comicrent> kubectl get all -n sa-p5
-NAME                                              READY   STATUS      RESTARTS   AGE
-pod/comicrent-api-gateway-6485d6cdd4-fz4m8        1/1     Running     0          53m
-pod/comicrent-auth-service-5dffc876fd-q2bfp       1/1     Running     0          98m
-pod/comicrent-comics-service-6fdf6c8957-t2hkp     1/1     Running     0          150m
-pod/comicrent-copies-consumer-67bc59bc77-8w572    1/1     Running     0          36m
-pod/comicrent-copies-service-984f97c77-ctk2w      1/1     Running     0          150m
-pod/comicrent-cron-summary-manual-bwx6l           0/1     Completed   0          4m18s
-pod/comicrent-cron-tick-29793944-w4qbn            0/1     Completed   0          3m45s
-pod/comicrent-cron-tick-29793946-7h9tn            0/1     Completed   0          105s
-pod/comicrent-cron-tick-manual-8h4k7              0/1     Completed   0          4m52s
-pod/comicrent-postgresql-0                        1/1     Running     0          34m
-pod/comicrent-rabbitmq-0                          1/1     Running     0          129m
-pod/comicrent-rentals-service-dd598646-hnnhv      1/1     Running     0          48m
-pod/comicrent-summary-consumer-6894ddff77-9xqp2   1/1     Running     0          7m27s
+# Evidencias Técnicas - Práctica 5
 
-NAME                                  TYPE        CLUSTER-IP      EXTERNAL-IP   PORT(S)                                 AGE
-service/comicrent-api-gateway         ClusterIP   10.108.108.11   <none>        3000/TCP                                176m
-service/comicrent-auth-service        ClusterIP   10.101.121.92   <none>        3001/TCP                                176m
-service/comicrent-comics-service      ClusterIP   10.96.31.104    <none>        3002/TCP                                176m
-service/comicrent-copies-service      ClusterIP   10.97.8.49      <none>        8002/TCP                                176m
-service/comicrent-postgresql          ClusterIP   10.111.8.188    <none>        5432/TCP                                176m
-service/comicrent-postgresql-hl       ClusterIP   None            <none>        5432/TCP                                176m
-service/comicrent-rabbitmq            ClusterIP   10.108.94.34    <none>        5672/TCP,4369/TCP,25672/TCP,15672/TCP   176m
-service/comicrent-rabbitmq-headless   ClusterIP   None            <none>        4369/TCP,5672/TCP,25672/TCP,15672/TCP   176m
-service/comicrent-rentals-service     ClusterIP   10.110.158.34   <none>        8001/TCP                                176m
+## ComicRent - Kubernetes, Helm, RabbitMQ y Resiliencia
 
-NAME                                         READY   UP-TO-DATE   AVAILABLE   AGE
-deployment.apps/comicrent-api-gateway        1/1     1            1           176m
-deployment.apps/comicrent-auth-service       1/1     1            1           176m
-deployment.apps/comicrent-comics-service     1/1     1            1           176m
-deployment.apps/comicrent-copies-consumer    1/1     1            1           168m
-deployment.apps/comicrent-copies-service     1/1     1            1           176m
-deployment.apps/comicrent-rentals-service    1/1     1            1           168m
-deployment.apps/comicrent-summary-consumer   1/1     1            1           7m27s
+**Carnet:** 202307705  
+**Curso:** Software Avanzado  
+**Práctica:** 5  
+**Proyecto:** ComicRent  
+**Namespace:** `sa-p5`
 
-NAME                                                    DESIRED   CURRENT   READY   AGE
-replicaset.apps/comicrent-api-gateway-5c47cf7479        0         0         0       176m
-replicaset.apps/comicrent-api-gateway-6485d6cdd4        1         1         1       53m
-replicaset.apps/comicrent-api-gateway-79966d6f9f        0         0         0       150m
-replicaset.apps/comicrent-auth-service-5dffc876fd       1         1         1       98m
-replicaset.apps/comicrent-auth-service-754d896d84       0         0         0       150m
-replicaset.apps/comicrent-auth-service-7f57cbc8c4       0         0         0       176m
-replicaset.apps/comicrent-comics-service-6fdf6c8957     1         1         1       150m
-replicaset.apps/comicrent-comics-service-78fdb4b757     0         0         0       176m
-replicaset.apps/comicrent-copies-consumer-67bc59bc77    1         1         1       150m
-replicaset.apps/comicrent-copies-consumer-699854645     0         0         0       168m
-replicaset.apps/comicrent-copies-service-7dfc5d45cc     0         0         0       176m
-replicaset.apps/comicrent-copies-service-984f97c77      1         1         1       150m
-replicaset.apps/comicrent-rentals-service-67b859b87f    0         0         0       168m
-replicaset.apps/comicrent-rentals-service-869ffcc879    0         0         0       150m
-replicaset.apps/comicrent-rentals-service-dd598646      1         1         1       48m
-replicaset.apps/comicrent-summary-consumer-6894ddff77   1         1         1       7m27s
+---
 
-NAME                                    READY   AGE
-statefulset.apps/comicrent-postgresql   1/1     176m
-statefulset.apps/comicrent-rabbitmq     1/1     176m
+# 1. Objetivo de la documentación
 
-NAME                                                        REFERENCE                          TARGETS       MINPODS   MAXPODS   REPLICAS   AGE
-horizontalpodautoscaler.autoscaling/comicrent-api-gateway   Deployment/comicrent-api-gateway   cpu: 1%/40%   1         2         1          176m
+Este documento reúne las principales evidencias técnicas obtenidas durante la implementación de la Práctica 5.
 
-NAME                                   SCHEDULE       TIMEZONE   SUSPEND   ACTIVE   LAST SCHEDULE   AGE
-cronjob.batch/comicrent-cron-summary   */10 * * * *   <none>     False     0        <none>          7m27s
-cronjob.batch/comicrent-cron-tick      */2 * * * *    <none>     False     0        105s            7m27s
+La solución parte de la arquitectura de microservicios desarrollada en P4 y agrega capacidades de operación sobre Kubernetes mediante Helm, persistencia, mensajería asíncrona, aislamiento de red, seguridad, escalamiento, resiliencia, CronJobs, pruebas de carga y procedimientos de actualización y rollback.
 
-NAME                                      STATUS     COMPLETIONS   DURATION   AGE
-job.batch/comicrent-cron-summary-manual   Complete   1/1           15s        4m18s
-job.batch/comicrent-cron-tick-29793944    Complete   1/1           14s        3m45s
-job.batch/comicrent-cron-tick-29793946    Complete   1/1           12s        105s
-job.batch/comicrent-cron-tick-manual      Complete   1/1           14s        4m52s
+Las evidencias incluidas corresponden a ejecuciones reales realizadas sobre un clúster local Minikube.
 
-PS C:\Users\Vela\Desktop\SA\LAB\PRACTICAS\P5\helm\comicrent> kubectl get cronjobs,jobs -n sa-p5
-NAME                                   SCHEDULE       TIMEZONE   SUSPEND   ACTIVE   LAST SCHEDULE   AGE
-cronjob.batch/comicrent-cron-summary   */10 * * * *   <none>     False     0        <none>          8m45s
-cronjob.batch/comicrent-cron-tick      */2 * * * *    <none>     False     0        63s             8m45s
+---
 
-NAME                                      STATUS     COMPLETIONS   DURATION   AGE
-job.batch/comicrent-cron-summary-manual   Complete   1/1           15s        5m36s
-job.batch/comicrent-cron-tick-29793944    Complete   1/1           14s        5m3s
-job.batch/comicrent-cron-tick-29793946    Complete   1/1           12s        3m3s
-job.batch/comicrent-cron-tick-29793948    Complete   1/1           14s        63s
-PS C:\Users\Vela\Desktop\SA\LAB\PRACTICAS\P5\helm\comicrent> kubectl get pvc -n sa-p5
-NAME                          STATUS   VOLUME                                     CAPACITY   ACCESS MODES   STORAGECLASS   VOLUMEATTRIBUTESCLASS   AGE
-data-comicrent-postgresql-0   Bound    pvc-d6ef4e11-6f0c-4057-afcc-92286daf1378   2Gi        RWO            standard       <unset>                 178m
-data-comicrent-rabbitmq-0     Bound    pvc-d037512a-396c-4e8f-b2cf-a29d0002dcaa   1Gi        RWO            standard       <unset>                 178m
-PS C:\Users\Vela\Desktop\SA\LAB\PRACTICAS\P5\helm\comicrent> kubectl get networkpolicy -n sa-p5
-NAME                        POD-SELECTOR                                                                                                 AGE
-comicrent-allow-dns         <none>                                                                                                       178m
-comicrent-api-gateway       app.kubernetes.io/instance=comicrent,app.kubernetes.io/name=api-gateway                                      178m
-comicrent-auth-service      app.kubernetes.io/instance=comicrent,app.kubernetes.io/name=auth-service                                     178m
-comicrent-comics-service    app.kubernetes.io/instance=comicrent,app.kubernetes.io/name=comics-service                                   178m
-comicrent-copies-consumer   app.kubernetes.io/instance=comicrent,app.kubernetes.io/name=copies-consumer                                  178m
-comicrent-copies-service    app.kubernetes.io/instance=comicrent,app.kubernetes.io/name=copies-service                                   178m
-comicrent-cron-summary      app.kubernetes.io/name=cron-summary                                                                          8m53s
-comicrent-cron-tick         app.kubernetes.io/name=cron-tick                                                                             8m53s
-comicrent-default-deny      <none>                                                                                                       178m
-comicrent-postgresql        app.kubernetes.io/component=primary,app.kubernetes.io/instance=comicrent,app.kubernetes.io/name=postgresql   178m
-comicrent-rabbitmq          app.kubernetes.io/instance=comicrent,app.kubernetes.io/name=rabbitmq                                         178m
-comicrent-rentals-service   app.kubernetes.io/instance=comicrent,app.kubernetes.io/name=rentals-service                                  178m
-PS C:\Users\Vela\Desktop\SA\LAB\PRACTICAS\P5\helm\comicrent> helm history comicrent
-REVISION        UPDATED                         STATUS          CHART           APP VERSION     DESCRIPTION                                   
-1               Mon Aug 24 20:50:53 2026        failed          comicrent-0.1.0 1.0.0           Release "comicrent" failed: server-side apply failed for object sa-p5/comicrent-copies-consumer apps/v1, Kind=Deployment: failed to create typed patch object (sa-p5/comicrent-copies-consumer; apps/v1, Kind=Deployment): .spec.template.annotations: field not declared in sch...
-2               Mon Aug 24 20:59:19 2026        failed          comicrent-0.1.0 1.0.0           Upgrade "comicrent" failed: context canceled                                   
-3               Mon Aug 24 21:17:41 2026        superseded      comicrent-0.1.0 1.0.0           Upgrade "comicrent" failed: resource Deployment/sa-p5/comicrent-auth-service not ready. status: Failed, message: Progress deadline exceeded                                   
-                                                                                                resource Deployment/sa-p5/comicrent-copies-consumer not ready. status: InProgress, message: Available: 0/1                                   
-                                                                                                resource StatefulSet/sa-p5/...                                   
-4               Mon Aug 24 22:09:30 2026        superseded      comicrent-0.1.0 1.0.0           Upgrade complete                                   
-5               Mon Aug 24 22:54:40 2026        superseded      comicrent-0.1.0 1.0.0           Upgrade complete                                   
-6               Mon Aug 24 22:58:50 2026        superseded      comicrent-0.1.0 1.0.0           Upgrade complete                                   
-7               Mon Aug 24 23:40:15 2026        deployed        comicrent-0.1.0 1.0.0           Upgrade complete                                                                                                                       
+# 2. Arquitectura desplegada
 
+La arquitectura final incluye:
 
+```text
+Cliente
+   |
+   | kubectl port-forward
+   v
+API Gateway
+   |
+   +--> Auth Service
+   +--> Comics Service
+   +--> Rentals Service
+   +--> Copies Service
+             ^
+             |
+             |
+Rentals ----> RabbitMQ ----> Copies Consumer
+                          |
+                          +----> Summary Consumer
 
+PostgreSQL
+   |
+   +--> auth_db
+   +--> comics_db
+   +--> rentals_db
+   +--> copies_db
+   +--> operations_db
 
+Cron Tick ----> PostgreSQL
+Cron Summary --> PostgreSQL
+Cron Summary --> RabbitMQ --> Summary Consumer
+```
 
+El API Gateway es el único componente utilizado como punto de entrada desde el exterior del clúster.
 
+Los microservicios utilizan Services de tipo:
 
+```text
+ClusterIP
+```
 
+y las comunicaciones internas son controladas mediante NetworkPolicies.
 
+---
 
+# 3. Estado general del clúster
 
+Se utilizó el script:
 
+```powershell
+.\scripts\verify-cluster.ps1
+```
 
+para verificar de forma centralizada el estado de la práctica.
 
+Los principales Deployments se encontraron disponibles:
 
+```text
+comicrent-api-gateway        1/1
+comicrent-auth-service       1/1
+comicrent-comics-service     1/1
+comicrent-copies-consumer    1/1
+comicrent-copies-service     1/1
+comicrent-rentals-service    1/1
+comicrent-summary-consumer   1/1
+```
 
+Los componentes persistentes también se encontraron disponibles:
 
--
+```text
+comicrent-postgresql   1/1
+comicrent-rabbitmq     1/1
+```
 
+Esto confirma que todos los componentes principales del sistema estaban desplegados correctamente.
 
+---
 
------------------------------------------------
-PS C:\Users\Vela\Desktop\SA\LAB\PRACTICAS\P5\helm\comicrent> kubectl get cronjobs,jobs -n sa-p5
-NAME                                   SCHEDULE       TIMEZONE   SUSPEND   ACTIVE   LAST SCHEDULE   AGE
-cronjob.batch/comicrent-cron-summary   */10 * * * *   <none>     False     0        <none>          8m45s
-cronjob.batch/comicrent-cron-tick      */2 * * * *    <none>     False     0        63s             8m45s
+# 4. Helm
 
-NAME                                      STATUS     COMPLETIONS   DURATION   AGE
-job.batch/comicrent-cron-summary-manual   Complete   1/1           15s        5m36s
-job.batch/comicrent-cron-tick-29793944    Complete   1/1           14s        5m3s
-job.batch/comicrent-cron-tick-29793946    Complete   1/1           12s        3m3s
-job.batch/comicrent-cron-tick-29793948    Complete   1/1           14s        63s
-PS C:\Users\Vela\Desktop\SA\LAB\PRACTICAS\P5\helm\comicrent> kubectl get pvc -n sa-p5
-NAME                          STATUS   VOLUME                                     CAPACITY   ACCESS MODES   STORAGECLASS   VOLUMEATTRIBUTESCLASS   AGE
-data-comicrent-postgresql-0   Bound    pvc-d6ef4e11-6f0c-4057-afcc-92286daf1378   2Gi        RWO            standard       <unset>                 178m
-data-comicrent-rabbitmq-0     Bound    pvc-d037512a-396c-4e8f-b2cf-a29d0002dcaa   1Gi        RWO            standard       <unset>                 178m
-PS C:\Users\Vela\Desktop\SA\LAB\PRACTICAS\P5\helm\comicrent> kubectl get networkpolicy -n sa-p5
-NAME                        POD-SELECTOR                                                                                                 AGE
-comicrent-allow-dns         <none>                                                                                                       178m
-comicrent-api-gateway       app.kubernetes.io/instance=comicrent,app.kubernetes.io/name=api-gateway                                      178m
-comicrent-auth-service      app.kubernetes.io/instance=comicrent,app.kubernetes.io/name=auth-service                                     178m
-comicrent-comics-service    app.kubernetes.io/instance=comicrent,app.kubernetes.io/name=comics-service                                   178m
-comicrent-copies-consumer   app.kubernetes.io/instance=comicrent,app.kubernetes.io/name=copies-consumer                                  178m
-comicrent-copies-service    app.kubernetes.io/instance=comicrent,app.kubernetes.io/name=copies-service                                   178m
-comicrent-cron-summary      app.kubernetes.io/name=cron-summary                                                                          8m53s
-comicrent-cron-tick         app.kubernetes.io/name=cron-tick                                                                             8m53s
-comicrent-default-deny      <none>                                                                                                       178m
-comicrent-postgresql        app.kubernetes.io/component=primary,app.kubernetes.io/instance=comicrent,app.kubernetes.io/name=postgresql   178m
-comicrent-rabbitmq          app.kubernetes.io/instance=comicrent,app.kubernetes.io/name=rabbitmq                                         178m
-comicrent-rentals-service   app.kubernetes.io/instance=comicrent,app.kubernetes.io/name=rentals-service                                  178m
-PS C:\Users\Vela\Desktop\SA\LAB\PRACTICAS\P5\helm\comicrent> helm history comicrent
-REVISION        UPDATED                         STATUS          CHART           APP VERSION     DESCRIPTION                                                                                                                                                                                                                                                                        
-1               Mon Aug 24 20:50:53 2026        failed          comicrent-0.1.0 1.0.0           Release "comicrent" failed: server-side apply failed for object sa-p5/comicrent-copies-consumer apps/v1, Kind=Deployment: failed to create typed patch object (sa-p5/comicrent-copies-consumer; apps/v1, Kind=Deployment): .spec.template.annotations: field not declared in sch...
-2               Mon Aug 24 20:59:19 2026        failed          comicrent-0.1.0 1.0.0           Upgrade "comicrent" failed: context canceled                                                                                                                                                                                                                                       
-3               Mon Aug 24 21:17:41 2026        superseded      comicrent-0.1.0 1.0.0           Upgrade "comicrent" failed: resource Deployment/sa-p5/comicrent-auth-service not ready. status: Failed, message: Progress deadline exceeded                                                                                                                                        
-                                                                                                resource Deployment/sa-p5/comicrent-copies-consumer not ready. status: InProgress, message: Available: 0/1                                                                                                                                                                         
-                                                                                                resource StatefulSet/sa-p5/...                                                                                                                                                                                                                                                     
-4               Mon Aug 24 22:09:30 2026        superseded      comicrent-0.1.0 1.0.0           Upgrade complete                                                                                                                                                                                                                                                                   
-5               Mon Aug 24 22:54:40 2026        superseded      comicrent-0.1.0 1.0.0           Upgrade complete                                                                                                                                                                                                                                                                   
-6               Mon Aug 24 22:58:50 2026        superseded      comicrent-0.1.0 1.0.0           Upgrade complete                                                                                                                                                                                                                                                                   
-7               Mon Aug 24 23:40:15 2026        deployed        comicrent-0.1.0 1.0.0           Upgrade complete                                                                                                                                                                                                                                                                   
-PS C:\Users\Vela\Desktop\SA\LAB\PRACTICAS\P5\helm\comicrent> minikube delete
-🔥  Eliminando "minikube" en docker...
-🔥  Eliminando contenedor "minikube" ...
-🔥  Eliminando C:\Users\Vela\.minikube\machines\minikube...
-💀  Removed all traces of the "minikube" cluster.
-PS C:\Users\Vela\Desktop\SA\LAB\PRACTICAS\P5\helm\comicrent> minikube start `
->>   --driver=docker `
->>   --cpus=4 `
->>   --memory=3500 `
->>   --cni=calico
-😄  minikube v1.38.1 en Microsoft Windows 11 Pro 25H2
-✨  Using the docker driver based on user configuration
-❗  Starting v1.39.0, minikube will default to "containerd" container runtime. See #21973 for more info.
-📌  Using Docker Desktop driver with root privileges
-👍  Starting "minikube" primary control-plane node in "minikube" cluster
-🚜  Pulling base image v0.0.50 ...
-🔥  Creating docker container (CPUs=4, Memory=3500MB) ... 
-🐳  Preparando Kubernetes v1.35.1 en Docker 29.2.1... 
-🔗  Configurando CNI Calico ...
-🔎  Verifying Kubernetes components...
-    ▪ Using image gcr.io/k8s-minikube/storage-provisioner:v5
-🌟  Complementos habilitados: storage-provisioner, default-storageclass
-🏄  Done! kubectl is now configured to use "minikube" cluster and "default" namespace by default
-PS C:\Users\Vela\Desktop\SA\LAB\PRACTICAS\P5\helm\comicrent> kubectl get nodes
-NAME       STATUS   ROLES           AGE     VERSION
-minikube   Ready    control-plane   2m13s   v1.35.1
-PS C:\Users\Vela\Desktop\SA\LAB\PRACTICAS\P5\helm\comicrent> kubectl get pods -n kube-system
-NAME                                       READY   STATUS    RESTARTS   AGE
-calico-kube-controllers-565c89d6df-s9476   1/1     Running   0          2m9s
-calico-node-klggn                          1/1     Running   0          2m9s
-coredns-7d764666f9-b77b9                   1/1     Running   0          2m9s
-etcd-minikube                              1/1     Running   0          2m14s
-kube-apiserver-minikube                    1/1     Running   0          2m16s
-kube-controller-manager-minikube           1/1     Running   0          2m14s
-kube-proxy-6qzk9                           1/1     Running   0          2m9s
-kube-scheduler-minikube                    1/1     Running   0          2m14s
-storage-provisioner                        1/1     Running   0          2m12s
-PS C:\Users\Vela\Desktop\SA\LAB\PRACTICAS\P5\helm\comicrent> minikube addons enable metrics-server
-💡  metrics-server is an addon maintained by Kubernetes. For any concerns contact minikube on GitHub.
-You can view the list of minikube maintainers at: https://github.com/kubernetes/minikube/blob/master/OWNERS
-    ▪ Using image registry.k8s.io/metrics-server/metrics-server:v0.8.1
-🌟  The 'metrics-server' addon is enabled
-PS C:\Users\Vela\Desktop\SA\LAB\PRACTICAS\P5\helm\comicrent> kubectl get pods -n kube-system
-NAME                                       READY   STATUS    RESTARTS   AGE
-calico-kube-controllers-565c89d6df-s9476   1/1     Running   0          5m14s
-calico-node-klggn                          1/1     Running   0          5m14s
-coredns-7d764666f9-b77b9                   1/1     Running   0          5m14s
-etcd-minikube                              1/1     Running   0          5m19s
-kube-apiserver-minikube                    1/1     Running   0          5m21s
-kube-controller-manager-minikube           1/1     Running   0          5m19s
-kube-proxy-6qzk9                           1/1     Running   0          5m14s
-kube-scheduler-minikube                    1/1     Running   0          5m19s
-metrics-server-9d74bb658-rtxjx             1/1     Running   0          2m1s
-storage-provisioner                        1/1     Running   0          5m17s
-PS C:\Users\Vela\Desktop\SA\LAB\PRACTICAS\P5\helm\comicrent> minikube image load comicrent/api-gateway:1.0.0
->> minikube image load comicrent/auth-service:1.0.0
->> minikube image load comicrent/comics-service:1.0.0
->> minikube image load comicrent/rentals-service:1.0.0
->> minikube image load comicrent/copies-service:1.0.0
->> minikube image load comicrent/operations-jobs:1.0.0
-PS C:\Users\Vela\Desktop\SA\LAB\PRACTICAS\P5\helm\comicrent> minikube image load bitnamilegacy/rabbitmq:3.13.5-debian-12-r1
-PS C:\Users\Vela\Desktop\SA\LAB\PRACTICAS\P5\helm\comicrent> minikube image ls |
->>   Select-String `
->>     "comicrent",`
->>     "rabbitmq"
+## 4.1 Validación del chart
 
-docker.io/comicrent/rentals-service:1.0.0
-docker.io/comicrent/operations-jobs:1.0.0
-docker.io/comicrent/copies-service:1.0.0
-docker.io/comicrent/comics-service:1.0.0
-docker.io/comicrent/auth-service:1.0.0
-docker.io/comicrent/api-gateway:1.0.0
-docker.io/bitnamilegacy/rabbitmq:3.13.5-debian-12-r1
+Antes de realizar el despliegue se ejecutó:
 
-PS C:\Users\Vela\Desktop\SA\LAB\PRACTICAS\P5\helm\comicrent> helm dependency update
-Hang tight while we grab the latest from your chart repositories...
-...Successfully got an update from the "bitnami" chart repository
-Update Complete. ⎈Happy Helming!⎈
-Saving 9 charts
-Dependency api-gateway did not declare a repository. Assuming it exists in the charts directory
-Dependency auth-service did not declare a repository. Assuming it exists in the charts directory
-Dependency comics-service did not declare a repository. Assuming it exists in the charts directory
-Dependency rentals-service did not declare a repository. Assuming it exists in the charts directory
-Dependency copies-service did not declare a repository. Assuming it exists in the charts directory
-Dependency copies-consumer did not declare a repository. Assuming it exists in the charts directory
-Downloading postgresql from repo https://charts.bitnami.com/bitnami
-Pulled: registry-1.docker.io/bitnamicharts/postgresql:18.8.9
-Digest: sha256:059725d5ac01b5bbb00a7f1c8d1c63c66859936638b525a590eab8d8d666a2bb
-Downloading rabbitmq from repo https://charts.bitnami.com/bitnami
-Deleting outdated charts
-PS C:\Users\Vela\Desktop\SA\LAB\PRACTICAS\P5\helm\comicrent> helm lint . -f values-dev.yaml
-==> Linting .
-[INFO] Chart.yaml: icon is recommended
+```powershell
+helm dependency update . --skip-refresh
+```
 
+El chart contiene nueve dependencias:
+
+```text
+api-gateway
+auth-service
+comics-service
+rentals-service
+copies-service
+copies-consumer
+operations-jobs
+postgresql
+rabbitmq
+```
+
+Posteriormente se ejecutó:
+
+```powershell
+helm lint . -f values-dev.yaml
+```
+
+Resultado:
+
+```text
 1 chart(s) linted, 0 chart(s) failed
-PS C:\Users\Vela\Desktop\SA\LAB\PRACTICAS\P5\helm\comicrent> helm install comicrent . `
->>   -f values-dev.yaml `
->>   --wait `
->>   --timeout 10m
+```
+
+Esto confirma que el chart no presentaba errores de sintaxis o estructura detectables por Helm.
+
+---
+
+# 5. Despliegue mediante Helm
+
+La actualización final fue ejecutada mediante:
+
+```powershell
+helm upgrade comicrent . `
+  -f values-dev.yaml `
+  --wait `
+  --timeout 10m
+```
+
+Resultado:
+
+```text
+Release "comicrent" has been upgraded. Happy Helming!
+
 NAME: comicrent
-LAST DEPLOYED: Tue Aug 25 00:10:40 2026
-NAMESPACE: default
 STATUS: deployed
-REVISION: 1
-DESCRIPTION: Install complete
-TEST SUITE: None
-PS C:\Users\Vela\Desktop\SA\LAB\PRACTICAS\P5\helm\comicrent> kubectl get pods -n sa-p5
-NAME                                          READY   STATUS      RESTARTS      AGE
-comicrent-api-gateway-6485d6cdd4-wxlwx        1/1     Running     0             2m26s
-comicrent-auth-service-5dffc876fd-rlztx       1/1     Running     0             2m26s
-comicrent-comics-service-6fdf6c8957-2mjwf     1/1     Running     0             2m26s
-comicrent-copies-consumer-67bc59bc77-b69x9    1/1     Running     0             2m26s
-comicrent-copies-service-984f97c77-crfv6      1/1     Running     1 (54s ago)   2m26s
-comicrent-cron-tick-29793972-n4m6v            0/1     Completed   0             68s
-comicrent-postgresql-0                        1/1     Running     0             2m26s
-comicrent-rabbitmq-0                          1/1     Running     0             2m26s
-comicrent-rentals-service-dd598646-vr2xc      1/1     Running     1 (52s ago)   2m26s
-comicrent-summary-consumer-6894ddff77-f2nr4   1/1     Running     0             2m26s
+REVISION: 11
+DESCRIPTION: Upgrade complete
+```
 
+La aplicación quedó desplegada correctamente en la revisión 11.
 
+---
 
+# 6. Namespace
 
-PS C:\Users\Vela\Desktop\SA\LAB\PRACTICAS\P5\helm\comicrent> kubectl get pods -n sa-p5
->> kubectl get networkpolicy -n sa-p5
-NAME                                          READY   STATUS      RESTARTS        AGE
-comicrent-api-gateway-6485d6cdd4-wxlwx        1/1     Running     0               4m20s
-comicrent-auth-service-5dffc876fd-rlztx       1/1     Running     0               4m20s
-comicrent-comics-service-6fdf6c8957-2mjwf     1/1     Running     0               4m20s
-comicrent-copies-consumer-67bc59bc77-b69x9    1/1     Running     0               4m20s
-comicrent-copies-service-984f97c77-crfv6      1/1     Running     1 (2m48s ago)   4m20s
-comicrent-cron-tick-29793972-n4m6v            0/1     Completed   0               3m2s
-comicrent-cron-tick-29793974-dcbdf            0/1     Completed   0               62s
-comicrent-postgresql-0                        1/1     Running     0               4m20s
-comicrent-rabbitmq-0                          1/1     Running     0               4m20s
-comicrent-rentals-service-dd598646-vr2xc      1/1     Running     1 (2m46s ago)   4m20s
-comicrent-summary-consumer-6894ddff77-f2nr4   1/1     Running     1 (105s ago)    4m20s
-NAME                        POD-SELECTOR                                                                                                 AGE
-comicrent-allow-dns         <none>                                                                                                       4m21s
-comicrent-api-gateway       app.kubernetes.io/instance=comicrent,app.kubernetes.io/name=api-gateway                                      4m21s
-comicrent-auth-service      app.kubernetes.io/instance=comicrent,app.kubernetes.io/name=auth-service                                     4m21s
-comicrent-comics-service    app.kubernetes.io/instance=comicrent,app.kubernetes.io/name=comics-service                                   4m21s
-comicrent-copies-consumer   app.kubernetes.io/instance=comicrent,app.kubernetes.io/name=copies-consumer                                  4m21s
-comicrent-copies-service    app.kubernetes.io/instance=comicrent,app.kubernetes.io/name=copies-service                                   4m21s
-comicrent-cron-summary      app.kubernetes.io/name=cron-summary                                                                          4m21s
-comicrent-cron-tick         app.kubernetes.io/name=cron-tick                                                                             4m21s
-comicrent-default-deny      <none>                                                                                                       4m21s
-comicrent-postgresql        app.kubernetes.io/component=primary,app.kubernetes.io/instance=comicrent,app.kubernetes.io/name=postgresql   4m21s
-comicrent-rabbitmq          app.kubernetes.io/instance=comicrent,app.kubernetes.io/name=rabbitmq                                         4m21s
-comicrent-rentals-service   app.kubernetes.io/instance=comicrent,app.kubernetes.io/name=rentals-service                                  4m21s
+Los recursos de la aplicación se despliegan en:
 
+```text
+sa-p5
+```
+
+Evidencia:
+
+```text
+NAME    STATUS
+sa-p5   Active
+```
+
+El namespace es creado por el propio chart Helm y no requiere creación manual mediante `kubectl create namespace`.
+
+---
+
+# 7. PostgreSQL StatefulSet
+
+PostgreSQL se encuentra desplegado como StatefulSet:
+
+```text
+NAME                   READY
+comicrent-postgresql   1/1
+```
+
+Esto permite mantener una identidad estable para el Pod y asociarlo a almacenamiento persistente.
+
+---
+
+# 8. PostgreSQL Headless Service
+
+El StatefulSet utiliza un Service headless.
+
+Evidencia:
+
+```text
+comicrent-postgresql       10.96.219.43
+comicrent-postgresql-hl    None
+```
+
+El valor:
+
+```text
+CLUSTER-IP = None
+```
+
+en:
+
+```text
+comicrent-postgresql-hl
+```
+
+confirma que se trata de un Service headless.
+
+---
+
+# 9. Bases de datos
+
+Dentro del servidor PostgreSQL se mantienen cinco bases de datos lógicas:
+
+```text
+auth_db
+comics_db
+rentals_db
+copies_db
+operations_db
+```
+
+Las primeras cuatro corresponden a los dominios funcionales de P4.
+
+La base:
+
+```text
+operations_db
+```
+
+fue agregada específicamente para los procesos de P5 relacionados con CronJobs y resúmenes.
+
+---
+
+# 10. Persistencia PostgreSQL
+
+PostgreSQL posee un PersistentVolumeClaim:
+
+```text
+data-comicrent-postgresql-0
+```
+
+Estado:
+
+```text
+STATUS: Bound
+CAPACITY: 2Gi
+ACCESS MODES: RWO
+```
+
+Evidencia:
+
+```text
+data-comicrent-postgresql-0   Bound   2Gi   RWO
+```
+
+La persistencia fue validada eliminando el Pod de PostgreSQL.
+
+El StatefulSet recreó automáticamente el Pod y los datos almacenados previamente continuaron disponibles.
+
+Esto demuestra que los datos no dependen del ciclo de vida del Pod.
+
+---
+
+# 11. Persistencia RabbitMQ
+
+RabbitMQ también utiliza almacenamiento persistente.
+
+PVC:
+
+```text
+data-comicrent-rabbitmq-0
+```
+
+Evidencia:
+
+```text
+data-comicrent-rabbitmq-0   Bound   1Gi   RWO
+```
+
+Esto permite mantener el estado de RabbitMQ independientemente de una recreación del Pod.
+
+---
+
+# 12. RabbitMQ
+
+RabbitMQ se encuentra desplegado como StatefulSet:
+
+```text
+comicrent-rabbitmq   1/1
+```
+
+Servicios disponibles:
+
+```text
+comicrent-rabbitmq
+comicrent-rabbitmq-headless
+```
+
+El Service headless presenta:
+
+```text
+CLUSTER-IP = None
+```
+
+---
+
+# 13. Colas RabbitMQ
+
+Las colas fueron consultadas mediante:
+
+```powershell
+kubectl exec `
+  -n sa-p5 `
+  comicrent-rabbitmq-0 `
+  -- rabbitmqctl list_queues `
+  name `
+  durable `
+  messages_ready `
+  messages_unacknowledged `
+  consumers
+```
+
+Resultado:
+
+```text
+operations.hourly.summary   true   0   0   1
+copies.return.requested     true   0   0   1
+```
+
+Esto demuestra que:
+
+```text
+copies.return.requested
+```
+
+y:
+
+```text
+operations.hourly.summary
+```
+
+son colas durables.
+
+Además, ambas contaban con un consumer activo durante la verificación.
+
+---
+
+# 14. Flujo asíncrono de devoluciones
+
+El flujo de negocio implementado es:
+
+```text
+Rentals Service
+      |
+      v
+RabbitMQ
+      |
+      v
+copies.return.requested
+      |
+      v
+Copies Consumer
+      |
+      v
+PostgreSQL
+```
+
+Cuando se procesa una devolución:
+
+1. Rentals publica un evento.
+2. RabbitMQ conserva el mensaje.
+3. Copies Consumer recibe el evento.
+4. Se actualiza la copia.
+5. Se registra el evento procesado.
+6. Se confirma la transacción en PostgreSQL.
+7. Después de completar correctamente el procesamiento se realiza ACK.
+
+Esto evita confirmar mensajes antes de que el cambio de negocio se haya aplicado correctamente.
+
+---
+
+# 15. Idempotencia del consumer
+
+Para evitar procesamientos duplicados se utiliza:
+
+```text
+processed_events
+```
+
+Cada evento posee un identificador único:
+
+```text
+event_id
+```
+
+Antes de procesar un evento se verifica si ya existe.
+
+Si el evento ya había sido procesado:
+
+```text
+no se repite la operación
+```
+
+y se confirma mediante ACK.
+
+Esto permite manejar entregas repetidas de RabbitMQ sin provocar inconsistencias.
+
+---
+
+# 16. Prueba de consumer caído
+
+Se realizó una prueba deteniendo intencionalmente el consumer de copias.
+
+Comando:
+
+```powershell
+kubectl scale deployment comicrent-copies-consumer `
+  --replicas=0 `
+  -n sa-p5
+```
+
+Mientras el consumer permaneció detenido se generaron eventos de devolución.
+
+Durante ese período RabbitMQ presentó:
+
+```text
+consumers = 0
+messages_ready > 0
+```
+
+Las solicitudes de devolución pudieron completarse, pero los mensajes permanecieron pendientes en RabbitMQ.
+
+Posteriormente se restauró el consumer:
+
+```powershell
+kubectl scale deployment comicrent-copies-consumer `
+  --replicas=1 `
+  -n sa-p5
+```
+
+Después de iniciar nuevamente:
+
+```text
+messages_ready = 0
+consumers = 1
+```
+
+Los mensajes acumulados fueron procesados y las copias correspondientes cambiaron correctamente a estado disponible.
+
+Esta prueba demuestra desacoplamiento y persistencia del flujo asíncrono.
+
+---
+
+# 17. NetworkPolicies
+
+La solución utiliza aislamiento de red mediante:
+
+```text
+NetworkPolicy
+```
+
+Entre las políticas creadas se encuentran:
+
+```text
+comicrent-default-deny
+comicrent-allow-dns
+comicrent-api-gateway
+comicrent-auth-service
+comicrent-comics-service
+comicrent-rentals-service
+comicrent-copies-service
+comicrent-copies-consumer
+comicrent-cron-tick
+comicrent-cron-summary
+comicrent-summary-consumer
+comicrent-postgresql
+comicrent-rabbitmq
+comicrent-upgrade-test
+```
+
+---
+
+# 18. Política default deny
+
+La política:
+
+```text
+comicrent-default-deny
+```
+
+establece una estrategia de denegación por defecto.
+
+Después se permiten únicamente las comunicaciones requeridas por la arquitectura.
+
+Esto permite implementar una lista explícita de comunicaciones autorizadas.
+
+---
+
+# 19. Flujos permitidos
+
+Los principales flujos autorizados son:
+
+```text
+Gateway -> Auth
+Gateway -> Comics
+Gateway -> Rentals
+Gateway -> Copies
+
+Rentals -> Comics
+Rentals -> Copies
+Rentals -> RabbitMQ
+
+Copies Consumer -> PostgreSQL
+Copies Consumer -> RabbitMQ
+
+Cron Tick -> PostgreSQL
+
+Cron Summary -> PostgreSQL
+Cron Summary -> RabbitMQ
+
+Summary Consumer -> PostgreSQL
+Summary Consumer -> RabbitMQ
+```
+
+También se permite acceso DNS para resolución de nombres internos.
+
+---
+
+# 20. Prueba de aislamiento
+
+Durante las pruebas se verificaron flujos permitidos y bloqueados.
+
+Ejemplos de flujos permitidos:
+
+```text
+Rentals -> RabbitMQ
+Copies Consumer -> PostgreSQL
+Summary Consumer -> RabbitMQ
+```
+
+Ejemplos de flujos bloqueados:
+
+```text
+Rentals -> Auth
+Summary Consumer -> Auth
+Copies Service -> RabbitMQ
+```
+
+Los intentos de comunicación no autorizados terminaron en timeout.
+
+Esto demuestra que las NetworkPolicies efectivamente restringen el tráfico lateral.
+
+---
+
+# 21. API Gateway como único punto de entrada
+
+Los Services de los microservicios son:
+
+```text
+ClusterIP
+```
+
+No se utiliza:
+
+```text
+NodePort
+LoadBalancer
+Ingress
+```
+
+para exponer directamente los microservicios.
+
+El acceso local se realiza mediante:
+
+```powershell
+kubectl port-forward `
+  service/comicrent-api-gateway `
+  3100:3000 `
+  -n sa-p5
+```
+
+El Gateway queda disponible en:
+
+```text
+http://localhost:3100
+```
+
+---
+
+# 22. Probes de salud
+
+Todos los componentes principales utilizan mecanismos de health check.
+
+Los servicios HTTP utilizan:
+
+```text
+startupProbe
+readinessProbe
+livenessProbe
+```
+
+principalmente sobre:
+
+```text
+/health
+```
+
+Los consumers utilizan probes `exec`.
+
+---
+
+# 23. Copies Consumer - Probes
+
+Se verificó mediante:
+
+```powershell
+kubectl get deployment comicrent-copies-consumer `
+  -n sa-p5 `
+  -o yaml
+```
+
+El Deployment contiene:
+
+```text
+startupProbe
+readinessProbe
+livenessProbe
+```
+
+La configuración valida variables esenciales como:
+
+```text
+DATABASE_URL
+RABBITMQ_HOST
+```
+
+Evidencia:
+
+```text
+startupProbe    presente
+readinessProbe  presente
+livenessProbe   presente
+```
+
+---
+
+# 24. Summary Consumer - Probes
+
+También se verificó:
+
+```text
+comicrent-summary-consumer
+```
+
+El Deployment contiene:
+
+```text
+startupProbe
+readinessProbe
+livenessProbe
+```
+
+con verificaciones sobre la configuración necesaria para PostgreSQL y RabbitMQ.
+
+---
+
+# 25. Horizontal Pod Autoscaler
+
+El API Gateway utiliza HPA.
+
+Configuración:
+
+```text
+minReplicas: 1
+maxReplicas: 2
+CPU target: 40%
+```
+
+Evidencia:
+
+```text
+NAME                    TARGETS       MINPODS   MAXPODS   REPLICAS
+comicrent-api-gateway   cpu: 2%/40%   1         2         1
+```
+
+El HPA permanece con una réplica cuando la carga es baja.
+
+---
+
+# 26. Prueba de carga con k6
+
+La prueba se encuentra en:
+
+```text
+P5/load-test/gateway-health.js
+```
+
+La prueba utiliza etapas progresivas de carga.
+
+Configuración utilizada:
+
+```text
+20 s -> 30 VUs
+40 s -> 80 VUs
+40 s -> 120 VUs
+20 s -> 0 VUs
+```
+
+El endpoint probado fue:
+
+```text
+GET /health
+```
+
+del API Gateway.
+
+---
+
+# 27. Resultado de k6
+
+La prueba final produjo aproximadamente:
+
+```text
+Solicitudes totales: 30,476
+RPS:                 253.86 req/s
+p95:                 536.72 ms
+Errores HTTP:        0.00 %
+Checks exitosos:     100 %
+Máximo de VUs:       120
+```
+
+Los thresholds configurados fueron cumplidos.
+
+---
+
+# 28. Escalamiento observado
+
+Durante la prueba de carga el HPA presentó valores como:
+
+```text
+1% / 40%
+55% / 40%
+300% / 40%
+111% / 40%
+```
+
+Al superar el umbral configurado se produjo el escalamiento:
+
+```text
+1 réplica
+   |
+   v
+2 réplicas
+```
+
+El nuevo Pod pasó por:
+
+```text
+Pending
+ContainerCreating
+Running
+```
+
+hasta quedar disponible.
+
+Posteriormente, al disminuir la carga, el HPA regresó el Deployment a una réplica.
+
+---
+
+# 29. ResourceQuota
+
+El namespace utiliza:
+
+```text
+comicrent-quota
+```
+
+Durante la verificación se observó:
+
+```text
+requests.cpu:        925m / 2
+requests.memory:     1184Mi / 2Gi
+requests.storage:    3Gi / 10Gi
+
+limits.cpu:          2380m / 4
+limits.memory:       2176Mi / 4Gi
+
+persistentvolumeclaims: 2 / 5
+services:               9 / 15
+```
+
+Esto demuestra que el namespace posee restricciones explícitas sobre el consumo máximo de recursos.
+
+---
+
+# 30. LimitRange
+
+También se utiliza:
+
+```text
+comicrent-limits
+```
+
+El LimitRange define límites mínimos, máximos y valores predeterminados para recursos de los contenedores.
+
+Evidencia:
+
+```text
+NAME
+comicrent-limits
+```
+
+---
+
+# 31. PodDisruptionBudget
+
+Los principales microservicios poseen PDB.
+
+Evidencia:
+
+```text
+comicrent-api-gateway
+comicrent-auth-service
+comicrent-comics-service
+comicrent-copies-service
+comicrent-rentals-service
+```
+
+También existen PDB provenientes de las dependencias para:
+
+```text
+comicrent-postgresql
+comicrent-rabbitmq
+```
+
+Los microservicios utilizan:
+
+```text
+minAvailable: 1
+```
+
+Con una sola réplica es normal observar:
+
+```text
+ALLOWED DISRUPTIONS = 0
+```
+
+ya que Kubernetes debe mantener al menos una instancia disponible.
+
+---
+
+# 32. RollingUpdate
+
+Los Deployments utilizan estrategia:
+
+```yaml
+strategy:
+  type: RollingUpdate
+  rollingUpdate:
+    maxUnavailable: 0
+    maxSurge: 1
+```
+
+Esto permite crear una nueva instancia antes de retirar la anterior.
+
+---
+
+# 33. Prueba de Zero Downtime
+
+Para evitar confundir la terminación de un proceso local `kubectl port-forward` con una caída real del servicio, la prueba de disponibilidad se realizó desde dentro del clúster contra el Service del Gateway.
+
+Se creó un Pod de prueba con una label autorizada por NetworkPolicy.
+
+El Pod realizó solicitudes repetidas contra:
+
+```text
+http://comicrent-api-gateway:3000/health
+```
+
+mientras se ejecutaba un upgrade.
+
+Durante el rollout se observó:
+
+```text
+nuevo Pod -> Ready
+viejo Pod -> Terminating
+```
+
+La salida del cliente mostró únicamente:
+
+```text
+HTTP 200
+```
+
+durante la actualización.
+
+Esto demuestra que el Service continuó disponible mientras se reemplazaba el Pod del Gateway.
+
+---
+
+# 34. NetworkPolicy de prueba de upgrade
+
+Para permitir únicamente la prueba de disponibilidad se creó:
+
+```text
+comicrent-upgrade-test
+```
+
+con selector:
+
+```text
+comicrent.io/upgrade-test=true
+```
+
+La política permanece en el chart para permitir que la prueba pueda reproducirse.
+
+Si no existe un Pod con esa label, la política no habilita tráfico adicional.
+
+---
+
+# 35. CronJob cada 2 minutos
+
+El primer CronJob se ejecuta mediante:
+
+```text
+*/2 * * * *
+```
+
+Zona horaria:
+
+```text
+America/Guatemala
+```
+
+Su función es insertar periódicamente:
+
+```text
+fecha/hora GMT-6
+carnet 202307705
+```
+
+en:
+
+```text
+operations_db
+```
+
+---
+
+# 36. Evidencia del CronJob de 2 minutos
+
+Durante la verificación se observaron ejecuciones:
+
+```text
+comicrent-cron-tick-29794736   Completed
+comicrent-cron-tick-29794738   Completed
+comicrent-cron-tick-29794740   Completed
+```
+
+Además:
+
+```text
+ACTIVE = 0
+```
+
+indica que las ejecuciones anteriores terminaron correctamente.
+
+---
+
+# 37. CronJob cada 10 minutos
+
+El segundo CronJob utiliza:
+
+```text
+*/10 * * * *
+```
+
+con:
+
+```text
+America/Guatemala
+```
+
+El flujo es:
+
+```text
+consulta datos
+    |
+    v
+genera resumen
+    |
+    v
+publica RabbitMQ
+    |
+    v
+operations.hourly.summary
+    |
+    v
+Summary Consumer
+    |
+    v
+PostgreSQL
+```
+
+---
+
+# 38. Evidencia del CronJob de 10 minutos
+
+Durante la verificación se observaron ejecuciones:
+
+```text
+comicrent-cron-summary-29794720   Completed
+comicrent-cron-summary-29794730   Completed
+comicrent-cron-summary-29794740   Completed
+```
+
+Esto demuestra que el Job se ejecutaba automáticamente de acuerdo con su schedule.
+
+---
+
+# 39. Configuración de CronJobs
+
+Ambos CronJobs utilizan:
+
+```yaml
+timeZone: "America/Guatemala"
+concurrencyPolicy: Forbid
+successfulJobsHistoryLimit: 3
+failedJobsHistoryLimit: 3
+```
+
+Además:
+
+```yaml
+backoffLimit: 2
+```
+
+Esto evita la ejecución simultánea del mismo CronJob y controla los reintentos e historial.
+
+---
+
+# 40. Summary Consumer
+
+El Summary Consumer se mantiene activo como Deployment:
+
+```text
+comicrent-summary-consumer   1/1
+```
+
+Durante la verificación RabbitMQ presentó:
+
+```text
+operations.hourly.summary
+durable = true
+consumers = 1
+```
+
+Esto demuestra que el consumer se encontraba conectado a la cola correspondiente.
+
+---
+
+# 41. ServiceAccounts
+
+Cada workload principal utiliza un ServiceAccount específico.
+
+Evidencia:
+
+```text
+comicrent-api-gateway
+comicrent-auth-service
+comicrent-comics-service
+comicrent-copies-consumer
+comicrent-copies-service
+comicrent-cron-summary
+comicrent-cron-tick
+comicrent-rentals-service
+comicrent-summary-consumer
+```
+
+PostgreSQL y RabbitMQ también poseen sus propios ServiceAccounts.
+
+---
+
+# 42. RBAC
+
+Los workloads utilizan:
+
+```text
+Role
+RoleBinding
+```
+
+dedicados.
+
+Por ejemplo:
+
+```text
+comicrent-cron-tick
+comicrent-cron-summary
+comicrent-summary-consumer
+```
+
+poseen cada uno:
+
+```text
+ServiceAccount
+Role
+RoleBinding
+```
+
+independientes.
+
+Esto evita compartir una identidad Kubernetes común entre procesos diferentes.
+
+---
+
+# 43. SecurityContext
+
+Los contenedores se ejecutan con restricciones de seguridad.
+
+Entre las propiedades utilizadas se encuentran:
+
+```text
+runAsNonRoot: true
+readOnlyRootFilesystem: true
+allowPrivilegeEscalation: false
+```
+
+y:
+
+```text
+capabilities:
+  drop:
+    - ALL
+```
+
+Además se utiliza:
+
+```text
+seccompProfile: RuntimeDefault
+```
+
+Estas configuraciones reducen los privilegios disponibles dentro de los contenedores.
+
+---
+
+# 44. Optimización de imágenes
+
+Las imágenes fueron optimizadas mediante Dockerfiles multi-stage y bases reducidas.
+
+Comparación obtenida:
+
+| Servicio | Antes | Después |
+|---|---:|---:|
+| API Gateway | 497 MB Slim | 319 MB Alpine |
+| Auth Service | 1.44 GB Slim | 1.33 GB Alpine |
+| Comics Service | 1.53 GB Slim | 1.41 GB Alpine |
+| Rentals Service | 293 MB Slim | 190 MB Alpine |
+| Copies Service | 279 MB Slim | 176 MB Alpine |
+| Operations Jobs | - | 94.7 MB Alpine |
+
+---
+
+# 45. Comparación Alpine vs Distroless
+
+También se evaluó una alternativa Distroless para algunos servicios.
+
+En Rentals se obtuvo aproximadamente:
+
+```text
+Alpine:      190 MB
+Distroless:  196 MB
+```
+
+Por lo tanto se mantuvo Alpine como imagen final debido a su tamaño competitivo y mayor facilidad de operación y diagnóstico.
+
+---
+
+# 46. Versionado Helm
+
+El chart comenzó con:
+
+```text
+Chart version: 0.1.0
+App version:   1.0.0
+```
+
+Posteriormente fue actualizado a:
+
+```text
+Chart version: 0.2.0
+App version:   1.1.0
+```
+
+Esto demuestra versionado explícito del chart y de la aplicación.
+
+---
+
+# 47. Historial Helm
+
+Se ejecutó:
+
+```powershell
+helm history comicrent
+```
+
+Entre las revisiones observadas se encuentran:
+
+```text
+REVISION 6
+comicrent-0.1.0
+Upgrade complete
+
+REVISION 7
+comicrent-0.1.0
+Upgrade complete
+
+REVISION 8
+comicrent-0.1.0
+Rollback to 6
+
+REVISION 9
+comicrent-0.2.0
+App version 1.1.0
+Upgrade complete
+
+REVISION 10
+failed
+
+REVISION 11
+comicrent-0.2.0
+App version 1.1.0
+deployed
+Upgrade complete
+```
+
+---
+
+# 48. Rollback Helm
+
+Se ejecutó un rollback real mediante:
+
+```powershell
+helm rollback comicrent 6 `
+  --wait `
+  --timeout 10m
+```
+
+El historial creó una nueva revisión:
+
+```text
+REVISION 8
+DESCRIPTION: Rollback to 6
+```
+
+Esto confirma que Helm restauró correctamente una revisión anterior.
+
+---
+
+# 49. Revisión fallida y recuperación
+
+Durante una actualización se generó:
+
+```text
+REVISION 10
+STATUS: failed
+```
+
+Motivo:
+
+```text
+Deployment comicrent-copies-consumer not ready
+Pending termination
+```
+
+El problema fue corregido y posteriormente se realizó una nueva actualización.
+
+Resultado:
+
+```text
+REVISION 11
+STATUS: deployed
+DESCRIPTION: Upgrade complete
+```
+
+La revisión fallida se conserva en el historial como evidencia del proceso de diagnóstico y recuperación.
+
+---
+
+# 50. Scripts de automatización
+
+Se agregaron scripts PowerShell en:
+
+```text
+P5/scripts/
+```
+
+Contenido:
+
+```text
+build-images.ps1
+helm-version.ps1
+helm-upgrade.ps1
+helm-rollback.ps1
+verify-cluster.ps1
+```
+
+---
+
+# 51. build-images.ps1
+
+El script automatiza:
+
+```text
+docker build
+docker tag
+docker push
+minikube image load
+```
+
+para las imágenes de la solución.
+
+El registry configurado para publicación puede utilizar:
+
+```text
+docker.io/davidvela777
+```
+
+Ejemplo:
+
+```powershell
+.\scripts\build-images.ps1 `
+  -Tag "1.0.0" `
+  -Registry "docker.io/davidvela777" `
+  -Push
+```
+
+---
+
+# 52. helm-version.ps1
+
+Este script permite modificar de manera controlada:
+
+```text
+version
+appVersion
+```
+
+en:
+
+```text
+Chart.yaml
+```
+
+Además ejecuta `helm lint` después del cambio.
+
+---
+
+# 53. helm-upgrade.ps1
+
+Automatiza:
+
+```text
+helm dependency update
+helm lint
+helm history
+helm upgrade
+kubectl rollout status
+helm status
+```
+
+Permite reproducir el procedimiento utilizado durante los upgrades de la práctica.
+
+---
+
+# 54. helm-rollback.ps1
+
+Automatiza:
+
+```text
+helm history
+helm rollback
+kubectl rollout status
+helm status
+```
+
+y recibe como parámetro la revisión que se desea restaurar.
+
+---
+
+# 55. verify-cluster.ps1
+
+El script de verificación consulta:
+
+```text
+Namespace
+Pods
+Deployments
+StatefulSets
+Services
+PVC
+HPA
+PDB
+NetworkPolicies
+ServiceAccounts
+Roles
+RoleBindings
+CronJobs
+ResourceQuota
+LimitRange
+métricas
+colas RabbitMQ
+Helm status
+Helm history
+```
+
+El script fue ejecutado correctamente y se utilizó como comprobación final del estado de la práctica.
+
+---
+
+# 56. Validación de sintaxis de scripts
+
+Se realizó validación sintáctica mediante el parser de PowerShell.
+
+Resultado:
+
+```text
+build-images.ps1       Sintaxis OK
+helm-rollback.ps1      Sintaxis OK
+helm-upgrade.ps1       Sintaxis OK
+helm-version.ps1       Sintaxis OK
+verify-cluster.ps1     Sintaxis OK
+```
+
+Esto confirma que todos los scripts agregados al repositorio son sintácticamente válidos.
+
+---
+
+# 57. Estado final
+
+El estado final observado fue:
+
+```text
+API Gateway          Running
+Auth Service         Running
+Comics Service       Running
+Rentals Service      Running
+Copies Service       Running
+Copies Consumer      Running
+Summary Consumer     Running
+PostgreSQL           Running
+RabbitMQ             Running
+```
+
+Los Jobs anteriores aparecían como:
+
+```text
+Completed
+```
+
+lo cual corresponde a ejecuciones terminadas correctamente.
+
+---
+
+# 58. Resumen de cumplimiento técnico
+
+La implementación evidencia:
+
+```text
+Helm chart padre
+Subcharts
+values por ambiente
+funciones avanzadas Helm
+Namespace administrado por chart
+ConfigMaps
+Secrets
+PostgreSQL StatefulSet
+PVC
+Headless Service
+RabbitMQ
+colas durables
+flujo asíncrono
+ACK posterior al procesamiento
+idempotencia
+prueba de consumer caído
+NetworkPolicies
+default deny
+health probes
+HPA
+prueba de carga k6
+ResourceQuota
+LimitRange
+PDB
+RollingUpdate
+Zero Downtime
+ServiceAccounts
+RBAC
+SecurityContext
+CronJobs
+GMT-6
+versionado
+upgrade
+rollback
+optimización de imágenes
+scripts de automatización
+```
+
+---
+
+# 59. Conclusión
+
+La Práctica 5 permitió evolucionar ComicRent desde una arquitectura de microservicios funcional hacia un entorno administrado mediante Kubernetes y Helm.
+
+La solución incorpora persistencia, seguridad, aislamiento, resiliencia, escalamiento y procesamiento asíncrono sin eliminar las comunicaciones síncronas requeridas por los flujos de negocio existentes.
+
+Las pruebas realizadas demostraron:
+
+- Persistencia ante recreación de Pods.
+- Acumulación y recuperación de mensajes cuando un consumer se encuentra detenido.
+- Restricción efectiva de comunicaciones mediante NetworkPolicies.
+- Escalamiento automático por consumo de CPU.
+- Ejecución programada de CronJobs.
+- Actualizaciones mediante RollingUpdate sin interrupción del Service.
+- Versionado y rollback mediante Helm.
+- Reducción del tamaño de imágenes.
+- Automatización de tareas operativas mediante scripts PowerShell.
+
+El estado final del clúster confirmó que todos los componentes principales se encontraban operativos y que la solución podía ser administrada de forma reproducible mediante Helm y los scripts incluidos en el repositorio.
