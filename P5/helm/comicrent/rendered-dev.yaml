@@ -9,66 +9,583 @@ metadata:
     app.kubernetes.io/part-of: "comicrent"
     
 ---
-# Source: comicrent/charts/postgresql/templates/primary/networkpolicy.yaml
-kind: NetworkPolicy
+# Source: comicrent/templates/networkpolicies.yaml
+# ============================================================
+# DEFAULT DENY
+# Todo tráfico entre Pods queda bloqueado salvo reglas explícitas.
+# ============================================================
+
 apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: comicrent-default-deny
+  namespace: "sa-p5"
+  labels:
+    app.kubernetes.io/part-of: "comicrent"
+spec:
+  podSelector: {}
+  policyTypes:
+    - Ingress
+    - Egress
+
+
+---
+# Source: comicrent/templates/networkpolicies.yaml
+# ============================================================
+# DNS
+# Todos los Pods necesitan resolver nombres de Services.
+# ============================================================
+
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: comicrent-allow-dns
+  namespace: "sa-p5"
+  labels:
+    app.kubernetes.io/part-of: "comicrent"
+spec:
+  podSelector: {}
+  policyTypes:
+    - Egress
+
+  egress:
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: kube-system
+
+      ports:
+        - protocol: UDP
+          port: 53
+
+        - protocol: TCP
+          port: 53
+
+
+---
+# Source: comicrent/templates/networkpolicies.yaml
+# ============================================================
+# API GATEWAY
+#
+# Permitido:
+# Gateway -> Auth
+# Gateway -> Comics
+# Gateway -> Rentals
+# Gateway -> Copies
+# ============================================================
+
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: comicrent-api-gateway
+  namespace: "sa-p5"
+  labels:
+    app.kubernetes.io/part-of: "comicrent"
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: api-gateway
+      app.kubernetes.io/instance: comicrent
+
+  policyTypes:
+    - Egress
+
+  egress:
+    - to:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: auth-service
+              app.kubernetes.io/instance: comicrent
+      ports:
+        - protocol: TCP
+          port: 3001
+
+    - to:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: comics-service
+              app.kubernetes.io/instance: comicrent
+      ports:
+        - protocol: TCP
+          port: 3002
+
+    - to:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: rentals-service
+              app.kubernetes.io/instance: comicrent
+      ports:
+        - protocol: TCP
+          port: 8001
+
+    - to:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: copies-service
+              app.kubernetes.io/instance: comicrent
+      ports:
+        - protocol: TCP
+          port: 8002
+
+
+---
+# Source: comicrent/templates/networkpolicies.yaml
+# ============================================================
+# AUTH
+#
+# Entrada:
+# Gateway -> Auth
+#
+# Salida:
+# Auth -> PostgreSQL
+# ============================================================
+
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: comicrent-auth-service
+  namespace: "sa-p5"
+  labels:
+    app.kubernetes.io/part-of: "comicrent"
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: auth-service
+      app.kubernetes.io/instance: comicrent
+
+  policyTypes:
+    - Ingress
+    - Egress
+
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: api-gateway
+              app.kubernetes.io/instance: comicrent
+      ports:
+        - protocol: TCP
+          port: 3001
+
+  egress:
+    - to:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: postgresql
+              app.kubernetes.io/instance: comicrent
+              app.kubernetes.io/component: primary
+      ports:
+        - protocol: TCP
+          port: 5432
+
+
+---
+# Source: comicrent/templates/networkpolicies.yaml
+# ============================================================
+# COMICS
+#
+# Entrada:
+# Gateway -> Comics
+# Rentals -> Comics
+#
+# Salida:
+# Comics -> PostgreSQL
+# ============================================================
+
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: comicrent-comics-service
+  namespace: "sa-p5"
+  labels:
+    app.kubernetes.io/part-of: "comicrent"
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: comics-service
+      app.kubernetes.io/instance: comicrent
+
+  policyTypes:
+    - Ingress
+    - Egress
+
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: api-gateway
+              app.kubernetes.io/instance: comicrent
+
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: rentals-service
+              app.kubernetes.io/instance: comicrent
+
+      ports:
+        - protocol: TCP
+          port: 3002
+
+  egress:
+    - to:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: postgresql
+              app.kubernetes.io/instance: comicrent
+              app.kubernetes.io/component: primary
+      ports:
+        - protocol: TCP
+          port: 5432
+
+
+---
+# Source: comicrent/templates/networkpolicies.yaml
+# ============================================================
+# RENTALS
+#
+# Entrada:
+# Gateway -> Rentals
+#
+# Salida:
+# Rentals -> PostgreSQL
+# Rentals -> Comics
+# Rentals -> Copies
+# Rentals -> RabbitMQ
+# ============================================================
+
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: comicrent-rentals-service
+  namespace: "sa-p5"
+  labels:
+    app.kubernetes.io/part-of: "comicrent"
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: rentals-service
+      app.kubernetes.io/instance: comicrent
+
+  policyTypes:
+    - Ingress
+    - Egress
+
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: api-gateway
+              app.kubernetes.io/instance: comicrent
+      ports:
+        - protocol: TCP
+          port: 8001
+
+  egress:
+    - to:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: postgresql
+              app.kubernetes.io/instance: comicrent
+              app.kubernetes.io/component: primary
+      ports:
+        - protocol: TCP
+          port: 5432
+
+    - to:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: comics-service
+              app.kubernetes.io/instance: comicrent
+      ports:
+        - protocol: TCP
+          port: 3002
+
+    - to:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: copies-service
+              app.kubernetes.io/instance: comicrent
+      ports:
+        - protocol: TCP
+          port: 8002
+
+    - to:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: rabbitmq
+              app.kubernetes.io/instance: comicrent
+      ports:
+        - protocol: TCP
+          port: 5672
+
+
+---
+# Source: comicrent/templates/networkpolicies.yaml
+# ============================================================
+# COPIES API
+#
+# Entrada:
+# Gateway -> Copies
+# Rentals -> Copies
+#
+# Salida:
+# Copies -> PostgreSQL
+# ============================================================
+
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: comicrent-copies-service
+  namespace: "sa-p5"
+  labels:
+    app.kubernetes.io/part-of: "comicrent"
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: copies-service
+      app.kubernetes.io/instance: comicrent
+
+  policyTypes:
+    - Ingress
+    - Egress
+
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: api-gateway
+              app.kubernetes.io/instance: comicrent
+
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: rentals-service
+              app.kubernetes.io/instance: comicrent
+
+      ports:
+        - protocol: TCP
+          port: 8002
+
+  egress:
+    - to:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: postgresql
+              app.kubernetes.io/instance: comicrent
+              app.kubernetes.io/component: primary
+      ports:
+        - protocol: TCP
+          port: 5432
+
+
+---
+# Source: comicrent/templates/networkpolicies.yaml
+# ============================================================
+# COPIES CONSUMER
+#
+# Salida:
+# Consumer -> PostgreSQL
+# Consumer -> RabbitMQ
+# ============================================================
+
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: comicrent-copies-consumer
+  namespace: "sa-p5"
+  labels:
+    app.kubernetes.io/part-of: "comicrent"
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: copies-consumer
+      app.kubernetes.io/instance: comicrent
+
+  policyTypes:
+    - Ingress
+    - Egress
+
+  ingress: []
+
+  egress:
+    - to:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: postgresql
+              app.kubernetes.io/instance: comicrent
+              app.kubernetes.io/component: primary
+      ports:
+        - protocol: TCP
+          port: 5432
+
+    - to:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: rabbitmq
+              app.kubernetes.io/instance: comicrent
+      ports:
+        - protocol: TCP
+          port: 5672
+
+
+---
+# Source: comicrent/templates/networkpolicies.yaml
+# ============================================================
+# POSTGRESQL
+#
+# Entrada:
+# Auth
+# Comics
+# Rentals
+# Copies
+# Copies Consumer
+# ============================================================
+
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
 metadata:
   name: comicrent-postgresql
   namespace: "sa-p5"
   labels:
-    app.kubernetes.io/instance: comicrent
-    app.kubernetes.io/managed-by: Helm
-    app.kubernetes.io/name: postgresql
-    app.kubernetes.io/version: 18.6.0
-    helm.sh/chart: postgresql-18.8.9
-    app.kubernetes.io/component: primary
+    app.kubernetes.io/part-of: "comicrent"
 spec:
   podSelector:
     matchLabels:
-      app.kubernetes.io/instance: comicrent
       app.kubernetes.io/name: postgresql
+      app.kubernetes.io/instance: comicrent
       app.kubernetes.io/component: primary
+
   policyTypes:
     - Ingress
-    - Egress
-  egress:
-    - {}
+
   ingress:
-    - ports:
-        - port: 5432
+    - from:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: auth-service
+              app.kubernetes.io/instance: comicrent
+
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: comics-service
+              app.kubernetes.io/instance: comicrent
+
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: rentals-service
+              app.kubernetes.io/instance: comicrent
+
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: copies-service
+              app.kubernetes.io/instance: comicrent
+
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: copies-consumer
+              app.kubernetes.io/instance: comicrent
+
+      ports:
+        - protocol: TCP
+          port: 5432
+
 
 ---
-# Source: comicrent/charts/rabbitmq/templates/networkpolicy.yaml
-kind: NetworkPolicy
+# Source: comicrent/templates/networkpolicies.yaml
+# ============================================================
+# RABBITMQ
+#
+# Entrada AMQP:
+# Rentals
+# Copies Consumer
+#
+# RabbitMQ mantiene sus conexiones internas necesarias.
+# ============================================================
+
 apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
 metadata:
   name: comicrent-rabbitmq
   namespace: "sa-p5"
   labels:
-    app.kubernetes.io/instance: comicrent
-    app.kubernetes.io/managed-by: Helm
-    app.kubernetes.io/name: rabbitmq
-    app.kubernetes.io/version: 3.13.5
-    helm.sh/chart: rabbitmq-14.6.3
+    app.kubernetes.io/part-of: "comicrent"
 spec:
   podSelector:
     matchLabels:
-      app.kubernetes.io/instance: comicrent
       app.kubernetes.io/name: rabbitmq
+      app.kubernetes.io/instance: comicrent
+
   policyTypes:
     - Ingress
-    - Egress
-  egress:
-    - {}
-  ingress:
-    # Allow inbound connections to RabbitMQ
-    - ports:
-        - port: 4369
-        - port: 5672
-        - port: 5671
-        - port: 25672
-        - port: 15672
 
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: rentals-service
+              app.kubernetes.io/instance: comicrent
+
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: copies-consumer
+              app.kubernetes.io/instance: comicrent
+
+      ports:
+        - protocol: TCP
+          port: 5672
+---
+# Source: comicrent/templates/resourcequota.yaml
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: comicrent-quota
+  namespace: "sa-p5"
+  labels:
+    app.kubernetes.io/part-of: "comicrent"
+
+spec:
+  hard:
+    requests.cpu: "2"
+    requests.memory: "2Gi"
+
+    limits.cpu: "4"
+    limits.memory: "4Gi"
+
+    requests.storage: "10Gi"
+
+    pods: "20"
+    persistentvolumeclaims: "5"
+
+    services: "15"
+    configmaps: "20"
+    secrets: "15"
+---
+# Source: comicrent/templates/limitrange.yaml
+apiVersion: v1
+kind: LimitRange
+metadata:
+  name: comicrent-limits
+  namespace: "sa-p5"
+  labels:
+    app.kubernetes.io/part-of: "comicrent"
+
+spec:
+  limits:
+    - type: Container
+
+      defaultRequest:
+        cpu: "50m"
+        memory: "64Mi"
+
+      default:
+        cpu: "500m"
+        memory: "512Mi"
+
+      min:
+        cpu: "10m"
+        memory: "32Mi"
+
+      max:
+        cpu: "1"
+        memory: "1Gi"
 ---
 # Source: comicrent/charts/api-gateway/templates/pdb.yaml
 apiVersion: policy/v1
@@ -282,7 +799,7 @@ metadata:
     helm.sh/chart: rabbitmq-14.6.3
 type: Opaque
 data:
-  rabbitmq-erlang-cookie: "T05lc2hCcm5RZmc0QklWVVk4Q1UwVHBkV2xBUFh5U0I="
+  rabbitmq-erlang-cookie: "MjR1cFZFcG52dGZQVUV3MVcyZXM2QUZSVFYzU3pseW4="
 
 ---
 # Source: comicrent/templates/secrets.yaml
@@ -1878,7 +2395,7 @@ spec:
         helm.sh/chart: rabbitmq-14.6.3
       annotations:
         checksum/config: ac47f041bb210ca9209afa42c26567d328c1e6c1d065070bd59f2313a36bc3a2
-        checksum/secret: cb2e33eef62259b59d4df718276afad0c1c95fe3b11c94cb9f30ce79f73b1837
+        checksum/secret: 6186ff26c1fb2aa77f71304abadba1664e30e74bd7f907f11d84826afad52293
     spec:
       
       serviceAccountName: comicrent-rabbitmq

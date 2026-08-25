@@ -1,0 +1,503 @@
+# ============================================================
+# DEFAULT DENY
+# Todo tráfico entre Pods queda bloqueado salvo reglas explícitas.
+# ============================================================
+
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: comicrent-default-deny
+  namespace: {{ .Values.namespace | default "sa-p5" | quote }}
+  labels:
+    app.kubernetes.io/part-of: "comicrent"
+spec:
+  podSelector: {}
+  policyTypes:
+    - Ingress
+    - Egress
+
+---
+# ============================================================
+# DNS
+# Todos los Pods necesitan resolver nombres de Services.
+# ============================================================
+
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: comicrent-allow-dns
+  namespace: {{ .Values.namespace | default "sa-p5" | quote }}
+  labels:
+    app.kubernetes.io/part-of: "comicrent"
+spec:
+  podSelector: {}
+  policyTypes:
+    - Egress
+
+  egress:
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: kube-system
+
+      ports:
+        - protocol: UDP
+          port: 53
+
+        - protocol: TCP
+          port: 53
+
+---
+# ============================================================
+# API GATEWAY
+#
+# Permitido:
+# Gateway -> Auth
+# Gateway -> Comics
+# Gateway -> Rentals
+# Gateway -> Copies
+# ============================================================
+
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: comicrent-api-gateway
+  namespace: {{ .Values.namespace | default "sa-p5" | quote }}
+  labels:
+    app.kubernetes.io/part-of: "comicrent"
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: api-gateway
+      app.kubernetes.io/instance: comicrent
+
+  policyTypes:
+    - Egress
+
+  egress:
+    - to:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: auth-service
+              app.kubernetes.io/instance: comicrent
+      ports:
+        - protocol: TCP
+          port: 3001
+
+    - to:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: comics-service
+              app.kubernetes.io/instance: comicrent
+      ports:
+        - protocol: TCP
+          port: 3002
+
+    - to:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: rentals-service
+              app.kubernetes.io/instance: comicrent
+      ports:
+        - protocol: TCP
+          port: 8001
+
+    - to:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: copies-service
+              app.kubernetes.io/instance: comicrent
+      ports:
+        - protocol: TCP
+          port: 8002
+
+---
+# ============================================================
+# AUTH
+#
+# Entrada:
+# Gateway -> Auth
+#
+# Salida:
+# Auth -> PostgreSQL
+# ============================================================
+
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: comicrent-auth-service
+  namespace: {{ .Values.namespace | default "sa-p5" | quote }}
+  labels:
+    app.kubernetes.io/part-of: "comicrent"
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: auth-service
+      app.kubernetes.io/instance: comicrent
+
+  policyTypes:
+    - Ingress
+    - Egress
+
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: api-gateway
+              app.kubernetes.io/instance: comicrent
+      ports:
+        - protocol: TCP
+          port: 3001
+
+  egress:
+    - to:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: postgresql
+              app.kubernetes.io/instance: comicrent
+              app.kubernetes.io/component: primary
+      ports:
+        - protocol: TCP
+          port: 5432
+
+---
+# ============================================================
+# COMICS
+#
+# Entrada:
+# Gateway -> Comics
+# Rentals -> Comics
+#
+# Salida:
+# Comics -> PostgreSQL
+# ============================================================
+
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: comicrent-comics-service
+  namespace: {{ .Values.namespace | default "sa-p5" | quote }}
+  labels:
+    app.kubernetes.io/part-of: "comicrent"
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: comics-service
+      app.kubernetes.io/instance: comicrent
+
+  policyTypes:
+    - Ingress
+    - Egress
+
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: api-gateway
+              app.kubernetes.io/instance: comicrent
+
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: rentals-service
+              app.kubernetes.io/instance: comicrent
+
+      ports:
+        - protocol: TCP
+          port: 3002
+
+  egress:
+    - to:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: postgresql
+              app.kubernetes.io/instance: comicrent
+              app.kubernetes.io/component: primary
+      ports:
+        - protocol: TCP
+          port: 5432
+
+---
+# ============================================================
+# RENTALS
+#
+# Entrada:
+# Gateway -> Rentals
+#
+# Salida:
+# Rentals -> PostgreSQL
+# Rentals -> Comics
+# Rentals -> Copies
+# Rentals -> RabbitMQ
+# ============================================================
+
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: comicrent-rentals-service
+  namespace: {{ .Values.namespace | default "sa-p5" | quote }}
+  labels:
+    app.kubernetes.io/part-of: "comicrent"
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: rentals-service
+      app.kubernetes.io/instance: comicrent
+
+  policyTypes:
+    - Ingress
+    - Egress
+
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: api-gateway
+              app.kubernetes.io/instance: comicrent
+      ports:
+        - protocol: TCP
+          port: 8001
+
+  egress:
+    - to:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: postgresql
+              app.kubernetes.io/instance: comicrent
+              app.kubernetes.io/component: primary
+      ports:
+        - protocol: TCP
+          port: 5432
+
+    - to:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: comics-service
+              app.kubernetes.io/instance: comicrent
+      ports:
+        - protocol: TCP
+          port: 3002
+
+    - to:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: copies-service
+              app.kubernetes.io/instance: comicrent
+      ports:
+        - protocol: TCP
+          port: 8002
+
+    - to:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: rabbitmq
+              app.kubernetes.io/instance: comicrent
+      ports:
+        - protocol: TCP
+          port: 5672
+
+---
+# ============================================================
+# COPIES API
+#
+# Entrada:
+# Gateway -> Copies
+# Rentals -> Copies
+#
+# Salida:
+# Copies -> PostgreSQL
+# ============================================================
+
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: comicrent-copies-service
+  namespace: {{ .Values.namespace | default "sa-p5" | quote }}
+  labels:
+    app.kubernetes.io/part-of: "comicrent"
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: copies-service
+      app.kubernetes.io/instance: comicrent
+
+  policyTypes:
+    - Ingress
+    - Egress
+
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: api-gateway
+              app.kubernetes.io/instance: comicrent
+
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: rentals-service
+              app.kubernetes.io/instance: comicrent
+
+      ports:
+        - protocol: TCP
+          port: 8002
+
+  egress:
+    - to:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: postgresql
+              app.kubernetes.io/instance: comicrent
+              app.kubernetes.io/component: primary
+      ports:
+        - protocol: TCP
+          port: 5432
+
+---
+# ============================================================
+# COPIES CONSUMER
+#
+# Salida:
+# Consumer -> PostgreSQL
+# Consumer -> RabbitMQ
+# ============================================================
+
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: comicrent-copies-consumer
+  namespace: {{ .Values.namespace | default "sa-p5" | quote }}
+  labels:
+    app.kubernetes.io/part-of: "comicrent"
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: copies-consumer
+      app.kubernetes.io/instance: comicrent
+
+  policyTypes:
+    - Ingress
+    - Egress
+
+  ingress: []
+
+  egress:
+    - to:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: postgresql
+              app.kubernetes.io/instance: comicrent
+              app.kubernetes.io/component: primary
+      ports:
+        - protocol: TCP
+          port: 5432
+
+    - to:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: rabbitmq
+              app.kubernetes.io/instance: comicrent
+      ports:
+        - protocol: TCP
+          port: 5672
+
+---
+# ============================================================
+# POSTGRESQL
+#
+# Entrada:
+# Auth
+# Comics
+# Rentals
+# Copies
+# Copies Consumer
+# ============================================================
+
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: comicrent-postgresql
+  namespace: {{ .Values.namespace | default "sa-p5" | quote }}
+  labels:
+    app.kubernetes.io/part-of: "comicrent"
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: postgresql
+      app.kubernetes.io/instance: comicrent
+      app.kubernetes.io/component: primary
+
+  policyTypes:
+    - Ingress
+
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: auth-service
+              app.kubernetes.io/instance: comicrent
+
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: comics-service
+              app.kubernetes.io/instance: comicrent
+
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: rentals-service
+              app.kubernetes.io/instance: comicrent
+
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: copies-service
+              app.kubernetes.io/instance: comicrent
+
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: copies-consumer
+              app.kubernetes.io/instance: comicrent
+
+      ports:
+        - protocol: TCP
+          port: 5432
+
+---
+# ============================================================
+# RABBITMQ
+#
+# Entrada AMQP:
+# Rentals
+# Copies Consumer
+#
+# RabbitMQ mantiene sus conexiones internas necesarias.
+# ============================================================
+
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: comicrent-rabbitmq
+  namespace: {{ .Values.namespace | default "sa-p5" | quote }}
+  labels:
+    app.kubernetes.io/part-of: "comicrent"
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: rabbitmq
+      app.kubernetes.io/instance: comicrent
+
+  policyTypes:
+    - Ingress
+
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: rentals-service
+              app.kubernetes.io/instance: comicrent
+
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: copies-consumer
+              app.kubernetes.io/instance: comicrent
+
+      ports:
+        - protocol: TCP
+          port: 5672
