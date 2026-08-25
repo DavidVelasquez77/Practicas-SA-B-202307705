@@ -24,9 +24,9 @@ spec:
       labels:
         {{- include "comics-service.selectorLabels" . | nindent 8 }}
 
-    annotations:
-      checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
-      checksum/secret: {{ .Values.global.secrets.postgresUserPassword | sha256sum | quote }}
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
+        checksum/secret: {{ .Values.global.secrets.postgresUserPassword | sha256sum | quote }}
 
     spec:
       serviceAccountName: {{ include "comics-service.fullname" . }}
@@ -36,6 +36,41 @@ spec:
         runAsNonRoot: true
         seccompProfile:
           type: RuntimeDefault
+
+      initContainers:
+        - name: prisma-migrate
+
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+
+          command:
+            - ./node_modules/.bin/prisma
+            - migrate
+            - deploy
+
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+
+          env:
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: comicrent-postgresql-secret
+                  key: password
+
+            - name: DATABASE_URL
+              value: "postgresql://comicrent_user:$(DB_PASSWORD)@comicrent-postgresql:5432/comics_db?schema=public"
+
+          resources:
+            requests:
+              cpu: 25m
+              memory: 64Mi
+            limits:
+              cpu: 200m
+              memory: 256Mi
 
       containers:
         - name: comics-service

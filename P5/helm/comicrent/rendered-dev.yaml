@@ -846,7 +846,7 @@ metadata:
     helm.sh/chart: rabbitmq-14.6.3
 type: Opaque
 data:
-  rabbitmq-erlang-cookie: "akNiVlRRNk5Sa3RuZk80YTRNNEtvWnk0TFd6eDBhaGI="
+  rabbitmq-erlang-cookie: "U0pXeHVFdjJOYXRyaWUxSnZZZ2Q0ekVGS1Q2U1l0blY="
 
 ---
 # Source: comicrent/templates/secrets.yaml
@@ -1672,6 +1672,41 @@ spec:
         seccompProfile:
           type: RuntimeDefault
 
+      initContainers:
+        - name: prisma-migrate
+
+          image: "comicrent/auth-service:1.0.0"
+          imagePullPolicy: IfNotPresent
+
+          command:
+            - ./node_modules/.bin/prisma
+            - migrate
+            - deploy
+
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+
+          env:
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: comicrent-postgresql-secret
+                  key: password
+
+            - name: DATABASE_URL
+              value: "postgresql://comicrent_user:$(DB_PASSWORD)@comicrent-postgresql:5432/auth_db?schema=public"
+
+          resources:
+            requests:
+              cpu: 25m
+              memory: 64Mi
+            limits:
+              cpu: 200m
+              memory: 256Mi
+
       containers:
         - name: auth-service
 
@@ -1726,6 +1761,7 @@ spec:
             initialDelaySeconds: 10
             periodSeconds: 10
             failureThreshold: 3
+
           resources:
             limits:
               cpu: 300m
@@ -1767,9 +1803,9 @@ spec:
         app.kubernetes.io/name: comics-service
         app.kubernetes.io/instance: comicrent
 
-    annotations:
-      checksum/config: 6378da4046deaf644ad31e5c7fb0297793b13fae37784265173a01075e79a1b5
-      checksum/secret: "9cc1ec1fefcf02364854e853e3d314c139b70d384485ca5074977d3706e563fd"
+      annotations:
+        checksum/config: 6378da4046deaf644ad31e5c7fb0297793b13fae37784265173a01075e79a1b5
+        checksum/secret: "9cc1ec1fefcf02364854e853e3d314c139b70d384485ca5074977d3706e563fd"
 
     spec:
       serviceAccountName: comicrent-comics-service
@@ -1779,6 +1815,41 @@ spec:
         runAsNonRoot: true
         seccompProfile:
           type: RuntimeDefault
+
+      initContainers:
+        - name: prisma-migrate
+
+          image: "comicrent/comics-service:1.0.0"
+          imagePullPolicy: IfNotPresent
+
+          command:
+            - ./node_modules/.bin/prisma
+            - migrate
+            - deploy
+
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+
+          env:
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: comicrent-postgresql-secret
+                  key: password
+
+            - name: DATABASE_URL
+              value: "postgresql://comicrent_user:$(DB_PASSWORD)@comicrent-postgresql:5432/comics_db?schema=public"
+
+          resources:
+            requests:
+              cpu: 25m
+              memory: 64Mi
+            limits:
+              cpu: 200m
+              memory: 256Mi
 
       containers:
         - name: comics-service
@@ -2447,7 +2518,7 @@ spec:
         helm.sh/chart: rabbitmq-14.6.3
       annotations:
         checksum/config: ac47f041bb210ca9209afa42c26567d328c1e6c1d065070bd59f2313a36bc3a2
-        checksum/secret: e8983846ee78dcb0a021194aef01f3e9995da680d70fb58cf0cc1e80b859044c
+        checksum/secret: 08cc7d9998a9bd27f3ea216332b10f85ed145c88ee21958ede9c91ca14b983a3
     spec:
       
       serviceAccountName: comicrent-rabbitmq
