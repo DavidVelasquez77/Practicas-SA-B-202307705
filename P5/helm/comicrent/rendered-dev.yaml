@@ -261,7 +261,7 @@ metadata:
     helm.sh/chart: rabbitmq-14.6.3
 type: Opaque
 data:
-  rabbitmq-erlang-cookie: "ZVNVY08wZEk3ZElpUURWRURYWjN1TVhNbEpjYkN0S0I="
+  rabbitmq-erlang-cookie: "c2dibzJmZlE5bTVrWVVXMmxyTDZjZTFwTGZ6VnlWekc="
 
 ---
 # Source: comicrent/templates/secrets.yaml
@@ -1341,8 +1341,32 @@ spec:
                   name: comicrent-rabbitmq-secret
                   key: rabbitmq-password
 
+          startupProbe:
+            exec:
+              command:
+                - python
+                - -c
+                - "import os; assert os.getenv('DATABASE_URL'); assert os.getenv('RABBITMQ_HOST')"
+            failureThreshold: 30
+            periodSeconds: 2
+
+          livenessProbe:
+            exec:
+              command:
+                - python
+                - -c
+                - "import os; assert os.getenv('DATABASE_URL'); assert os.getenv('RABBITMQ_HOST')"
+            initialDelaySeconds: 15
+            periodSeconds: 15
+            failureThreshold: 3
+
           resources:
-            {}
+            limits:
+              cpu: 200m
+              memory: 192Mi
+            requests:
+              cpu: 50m
+              memory: 96Mi
 ---
 # Source: comicrent/charts/copies-service/templates/deployment.yaml
 apiVersion: apps/v1
@@ -1804,7 +1828,7 @@ spec:
         helm.sh/chart: rabbitmq-14.6.3
       annotations:
         checksum/config: ac47f041bb210ca9209afa42c26567d328c1e6c1d065070bd59f2313a36bc3a2
-        checksum/secret: 957eed7294496e5656d6cd64cf34510153ec66487238d2c3b787df4a7ff94925
+        checksum/secret: 2e56fbaddbc565b7a509aab2dd0e66445ba914bc0bded276982e22f5e42410c8
     spec:
       
       serviceAccountName: comicrent-rabbitmq
