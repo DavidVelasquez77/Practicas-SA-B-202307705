@@ -24,9 +24,9 @@ spec:
       labels:
         {{- include "copies-consumer.selectorLabels" . | nindent 8 }}
 
-    annotations:
-      checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
-      checksum/secret: {{ printf "%s|%s" .Values.global.secrets.postgresUserPassword .Values.global.secrets.rabbitmqPassword | sha256sum | quote }}
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
+        checksum/secret: {{ printf "%s|%s" .Values.global.secrets.postgresUserPassword .Values.global.secrets.rabbitmqPassword | sha256sum | quote }}
 
     spec:
       serviceAccountName: {{ include "copies-consumer.fullname" . }}
@@ -34,6 +34,9 @@ spec:
 
       securityContext:
         runAsNonRoot: true
+        runAsUser: 100
+        runAsGroup: 101
+        fsGroup: 101
         seccompProfile:
           type: RuntimeDefault
 

@@ -846,7 +846,7 @@ metadata:
     helm.sh/chart: rabbitmq-14.6.3
 type: Opaque
 data:
-  rabbitmq-erlang-cookie: "U0pXeHVFdjJOYXRyaWUxSnZZZ2Q0ekVGS1Q2U1l0blY="
+  rabbitmq-erlang-cookie: "a1ZmVWtuYnNBaWpUQ1F0ZXUyc1lsalJwdmNobzN5a3Y="
 
 ---
 # Source: comicrent/templates/secrets.yaml
@@ -1570,6 +1570,9 @@ spec:
 
       securityContext:
         runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
         seccompProfile:
           type: RuntimeDefault
 
@@ -1669,6 +1672,9 @@ spec:
 
       securityContext:
         runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
         seccompProfile:
           type: RuntimeDefault
 
@@ -1813,6 +1819,9 @@ spec:
 
       securityContext:
         runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
         seccompProfile:
           type: RuntimeDefault
 
@@ -1947,9 +1956,9 @@ spec:
         app.kubernetes.io/name: copies-consumer
         app.kubernetes.io/instance: comicrent
 
-    annotations:
-      checksum/config: 7e5a7f061dbd75b7b7f795ca1932fcf2cf5734b59bc980c3385d4e8ad3ada736
-      checksum/secret: "ad44adf37112217ecaf54ca75da801e0ce00fb0444b97dfbb5b1f288d31f07f6"
+      annotations:
+        checksum/config: 7e5a7f061dbd75b7b7f795ca1932fcf2cf5734b59bc980c3385d4e8ad3ada736
+        checksum/secret: "ad44adf37112217ecaf54ca75da801e0ce00fb0444b97dfbb5b1f288d31f07f6"
 
     spec:
       serviceAccountName: comicrent-copies-consumer
@@ -1957,6 +1966,9 @@ spec:
 
       securityContext:
         runAsNonRoot: true
+        runAsUser: 100
+        runAsGroup: 101
+        fsGroup: 101
         seccompProfile:
           type: RuntimeDefault
 
@@ -2069,6 +2081,9 @@ spec:
 
       securityContext:
         runAsNonRoot: true
+        runAsUser: 100
+        runAsGroup: 101
+        fsGroup: 101
         seccompProfile:
           type: RuntimeDefault
 
@@ -2173,10 +2188,9 @@ spec:
       labels:
         app.kubernetes.io/name: rentals-service
         app.kubernetes.io/instance: comicrent
-
-    annotations:
-      checksum/config: 1dea4d798c40273b0ab76afc2b676fcda138d6d1ebee05b2e14d725a803de00d
-      checksum/secret: "ad44adf37112217ecaf54ca75da801e0ce00fb0444b97dfbb5b1f288d31f07f6"
+      annotations:
+        checksum/config: 1dea4d798c40273b0ab76afc2b676fcda138d6d1ebee05b2e14d725a803de00d
+        checksum/secret: "ad44adf37112217ecaf54ca75da801e0ce00fb0444b97dfbb5b1f288d31f07f6"
 
     spec:
       serviceAccountName: comicrent-rentals-service
@@ -2184,6 +2198,9 @@ spec:
 
       securityContext:
         runAsNonRoot: true
+        runAsUser: 100
+        runAsGroup: 101
+        fsGroup: 101
         seccompProfile:
           type: RuntimeDefault
 
@@ -2518,7 +2535,7 @@ spec:
         helm.sh/chart: rabbitmq-14.6.3
       annotations:
         checksum/config: ac47f041bb210ca9209afa42c26567d328c1e6c1d065070bd59f2313a36bc3a2
-        checksum/secret: 08cc7d9998a9bd27f3ea216332b10f85ed145c88ee21958ede9c91ca14b983a3
+        checksum/secret: c62ad805c3396ce45b2dceb236974444d2074d971ae8dd55a2c99c09cd85599b
     spec:
       
       serviceAccountName: comicrent-rabbitmq
@@ -2546,7 +2563,7 @@ spec:
       enableServiceLinks: true
       initContainers:
         - name: prepare-plugins-dir
-          image: docker.io/bitnami/rabbitmq:3.13.5-debian-12-r1
+          image: docker.io/bitnamilegacy/rabbitmq:3.13.5-debian-12-r1
           imagePullPolicy: "IfNotPresent"
           resources:
             limits:
@@ -2586,7 +2603,7 @@ spec:
               mountPath: /emptydir
       containers:
         - name: rabbitmq
-          image: docker.io/bitnami/rabbitmq:3.13.5-debian-12-r1
+          image: docker.io/bitnamilegacy/rabbitmq:3.13.5-debian-12-r1
           imagePullPolicy: "IfNotPresent"
           securityContext:
             allowPrivilegeEscalation: false

@@ -4,11 +4,13 @@ global:
   environment: base
   namespace: sa-p5
 
+  security:
+    allowInsecureImages: true
+
   secrets:
     postgresPassword: ""
     postgresUserPassword: ""
     rabbitmqPassword: ""
-
 
 # ==================================================
 # PostgreSQL
@@ -62,14 +64,16 @@ postgresql:
 
 rabbitmq:
   namespaceOverride: sa-p5
-
   fullnameOverride: comicrent-rabbitmq
-
   replicaCount: 1
+
+  image:
+    registry: docker.io
+    repository: bitnamilegacy/rabbitmq
+    tag: 3.13.5-debian-12-r1
 
   auth:
     username: comicrent
-
     existingPasswordSecret: comicrent-rabbitmq-secret
     existingSecretPasswordKey: rabbitmq-password
 

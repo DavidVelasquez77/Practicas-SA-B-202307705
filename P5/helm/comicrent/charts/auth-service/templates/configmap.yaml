@@ -5,5 +5,8 @@ metadata:
   namespace: {{ .Values.global.namespace | default "sa-p5" | quote }}
   labels:
     {{- include "auth-service.labels" . | nindent 4 }}
+
 data:
-  PORT: {{ .Values.config.port | default "3001" | quote }}
+  PORT: "3001"
+  JWT_EXPIRES_IN: "60"
+  JWT_REFRESH_TIME_SECONDS: "60"
