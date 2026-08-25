@@ -43,54 +43,7 @@ La arquitectura incluye:
 
 # 2. Arquitectura general
 
-```mermaid
-flowchart TB
-
-    USER["Cliente / Swagger / k6"]
-
-    GW["API Gateway<br/>:3000"]
-
-    AUTH["Auth Service<br/>:3001"]
-    COMICS["Comics Service<br/>:3002"]
-    RENTALS["Rentals Service<br/>:8001"]
-    COPIES["Copies Service<br/>:8002"]
-
-    COPYCON["Copies Consumer"]
-    SUMMARYCON["Summary Consumer"]
-
-    RABBIT[("RabbitMQ")]
-
-    PG[("PostgreSQL<br/>StatefulSet + PVC")]
-
-    CRON1["CronJob<br/>cada 2 minutos"]
-    CRON2["CronJob<br/>cada 10 minutos"]
-
-    USER -->|"kubectl port-forward"| GW
-
-    GW --> AUTH
-    GW --> COMICS
-    GW --> RENTALS
-    GW --> COPIES
-
-    RENTALS --> COMICS
-    RENTALS --> COPIES
-
-    RENTALS -->|"copy.return.requested"| RABBIT
-    RABBIT --> COPYCON
-
-    CRON1 --> PG
-
-    CRON2 --> PG
-    CRON2 -->|"operations.hourly.summary"| RABBIT
-    RABBIT --> SUMMARYCON
-
-    AUTH --> PG
-    COMICS --> PG
-    RENTALS --> PG
-    COPIES --> PG
-    COPYCON --> PG
-    SUMMARYCON --> PG
-```
+![alt text](./Diagramas/AG_P5.png)
 
 El **API Gateway es el único punto de entrada utilizado desde el exterior**.
 
