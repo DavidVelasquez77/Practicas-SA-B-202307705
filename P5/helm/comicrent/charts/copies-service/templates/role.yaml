@@ -1,0 +1,8 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: {{ include "copies-service.fullname" . }}
+  namespace: {{ .Values.global.namespace | default "sa-p5" | quote }}
+  labels:
+    {{- include "copies-service.labels" . | nindent 4 }}
+rules: []

@@ -112,6 +112,76 @@ spec:
       app.kubernetes.io/name: rabbitmq
 
 ---
+# Source: comicrent/charts/api-gateway/templates/serviceaccount.yaml
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: comicrent-api-gateway
+  namespace: "sa-p5"
+  labels:
+    helm.sh/chart: api-gateway-0.1.0
+    app.kubernetes.io/name: api-gateway
+    app.kubernetes.io/instance: comicrent
+    app.kubernetes.io/version: "1.0.0"
+    app.kubernetes.io/managed-by: Helm
+automountServiceAccountToken: false
+---
+# Source: comicrent/charts/auth-service/templates/serviceaccount.yaml
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: comicrent-auth-service
+  namespace: "sa-p5"
+  labels:
+    helm.sh/chart: auth-service-0.1.0
+    app.kubernetes.io/name: auth-service
+    app.kubernetes.io/instance: comicrent
+    app.kubernetes.io/version: "1.0.0"
+    app.kubernetes.io/managed-by: Helm
+automountServiceAccountToken: false
+---
+# Source: comicrent/charts/comics-service/templates/serviceaccount.yaml
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: comicrent-comics-service
+  namespace: "sa-p5"
+  labels:
+    helm.sh/chart: comics-service-0.1.0
+    app.kubernetes.io/name: comics-service
+    app.kubernetes.io/instance: comicrent
+    app.kubernetes.io/version: "1.0.0"
+    app.kubernetes.io/managed-by: Helm
+automountServiceAccountToken: false
+---
+# Source: comicrent/charts/copies-consumer/templates/serviceaccount.yaml
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: comicrent-copies-consumer
+  namespace: "sa-p5"
+  labels:
+    helm.sh/chart: copies-consumer-0.1.0
+    app.kubernetes.io/name: copies-consumer
+    app.kubernetes.io/instance: comicrent
+    app.kubernetes.io/version: "1.0.0"
+    app.kubernetes.io/managed-by: Helm
+automountServiceAccountToken: false
+---
+# Source: comicrent/charts/copies-service/templates/serviceaccount.yaml
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: comicrent-copies-service
+  namespace: "sa-p5"
+  labels:
+    helm.sh/chart: copies-service-0.1.0
+    app.kubernetes.io/name: copies-service
+    app.kubernetes.io/instance: comicrent
+    app.kubernetes.io/version: "1.0.0"
+    app.kubernetes.io/managed-by: Helm
+automountServiceAccountToken: false
+---
 # Source: comicrent/charts/postgresql/templates/serviceaccount.yaml
 apiVersion: v1
 kind: ServiceAccount
@@ -145,6 +215,20 @@ secrets:
 
 
 ---
+# Source: comicrent/charts/rentals-service/templates/serviceaccount.yaml
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: comicrent-rentals-service
+  namespace: "sa-p5"
+  labels:
+    helm.sh/chart: rentals-service-0.1.0
+    app.kubernetes.io/name: rentals-service
+    app.kubernetes.io/instance: comicrent
+    app.kubernetes.io/version: "1.0.0"
+    app.kubernetes.io/managed-by: Helm
+automountServiceAccountToken: false
+---
 # Source: comicrent/charts/rabbitmq/templates/config-secret.yaml
 apiVersion: v1
 kind: Secret
@@ -177,7 +261,7 @@ metadata:
     helm.sh/chart: rabbitmq-14.6.3
 type: Opaque
 data:
-  rabbitmq-erlang-cookie: "RFJjaXl0aWY5aDlJQ1dIb0N4QUI1YmV1UlZYc2RFR1Y="
+  rabbitmq-erlang-cookie: "V2Q5VEF5aWJ0YWxCVGVqVHR3QVUxakY3dkdWUndMTnM="
 
 ---
 # Source: comicrent/templates/secrets.yaml
@@ -355,6 +439,76 @@ data:
 
   RABBITMQ_RETURN_ROUTING_KEY: "copy.return.requested"
 ---
+# Source: comicrent/charts/api-gateway/templates/role.yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: comicrent-api-gateway
+  namespace: "sa-p5"
+  labels:
+    helm.sh/chart: api-gateway-0.1.0
+    app.kubernetes.io/name: api-gateway
+    app.kubernetes.io/instance: comicrent
+    app.kubernetes.io/version: "1.0.0"
+    app.kubernetes.io/managed-by: Helm
+rules: []
+---
+# Source: comicrent/charts/auth-service/templates/role.yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: comicrent-auth-service
+  namespace: "sa-p5"
+  labels:
+    helm.sh/chart: auth-service-0.1.0
+    app.kubernetes.io/name: auth-service
+    app.kubernetes.io/instance: comicrent
+    app.kubernetes.io/version: "1.0.0"
+    app.kubernetes.io/managed-by: Helm
+rules: []
+---
+# Source: comicrent/charts/comics-service/templates/role.yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: comicrent-comics-service
+  namespace: "sa-p5"
+  labels:
+    helm.sh/chart: comics-service-0.1.0
+    app.kubernetes.io/name: comics-service
+    app.kubernetes.io/instance: comicrent
+    app.kubernetes.io/version: "1.0.0"
+    app.kubernetes.io/managed-by: Helm
+rules: []
+---
+# Source: comicrent/charts/copies-consumer/templates/role.yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: comicrent-copies-consumer
+  namespace: "sa-p5"
+  labels:
+    helm.sh/chart: copies-consumer-0.1.0
+    app.kubernetes.io/name: copies-consumer
+    app.kubernetes.io/instance: comicrent
+    app.kubernetes.io/version: "1.0.0"
+    app.kubernetes.io/managed-by: Helm
+rules: []
+---
+# Source: comicrent/charts/copies-service/templates/role.yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: comicrent-copies-service
+  namespace: "sa-p5"
+  labels:
+    helm.sh/chart: copies-service-0.1.0
+    app.kubernetes.io/name: copies-service
+    app.kubernetes.io/instance: comicrent
+    app.kubernetes.io/version: "1.0.0"
+    app.kubernetes.io/managed-by: Helm
+rules: []
+---
 # Source: comicrent/charts/rabbitmq/templates/role.yaml
 kind: Role
 apiVersion: rbac.authorization.k8s.io/v1
@@ -376,6 +530,134 @@ rules:
     verbs: ["create"]
 
 ---
+# Source: comicrent/charts/rentals-service/templates/role.yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: comicrent-rentals-service
+  namespace: "sa-p5"
+  labels:
+    helm.sh/chart: rentals-service-0.1.0
+    app.kubernetes.io/name: rentals-service
+    app.kubernetes.io/instance: comicrent
+    app.kubernetes.io/version: "1.0.0"
+    app.kubernetes.io/managed-by: Helm
+rules: []
+---
+# Source: comicrent/charts/api-gateway/templates/rolebinding.yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: comicrent-api-gateway
+  namespace: "sa-p5"
+  labels:
+    helm.sh/chart: api-gateway-0.1.0
+    app.kubernetes.io/name: api-gateway
+    app.kubernetes.io/instance: comicrent
+    app.kubernetes.io/version: "1.0.0"
+    app.kubernetes.io/managed-by: Helm
+subjects:
+  - kind: ServiceAccount
+    name: comicrent-api-gateway
+    namespace: "sa-p5"
+
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: comicrent-api-gateway
+---
+# Source: comicrent/charts/auth-service/templates/rolebinding.yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: comicrent-auth-service
+  namespace: "sa-p5"
+  labels:
+    helm.sh/chart: auth-service-0.1.0
+    app.kubernetes.io/name: auth-service
+    app.kubernetes.io/instance: comicrent
+    app.kubernetes.io/version: "1.0.0"
+    app.kubernetes.io/managed-by: Helm
+
+subjects:
+  - kind: ServiceAccount
+    name: comicrent-auth-service
+    namespace: "sa-p5"
+
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: comicrent-auth-service
+---
+# Source: comicrent/charts/comics-service/templates/rolebinding.yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: comicrent-comics-service
+  namespace: "sa-p5"
+  labels:
+    helm.sh/chart: comics-service-0.1.0
+    app.kubernetes.io/name: comics-service
+    app.kubernetes.io/instance: comicrent
+    app.kubernetes.io/version: "1.0.0"
+    app.kubernetes.io/managed-by: Helm
+
+subjects:
+  - kind: ServiceAccount
+    name: comicrent-comics-service
+    namespace: "sa-p5"
+
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: comicrent-comics-service
+---
+# Source: comicrent/charts/copies-consumer/templates/rolebinding.yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: comicrent-copies-consumer
+  namespace: "sa-p5"
+  labels:
+    helm.sh/chart: copies-consumer-0.1.0
+    app.kubernetes.io/name: copies-consumer
+    app.kubernetes.io/instance: comicrent
+    app.kubernetes.io/version: "1.0.0"
+    app.kubernetes.io/managed-by: Helm
+
+subjects:
+  - kind: ServiceAccount
+    name: comicrent-copies-consumer
+    namespace: "sa-p5"
+
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: comicrent-copies-consumer
+---
+# Source: comicrent/charts/copies-service/templates/rolebinding.yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: comicrent-copies-service
+  namespace: "sa-p5"
+  labels:
+    helm.sh/chart: copies-service-0.1.0
+    app.kubernetes.io/name: copies-service
+    app.kubernetes.io/instance: comicrent
+    app.kubernetes.io/version: "1.0.0"
+    app.kubernetes.io/managed-by: Helm
+
+subjects:
+  - kind: ServiceAccount
+    name: comicrent-copies-service
+    namespace: "sa-p5"
+
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: comicrent-copies-service
+---
 # Source: comicrent/charts/rabbitmq/templates/rolebinding.yaml
 kind: RoleBinding
 apiVersion: rbac.authorization.k8s.io/v1
@@ -396,6 +678,29 @@ roleRef:
   kind: Role
   name: comicrent-rabbitmq-endpoint-reader
 
+---
+# Source: comicrent/charts/rentals-service/templates/rolebinding.yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: comicrent-rentals-service
+  namespace: "sa-p5"
+  labels:
+    helm.sh/chart: rentals-service-0.1.0
+    app.kubernetes.io/name: rentals-service
+    app.kubernetes.io/instance: comicrent
+    app.kubernetes.io/version: "1.0.0"
+    app.kubernetes.io/managed-by: Helm
+
+subjects:
+  - kind: ServiceAccount
+    name: comicrent-rentals-service
+    namespace: "sa-p5"
+
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: comicrent-rentals-service
 ---
 # Source: comicrent/charts/api-gateway/templates/service.yaml
 apiVersion: v1
@@ -651,8 +956,10 @@ metadata:
     app.kubernetes.io/instance: comicrent
     app.kubernetes.io/version: "1.0.0"
     app.kubernetes.io/managed-by: Helm
+
 spec:
   replicas: 1
+
   strategy:
     type: RollingUpdate
     rollingUpdate:
@@ -674,12 +981,26 @@ spec:
         checksum/config: eb41f8d92858e01d417176d5a750b837e265ee3a85637dbe0a81bb2d4e48666e
 
     spec:
+      serviceAccountName: comicrent-api-gateway
+      automountServiceAccountToken: false
+
+      securityContext:
+        runAsNonRoot: true
+        seccompProfile:
+          type: RuntimeDefault
+
       containers:
         - name: api-gateway
 
           image: "comicrent/api-gateway:1.0.0"
-
           imagePullPolicy: IfNotPresent
+
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - ALL
 
           ports:
             - name: http
@@ -705,6 +1026,7 @@ metadata:
     app.kubernetes.io/instance: comicrent
     app.kubernetes.io/version: "1.0.0"
     app.kubernetes.io/managed-by: Helm
+
 spec:
   replicas: 1
 
@@ -724,15 +1046,31 @@ spec:
       labels:
         app.kubernetes.io/name: auth-service
         app.kubernetes.io/instance: comicrent
+
       annotations:
         checksum/config: 35bc0d26116136c06816657dfa84747976c3d0c246ccf00f8d13e0fa28ff99c2
 
     spec:
+      serviceAccountName: comicrent-auth-service
+      automountServiceAccountToken: false
+
+      securityContext:
+        runAsNonRoot: true
+        seccompProfile:
+          type: RuntimeDefault
+
       containers:
         - name: auth-service
 
           image: "comicrent/auth-service:1.0.0"
           imagePullPolicy: IfNotPresent
+
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - ALL
 
           ports:
             - name: http
@@ -768,6 +1106,7 @@ metadata:
     app.kubernetes.io/instance: comicrent
     app.kubernetes.io/version: "1.0.0"
     app.kubernetes.io/managed-by: Helm
+
 spec:
   replicas: 1
 
@@ -787,15 +1126,31 @@ spec:
       labels:
         app.kubernetes.io/name: comics-service
         app.kubernetes.io/instance: comicrent
+
       annotations:
         checksum/config: 6378da4046deaf644ad31e5c7fb0297793b13fae37784265173a01075e79a1b5
 
     spec:
+      serviceAccountName: comicrent-comics-service
+      automountServiceAccountToken: false
+
+      securityContext:
+        runAsNonRoot: true
+        seccompProfile:
+          type: RuntimeDefault
+
       containers:
         - name: comics-service
 
           image: "comicrent/comics-service:1.0.0"
           imagePullPolicy: IfNotPresent
+
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - ALL
 
           ports:
             - name: http
@@ -831,6 +1186,7 @@ metadata:
     app.kubernetes.io/instance: comicrent
     app.kubernetes.io/version: "1.0.0"
     app.kubernetes.io/managed-by: Helm
+
 spec:
   replicas: 1
 
@@ -850,15 +1206,31 @@ spec:
       labels:
         app.kubernetes.io/name: copies-consumer
         app.kubernetes.io/instance: comicrent
+
       annotations:
         checksum/config: 7e5a7f061dbd75b7b7f795ca1932fcf2cf5734b59bc980c3385d4e8ad3ada736
 
     spec:
+      serviceAccountName: comicrent-copies-consumer
+      automountServiceAccountToken: false
+
+      securityContext:
+        runAsNonRoot: true
+        seccompProfile:
+          type: RuntimeDefault
+
       containers:
         - name: copies-consumer
 
           image: "comicrent/copies-service:1.0.0"
           imagePullPolicy: IfNotPresent
+
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - ALL
 
           command:
             - python
@@ -901,6 +1273,7 @@ metadata:
     app.kubernetes.io/instance: comicrent
     app.kubernetes.io/version: "1.0.0"
     app.kubernetes.io/managed-by: Helm
+
 spec:
   replicas: 1
 
@@ -920,15 +1293,31 @@ spec:
       labels:
         app.kubernetes.io/name: copies-service
         app.kubernetes.io/instance: comicrent
+
       annotations:
         checksum/config: 60acab16bb94c8e5b0f6807ae9015c92dc896dd1dad811d2e639d577c24e5500
 
     spec:
+      serviceAccountName: comicrent-copies-service
+      automountServiceAccountToken: false
+
+      securityContext:
+        runAsNonRoot: true
+        seccompProfile:
+          type: RuntimeDefault
+
       containers:
         - name: copies-service
 
           image: "comicrent/copies-service:1.0.0"
           imagePullPolicy: IfNotPresent
+
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - ALL
 
           ports:
             - name: http
@@ -970,6 +1359,7 @@ metadata:
     app.kubernetes.io/instance: comicrent
     app.kubernetes.io/version: "1.0.0"
     app.kubernetes.io/managed-by: Helm
+
 spec:
   replicas: 1
 
@@ -989,15 +1379,31 @@ spec:
       labels:
         app.kubernetes.io/name: rentals-service
         app.kubernetes.io/instance: comicrent
+
       annotations:
         checksum/config: 1dea4d798c40273b0ab76afc2b676fcda138d6d1ebee05b2e14d725a803de00d
 
     spec:
+      serviceAccountName: comicrent-rentals-service
+      automountServiceAccountToken: false
+
+      securityContext:
+        runAsNonRoot: true
+        seccompProfile:
+          type: RuntimeDefault
+
       containers:
         - name: rentals-service
 
           image: "comicrent/rentals-service:1.0.0"
           imagePullPolicy: IfNotPresent
+
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - ALL
 
           ports:
             - name: http
@@ -1259,7 +1665,7 @@ spec:
         helm.sh/chart: rabbitmq-14.6.3
       annotations:
         checksum/config: ac47f041bb210ca9209afa42c26567d328c1e6c1d065070bd59f2313a36bc3a2
-        checksum/secret: c72e3b307648b5eb9080f04c16c83c00622f7ce21a13bceb2e258d827bfd46f0
+        checksum/secret: 1ee74d2d56a0b16bb84bf1202528efee72279f0b3af94a0e6db40a1013690464
     spec:
       
       serviceAccountName: comicrent-rabbitmq

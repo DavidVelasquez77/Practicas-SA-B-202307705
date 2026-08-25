@@ -5,6 +5,7 @@ metadata:
   namespace: {{ .Values.global.namespace | default "sa-p5" | quote }}
   labels:
     {{- include "copies-service.labels" . | nindent 4 }}
+
 spec:
   replicas: {{ .Values.replicaCount }}
 
@@ -22,15 +23,31 @@ spec:
     metadata:
       labels:
         {{- include "copies-service.selectorLabels" . | nindent 8 }}
+
       annotations:
         checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
 
     spec:
+      serviceAccountName: {{ include "copies-service.fullname" . }}
+      automountServiceAccountToken: false
+
+      securityContext:
+        runAsNonRoot: true
+        seccompProfile:
+          type: RuntimeDefault
+
       containers:
         - name: copies-service
 
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
+
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - ALL
 
           ports:
             - name: http

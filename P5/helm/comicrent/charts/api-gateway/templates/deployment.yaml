@@ -5,8 +5,10 @@ metadata:
   namespace: {{ .Values.global.namespace | default "sa-p5" | quote }}
   labels:
     {{- include "api-gateway.labels" . | nindent 4 }}
+
 spec:
   replicas: {{ .Values.replicaCount }}
+
   strategy:
     type: RollingUpdate
     rollingUpdate:
@@ -26,12 +28,26 @@ spec:
         checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
 
     spec:
+      serviceAccountName: {{ include "api-gateway.fullname" . }}
+      automountServiceAccountToken: false
+
+      securityContext:
+        runAsNonRoot: true
+        seccompProfile:
+          type: RuntimeDefault
+
       containers:
         - name: api-gateway
 
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
-
           imagePullPolicy: {{ .Values.image.pullPolicy }}
+
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - ALL
 
           ports:
             - name: http
