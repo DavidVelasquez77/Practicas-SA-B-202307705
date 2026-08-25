@@ -70,6 +70,27 @@ spec:
         - port: 15672
 
 ---
+# Source: comicrent/charts/api-gateway/templates/pdb.yaml
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: comicrent-api-gateway
+  namespace: "sa-p5"
+  labels:
+    helm.sh/chart: api-gateway-0.1.0
+    app.kubernetes.io/name: api-gateway
+    app.kubernetes.io/instance: comicrent
+    app.kubernetes.io/version: "1.0.0"
+    app.kubernetes.io/managed-by: Helm
+
+spec:
+  minAvailable: 1
+
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: api-gateway
+      app.kubernetes.io/instance: comicrent
+---
 # Source: comicrent/charts/postgresql/templates/primary/pdb.yaml
 apiVersion: policy/v1
 kind: PodDisruptionBudget
@@ -261,7 +282,7 @@ metadata:
     helm.sh/chart: rabbitmq-14.6.3
 type: Opaque
 data:
-  rabbitmq-erlang-cookie: "c2dibzJmZlE5bTVrWVVXMmxyTDZjZTFwTGZ6VnlWekc="
+  rabbitmq-erlang-cookie: "T05lc2hCcm5RZmc0QklWVVk4Q1UwVHBkV2xBUFh5U0I="
 
 ---
 # Source: comicrent/templates/secrets.yaml
@@ -958,7 +979,6 @@ metadata:
     app.kubernetes.io/managed-by: Helm
 
 spec:
-  replicas: 1
 
   strategy:
     type: RollingUpdate
@@ -1596,6 +1616,36 @@ spec:
               cpu: 100m
               memory: 128Mi
 ---
+# Source: comicrent/charts/api-gateway/templates/hpa.yaml
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: comicrent-api-gateway
+  namespace: "sa-p5"
+  labels:
+    helm.sh/chart: api-gateway-0.1.0
+    app.kubernetes.io/name: api-gateway
+    app.kubernetes.io/instance: comicrent
+    app.kubernetes.io/version: "1.0.0"
+    app.kubernetes.io/managed-by: Helm
+
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: comicrent-api-gateway
+
+  minReplicas: 1
+  maxReplicas: 2
+
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 40
+---
 # Source: comicrent/charts/postgresql/templates/primary/statefulset.yaml
 apiVersion: apps/v1
 kind: StatefulSet
@@ -1828,7 +1878,7 @@ spec:
         helm.sh/chart: rabbitmq-14.6.3
       annotations:
         checksum/config: ac47f041bb210ca9209afa42c26567d328c1e6c1d065070bd59f2313a36bc3a2
-        checksum/secret: 2e56fbaddbc565b7a509aab2dd0e66445ba914bc0bded276982e22f5e42410c8
+        checksum/secret: cb2e33eef62259b59d4df718276afad0c1c95fe3b11c94cb9f30ce79f73b1837
     spec:
       
       serviceAccountName: comicrent-rabbitmq
