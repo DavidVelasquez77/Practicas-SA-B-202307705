@@ -400,6 +400,134 @@ spec:
           port: 5672
 
 ---
+
+# ============================================================
+# OPERATIONS CRON TICK
+#
+# Salida:
+# Cron Tick -> PostgreSQL
+# ============================================================
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: comicrent-cron-tick
+  namespace: {{ .Values.namespace | default "sa-p5" | quote }}
+  labels:
+    app.kubernetes.io/part-of: "comicrent"
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: cron-tick
+
+  policyTypes:
+    - Ingress
+    - Egress
+
+  ingress: []
+
+  egress:
+    - to:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: postgresql
+              app.kubernetes.io/instance: comicrent
+              app.kubernetes.io/component: primary
+      ports:
+        - protocol: TCP
+          port: 5432
+
+---
+# ============================================================
+# OPERATIONS CRON SUMMARY
+#
+# Salida:
+# Cron Summary -> PostgreSQL
+# Cron Summary -> RabbitMQ
+# ============================================================
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: comicrent-cron-summary
+  namespace: {{ .Values.namespace | default "sa-p5" | quote }}
+  labels:
+    app.kubernetes.io/part-of: "comicrent"
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: cron-summary
+
+  policyTypes:
+    - Ingress
+    - Egress
+
+  ingress: []
+
+  egress:
+    - to:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: postgresql
+              app.kubernetes.io/instance: comicrent
+              app.kubernetes.io/component: primary
+      ports:
+        - protocol: TCP
+          port: 5432
+
+    - to:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: rabbitmq
+              app.kubernetes.io/instance: comicrent
+      ports:
+        - protocol: TCP
+          port: 5672
+
+---
+# ============================================================
+# SUMMARY CONSUMER
+#
+# Salida:
+# Summary Consumer -> PostgreSQL
+# Summary Consumer -> RabbitMQ
+# ============================================================
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: comicrent-summary-consumer
+  namespace: {{ .Values.namespace | default "sa-p5" | quote }}
+  labels:
+    app.kubernetes.io/part-of: "comicrent"
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: summary-consumer
+
+  policyTypes:
+    - Ingress
+    - Egress
+
+  ingress: []
+
+  egress:
+    - to:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: postgresql
+              app.kubernetes.io/instance: comicrent
+              app.kubernetes.io/component: primary
+      ports:
+        - protocol: TCP
+          port: 5432
+
+    - to:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: rabbitmq
+              app.kubernetes.io/instance: comicrent
+      ports:
+        - protocol: TCP
+          port: 5672
+
 # ============================================================
 # POSTGRESQL
 #
@@ -455,6 +583,18 @@ spec:
               app.kubernetes.io/name: copies-consumer
               app.kubernetes.io/instance: comicrent
 
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: cron-tick
+
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: cron-summary
+
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: summary-consumer
+
       ports:
         - protocol: TCP
           port: 5432
@@ -504,6 +644,14 @@ spec:
             matchLabels:
               app.kubernetes.io/name: copies-consumer
               app.kubernetes.io/instance: comicrent
+
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: cron-summary
+
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: summary-consumer
 
       ports:
         - protocol: TCP
