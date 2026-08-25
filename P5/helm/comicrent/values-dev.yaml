@@ -5,3 +5,6 @@ global:
     postgresPassword: "dev-postgres-change-me"
     postgresUserPassword: "dev-comicrent-change-me"
     rabbitmqPassword: "dev-rabbitmq-change-me"
+
+    jwtSecret: "comicrent-dev-jwt-secret-change-me"
+    encryptionKey: "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"

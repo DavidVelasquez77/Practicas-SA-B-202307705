@@ -26,7 +26,7 @@ spec:
 
       annotations:
         checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
-        checksum/secret: {{ .Values.global.secrets.postgresUserPassword | sha256sum | quote }}
+        checksum/secret: {{ printf "%s|%s|%s" .Values.global.secrets.postgresUserPassword .Values.global.secrets.jwtSecret .Values.global.secrets.encryptionKey | sha256sum | quote }}
 
     spec:
       serviceAccountName: {{ include "auth-service.fullname" . }}
@@ -106,6 +106,18 @@ spec:
 
             - name: DATABASE_URL
               value: "postgresql://comicrent_user:$(DB_PASSWORD)@comicrent-postgresql:5432/auth_db?schema=public"
+
+            - name: JWT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: comicrent-auth-secret
+                  key: JWT_SECRET
+
+            - name: ENCRYPTION_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: comicrent-auth-secret
+                  key: ENCRYPTION_KEY
 
           startupProbe:
             httpGet:

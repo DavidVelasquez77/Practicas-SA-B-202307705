@@ -11,6 +11,8 @@ global:
     postgresPassword: ""
     postgresUserPassword: ""
     rabbitmqPassword: ""
+    jwtSecret: ""
+    encryptionKey: ""
 
 # ==================================================
 # PostgreSQL

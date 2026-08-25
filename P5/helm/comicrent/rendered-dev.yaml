@@ -846,7 +846,7 @@ metadata:
     helm.sh/chart: rabbitmq-14.6.3
 type: Opaque
 data:
-  rabbitmq-erlang-cookie: "a1ZmVWtuYnNBaWpUQ1F0ZXUyc1lsalJwdmNobzN5a3Y="
+  rabbitmq-erlang-cookie: "ZVpMT1E5aHBFSDNOZ2tqMXVvWUFRYTNyNkdPZk5RY3Q="
 
 ---
 # Source: comicrent/templates/secrets.yaml
@@ -875,6 +875,21 @@ metadata:
 type: Opaque
 stringData:
   rabbitmq-password: "dev-rabbitmq-change-me"
+
+
+---
+# Source: comicrent/templates/secrets.yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: comicrent-auth-secret
+  namespace: "sa-p5"
+  labels:
+    app.kubernetes.io/part-of: "comicrent"
+type: Opaque
+stringData:
+  JWT_SECRET: "comicrent-dev-jwt-secret-change-me"
+  ENCRYPTION_KEY: "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
 ---
 # Source: comicrent/charts/api-gateway/templates/configmap.yaml
 apiVersion: v1
@@ -911,8 +926,11 @@ metadata:
     app.kubernetes.io/instance: comicrent
     app.kubernetes.io/version: "1.0.0"
     app.kubernetes.io/managed-by: Helm
+
 data:
   PORT: "3001"
+  JWT_EXPIRES_IN: "60"
+  JWT_REFRESH_TIME_SECONDS: "60"
 ---
 # Source: comicrent/charts/comics-service/templates/configmap.yaml
 apiVersion: v1
@@ -1663,8 +1681,8 @@ spec:
         app.kubernetes.io/instance: comicrent
 
       annotations:
-        checksum/config: 35bc0d26116136c06816657dfa84747976c3d0c246ccf00f8d13e0fa28ff99c2
-        checksum/secret: "9cc1ec1fefcf02364854e853e3d314c139b70d384485ca5074977d3706e563fd"
+        checksum/config: f2ce348ac4053f039e07e2ae5d0b8f8525e39b100313aaca0dfcf56acd3f6688
+        checksum/secret: "4bb1539530b5efd177edfe88b981ad02f8142b48dbd97be893a8b637d784d41a"
 
     spec:
       serviceAccountName: comicrent-auth-service
@@ -1744,6 +1762,18 @@ spec:
 
             - name: DATABASE_URL
               value: "postgresql://comicrent_user:$(DB_PASSWORD)@comicrent-postgresql:5432/auth_db?schema=public"
+
+            - name: JWT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: comicrent-auth-secret
+                  key: JWT_SECRET
+
+            - name: ENCRYPTION_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: comicrent-auth-secret
+                  key: ENCRYPTION_KEY
 
           startupProbe:
             httpGet:
@@ -2535,7 +2565,7 @@ spec:
         helm.sh/chart: rabbitmq-14.6.3
       annotations:
         checksum/config: ac47f041bb210ca9209afa42c26567d328c1e6c1d065070bd59f2313a36bc3a2
-        checksum/secret: c62ad805c3396ce45b2dceb236974444d2074d971ae8dd55a2c99c09cd85599b
+        checksum/secret: eefa59710dac93e00da7b3e50db6aa1342905f2b95d93cfbcabce79b0bceb0c4
     spec:
       
       serviceAccountName: comicrent-rabbitmq
