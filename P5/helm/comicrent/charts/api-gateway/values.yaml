@@ -1,5 +1,7 @@
 replicaCount: 1
 
+deploymentRevision: "v2"
+
 image:
   repository: comicrent/api-gateway
   tag: "1.0.0"

@@ -28,6 +28,7 @@ spec:
 
       annotations:
         checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
+        comicrent/revision: {{ .Values.deploymentRevision | quote }}
 
     spec:
       serviceAccountName: {{ include "api-gateway.fullname" . }}

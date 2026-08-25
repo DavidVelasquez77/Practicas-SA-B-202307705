@@ -52,6 +52,7 @@ spec:
 # API GATEWAY
 #
 # Permitido:
+# upgrade-test -> Gateway
 # Gateway -> Auth
 # Gateway -> Comics
 # Gateway -> Rentals
@@ -65,6 +66,7 @@ metadata:
   namespace: {{ .Values.namespace | default "sa-p5" | quote }}
   labels:
     app.kubernetes.io/part-of: "comicrent"
+
 spec:
   podSelector:
     matchLabels:
@@ -72,7 +74,17 @@ spec:
       app.kubernetes.io/instance: comicrent
 
   policyTypes:
+    - Ingress
     - Egress
+
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              comicrent.io/upgrade-test: "true"
+      ports:
+        - protocol: TCP
+          port: 3000
 
   egress:
     - to:
@@ -110,7 +122,6 @@ spec:
       ports:
         - protocol: TCP
           port: 8002
-
 ---
 # ============================================================
 # AUTH
