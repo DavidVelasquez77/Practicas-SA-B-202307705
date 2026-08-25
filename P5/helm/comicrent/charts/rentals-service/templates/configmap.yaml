@@ -23,3 +23,5 @@ data:
   RABBITMQ_EXCHANGE: "comicrent.events"
 
   RABBITMQ_RETURN_ROUTING_KEY: "copy.return.requested"
+
+  LOG_LEVEL: {{ .Values.config.logLevel | default "info" | quote }}

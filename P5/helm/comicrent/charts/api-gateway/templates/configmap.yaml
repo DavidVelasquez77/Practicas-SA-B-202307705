@@ -11,3 +11,4 @@ data:
   COMICS_SERVICE_URL: "http://comicrent-comics-service:3002/graphql"
   RENTALS_SERVICE_URL: "http://comicrent-rentals-service:8001/graphql"
   COPIES_SERVICE_URL: "http://comicrent-copies-service:8002"
+  LOG_LEVEL: {{ .Values.config.logLevel | default "info" | quote }}

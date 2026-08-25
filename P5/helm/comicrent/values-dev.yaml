@@ -5,6 +5,113 @@ global:
     postgresPassword: "dev-postgres-change-me"
     postgresUserPassword: "dev-comicrent-change-me"
     rabbitmqPassword: "dev-rabbitmq-change-me"
-
     jwtSecret: "comicrent-dev-jwt-secret-change-me"
     encryptionKey: "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
+
+api-gateway:
+  replicaCount: 1
+
+  image:
+    tag: "1.0.0"
+
+  config:
+    logLevel: "debug"
+
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 300m
+      memory: 256Mi
+
+  autoscaling:
+    enabled: true
+    minReplicas: 1
+    maxReplicas: 2
+    targetCPUUtilizationPercentage: 40
+
+auth-service:
+  replicaCount: 1
+
+  image:
+    tag: "1.0.0"
+
+  config:
+    logLevel: "debug"
+
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 300m
+      memory: 256Mi
+
+comics-service:
+  replicaCount: 1
+
+  image:
+    tag: "1.0.0"
+
+  config:
+    logLevel: "debug"
+
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 300m
+      memory: 256Mi
+
+rentals-service:
+  replicaCount: 1
+
+  image:
+    tag: "1.0.0"
+
+  config:
+    logLevel: "debug"
+
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 300m
+      memory: 256Mi
+
+copies-service:
+  replicaCount: 1
+
+  image:
+    tag: "1.0.0"
+
+  config:
+    logLevel: "debug"
+
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 300m
+      memory: 256Mi
+
+copies-consumer:
+  replicaCount: 1
+
+  image:
+    tag: "1.0.0"
+
+  config:
+    logLevel: "debug"
+
+  resources:
+    requests:
+      cpu: 50m
+      memory: 96Mi
+    limits:
+      cpu: 200m
+      memory: 192Mi

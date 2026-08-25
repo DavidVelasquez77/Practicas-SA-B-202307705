@@ -1,6 +1,7 @@
 replicaCount: 1
 
-deploymentRevision: "v2"
+deploymentRevision: "v3"
+
 
 image:
   repository: comicrent/api-gateway
@@ -13,6 +14,7 @@ service:
 
 config:
   port: "3000"
+  logLevel: "info"
 
 resources:
   requests:

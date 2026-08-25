@@ -124,6 +124,43 @@ spec:
           port: 8002
 ---
 # ============================================================
+# UPGRADE TEST
+#
+# Permitido:
+# upgrade-test -> API Gateway
+#
+# Uso exclusivo para validar RollingUpdate sin downtime.
+# ============================================================
+
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: comicrent-upgrade-test
+  namespace: {{ .Values.namespace | default "sa-p5" | quote }}
+  labels:
+    app.kubernetes.io/part-of: "comicrent"
+
+spec:
+  podSelector:
+    matchLabels:
+      comicrent.io/upgrade-test: "true"
+
+  policyTypes:
+    - Egress
+
+  egress:
+    - to:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: api-gateway
+              app.kubernetes.io/instance: comicrent
+      ports:
+        - protocol: TCP
+          port: 3000
+
+---
+
+# ============================================================
 # AUTH
 #
 # Entrada:

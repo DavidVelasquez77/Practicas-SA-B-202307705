@@ -7,3 +7,4 @@ metadata:
     {{- include "comics-service.labels" . | nindent 4 }}
 data:
   PORT: {{ .Values.config.port | default "3002" | quote }}
+  LOG_LEVEL: {{ .Values.config.logLevel | default "info" | quote }}

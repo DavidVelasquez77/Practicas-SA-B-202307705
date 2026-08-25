@@ -11,6 +11,7 @@ service:
 
 config:
   port: "3001"
+  logLevel: "info"
 
 resources:
   requests:

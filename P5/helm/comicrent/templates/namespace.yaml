@@ -5,4 +5,4 @@ metadata:
   labels:
     app.kubernetes.io/managed-by: {{ .Release.Service | quote }}
     app.kubernetes.io/part-of: "comicrent"
-    
+    {{- include "comicrent.extraLabels" . | nindent 4 }}

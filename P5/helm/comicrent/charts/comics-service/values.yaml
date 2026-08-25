@@ -11,7 +11,7 @@ service:
 
 config:
   port: "3002"
-
+  logLevel: "info"
 resources:
   requests:
     cpu: 100m

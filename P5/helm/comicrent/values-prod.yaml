@@ -7,3 +7,111 @@ global:
     rabbitmqPassword: ""
     jwtSecret: ""
     encryptionKey: ""
+
+api-gateway:
+  replicaCount: 2
+
+  image:
+    tag: "1.0.0"
+
+  config:
+    logLevel: "warn"
+
+  resources:
+    requests:
+      cpu: 200m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+
+  autoscaling:
+    enabled: true
+    minReplicas: 2
+    maxReplicas: 4
+    targetCPUUtilizationPercentage: 60
+
+auth-service:
+  replicaCount: 2
+
+  image:
+    tag: "1.0.0"
+
+  config:
+    logLevel: "warn"
+
+  resources:
+    requests:
+      cpu: 200m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+
+comics-service:
+  replicaCount: 2
+
+  image:
+    tag: "1.0.0"
+
+  config:
+    logLevel: "warn"
+
+  resources:
+    requests:
+      cpu: 200m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+
+rentals-service:
+  replicaCount: 2
+
+  image:
+    tag: "1.0.0"
+
+  config:
+    logLevel: "warn"
+
+  resources:
+    requests:
+      cpu: 200m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+
+copies-service:
+  replicaCount: 2
+
+  image:
+    tag: "1.0.0"
+
+  config:
+    logLevel: "warn"
+
+  resources:
+    requests:
+      cpu: 200m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+
+copies-consumer:
+  replicaCount: 2
+
+  image:
+    tag: "1.0.0"
+
+  config:
+    logLevel: "warn"
+
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 300m
+      memory: 256Mi

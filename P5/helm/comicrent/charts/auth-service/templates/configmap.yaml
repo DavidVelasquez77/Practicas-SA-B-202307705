@@ -10,3 +10,4 @@ data:
   PORT: "3001"
   JWT_EXPIRES_IN: "60"
   JWT_REFRESH_TIME_SECONDS: "60"
+  LOG_LEVEL: {{ .Values.config.logLevel | default "info" | quote }}

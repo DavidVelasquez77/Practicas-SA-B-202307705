@@ -88,3 +88,8 @@ rabbitmq:
 
   networkPolicy:
     enabled: false
+
+extraLabels:
+  project: "comicrent"
+  practice: "p5"
+  managedByCourse: "software-avanzado"
