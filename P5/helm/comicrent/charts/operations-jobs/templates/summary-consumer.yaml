@@ -20,6 +20,9 @@ spec:
       serviceAccountName: comicrent-operations
       automountServiceAccountToken: false
 
+      serviceAccountName: comicrent-summary-consumer
+      automountServiceAccountToken: false
+
       securityContext:
         runAsNonRoot: true
         runAsUser: 100
@@ -82,3 +85,32 @@ spec:
 
           resources:
 {{ toYaml .Values.resources | indent 12 }}
+
+          startupProbe:
+            exec:
+              command:
+                - python
+                - -c
+                - "import os; assert os.getenv('RABBITMQ_URL')"
+            failureThreshold: {{ .Values.summaryConsumer.probes.startup.failureThreshold }}
+            periodSeconds: {{ .Values.summaryConsumer.probes.startup.periodSeconds }}
+
+          readinessProbe:
+            exec:
+              command:
+                - python
+                - -c
+                - "import os; assert os.getenv('RABBITMQ_URL')"
+            initialDelaySeconds: {{ .Values.summaryConsumer.probes.readiness.initialDelaySeconds }}
+            periodSeconds: {{ .Values.summaryConsumer.probes.readiness.periodSeconds }}
+            failureThreshold: {{ .Values.summaryConsumer.probes.readiness.failureThreshold }}
+
+          livenessProbe:
+            exec:
+              command:
+                - python
+                - -c
+                - "import os; assert os.getenv('DATABASE_URL')"
+            initialDelaySeconds: {{ .Values.summaryConsumer.probes.liveness.initialDelaySeconds }}
+            periodSeconds: {{ .Values.summaryConsumer.probes.liveness.periodSeconds }}
+            failureThreshold: {{ .Values.summaryConsumer.probes.liveness.failureThreshold }}

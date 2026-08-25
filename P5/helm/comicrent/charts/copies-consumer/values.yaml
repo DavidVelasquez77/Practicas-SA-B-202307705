@@ -21,6 +21,11 @@ probes:
     failureThreshold: 30
     periodSeconds: 2
 
+  readiness:
+    initialDelaySeconds: 5
+    periodSeconds: 10
+    failureThreshold: 3
+
   liveness:
     initialDelaySeconds: 15
     periodSeconds: 15

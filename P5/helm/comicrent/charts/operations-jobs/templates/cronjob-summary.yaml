@@ -5,12 +5,14 @@ metadata:
   namespace: {{ .Values.global.namespace | quote }}
 spec:
   schedule: {{ .Values.cronSummary.schedule | quote }}
+  timeZone: "America/Guatemala"
   concurrencyPolicy: Forbid
   successfulJobsHistoryLimit: 3
   failedJobsHistoryLimit: 3
 
   jobTemplate:
     spec:
+      backoffLimit: 2
       template:
         metadata:
           labels:
@@ -20,6 +22,9 @@ spec:
           serviceAccountName: comicrent-operations
           automountServiceAccountToken: false
           restartPolicy: Never
+
+          serviceAccountName: comicrent-cron-summary
+          automountServiceAccountToken: false
 
           securityContext:
             runAsNonRoot: true

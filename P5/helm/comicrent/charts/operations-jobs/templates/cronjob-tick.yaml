@@ -5,11 +5,14 @@ metadata:
   namespace: {{ .Values.global.namespace | quote }}
 spec:
   schedule: {{ .Values.cronTick.schedule | quote }}
+  timeZone: "America/Guatemala"
   concurrencyPolicy: Forbid
   successfulJobsHistoryLimit: 3
   failedJobsHistoryLimit: 3
+  
   jobTemplate:
     spec:
+      backoffLimit: 2
       template:
         metadata:
           labels:
@@ -27,6 +30,9 @@ spec:
             fsGroup: 101
             seccompProfile:
               type: RuntimeDefault
+
+          serviceAccountName: comicrent-cron-tick
+          automountServiceAccountToken: false
 
           containers:
             - name: cron-tick

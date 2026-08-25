@@ -37,3 +37,19 @@ resources:
   limits:
     cpu: 150m
     memory: 128Mi
+
+summaryConsumer:
+  probes:
+    startup:
+      failureThreshold: 30
+      periodSeconds: 2
+
+    readiness:
+      initialDelaySeconds: 5
+      periodSeconds: 10
+      failureThreshold: 3
+
+    liveness:
+      initialDelaySeconds: 15
+      periodSeconds: 15
+      failureThreshold: 3
