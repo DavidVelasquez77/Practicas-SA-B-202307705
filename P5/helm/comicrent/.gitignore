@@ -1,1 +1,2 @@
-rendered-dev.yaml
+rendered-*.yaml
+*.rendered.yaml
