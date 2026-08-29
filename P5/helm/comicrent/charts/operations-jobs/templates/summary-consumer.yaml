@@ -89,28 +89,31 @@ spec:
           startupProbe:
             exec:
               command:
-                - python
+                - /bin/sh
                 - -c
-                - "import os; assert os.getenv('RABBITMQ_HOST')"
+                - 'test -n "$RABBITMQ_HOST" && test -n "$DATABASE_URL"'
             failureThreshold: {{ .Values.summaryConsumer.probes.startup.failureThreshold }}
             periodSeconds: {{ .Values.summaryConsumer.probes.startup.periodSeconds }}
+            timeoutSeconds: {{ .Values.summaryConsumer.probes.startup.timeoutSeconds }}
 
           readinessProbe:
             exec:
               command:
-                - python
+                - /bin/sh
                 - -c
-                - "import os; assert os.getenv('RABBITMQ_HOST')"
+                - 'test -n "$RABBITMQ_HOST" && test -n "$DATABASE_URL"'
             initialDelaySeconds: {{ .Values.summaryConsumer.probes.readiness.initialDelaySeconds }}
             periodSeconds: {{ .Values.summaryConsumer.probes.readiness.periodSeconds }}
             failureThreshold: {{ .Values.summaryConsumer.probes.readiness.failureThreshold }}
+            timeoutSeconds: {{ .Values.summaryConsumer.probes.readiness.timeoutSeconds }}
 
           livenessProbe:
             exec:
               command:
-                - python
+                - /bin/sh
                 - -c
-                - "import os; assert os.getenv('DATABASE_URL')"
+                - 'test -n "$RABBITMQ_HOST" && test -n "$DATABASE_URL"'
             initialDelaySeconds: {{ .Values.summaryConsumer.probes.liveness.initialDelaySeconds }}
             periodSeconds: {{ .Values.summaryConsumer.probes.liveness.periodSeconds }}
             failureThreshold: {{ .Values.summaryConsumer.probes.liveness.failureThreshold }}
+            timeoutSeconds: {{ .Values.summaryConsumer.probes.liveness.timeoutSeconds }}
