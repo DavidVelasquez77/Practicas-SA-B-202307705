@@ -1525,7 +1525,110 @@ scripts de automatización
 
 ---
 
-# 59. Conclusión
+# 59. Preguntas teóricas
+
+## 59.1 ¿Qué es Helm y qué problema resuelve frente a los manifiestos sueltos?
+
+Helm es un gestor de paquetes para Kubernetes. Permite agrupar recursos como Deployments, Services, ConfigMaps, Secrets, StatefulSets, CronJobs, NetworkPolicies y demás objetos dentro de una unidad reutilizable llamada **chart**.
+
+Con manifiestos YAML sueltos es común duplicar archivos para cada ambiente, modificar valores manualmente y perder el control de qué versión fue instalada. Helm resuelve estos problemas mediante:
+
+- Templates parametrizables.
+- Archivos `values.yaml` y valores específicos por ambiente.
+- Reutilización de subcharts.
+- Instalaciones y actualizaciones reproducibles.
+- Historial de revisiones de cada despliegue.
+- Operaciones de upgrade y rollback.
+
+En ComicRent, el chart padre coordina los microservicios, PostgreSQL, RabbitMQ y los Jobs, mientras `values-dev.yaml` y `values-prod.yaml` permiten cambiar la configuración sin duplicar todos los manifiestos.
+
+---
+
+## 59.2 ¿Cuál es la diferencia entre chart, release y repository?
+
+- **Chart:** paquete que contiene los templates, valores, metadatos y dependencias necesarios para describir una aplicación en Kubernetes. En esta práctica, `comicrent` es el chart padre.
+- **Release:** instancia concreta de un chart instalada en un clúster. Una misma chart puede instalarse varias veces con nombres y valores diferentes. `comicrent` es también el nombre elegido para la release de esta práctica.
+- **Repository:** servidor o catálogo desde el cual se publican y descargan charts versionados. Por ejemplo, los charts de PostgreSQL y RabbitMQ se obtienen del repository de Bitnami.
+
+Por tanto, el chart es el paquete, la release es una instalación de ese paquete y el repository es el lugar desde donde se distribuyen charts.
+
+---
+
+## 59.3 ¿Qué es un StatefulSet y cuándo NO debe utilizarse?
+
+Un StatefulSet es un controlador de Kubernetes diseñado para aplicaciones que requieren identidad estable, nombres de red predecibles, almacenamiento persistente asociado a cada réplica y creación o terminación ordenada de Pods. Por ejemplo, un Pod de PostgreSQL puede conservar su identidad y volver a montar su volumen después de ser recreado.
+
+No debe utilizarse únicamente porque una aplicación almacene datos temporalmente ni como reemplazo general de un Deployment. Para servicios sin estado, réplicas intercambiables, APIs, gateways y consumers que guardan su estado fuera del Pod, normalmente debe utilizarse un Deployment. Un StatefulSet agrega administración y restricciones innecesarias si la aplicación no necesita identidad o almacenamiento estable por réplica.
+
+En ComicRent, PostgreSQL y RabbitMQ requieren persistencia y se ejecutan como StatefulSets, mientras los microservicios y consumers se administran mediante Deployments.
+
+---
+
+## 59.4 ¿Cuál es la diferencia entre liveness, readiness y startup probe?
+
+- **Startup probe:** determina si la aplicación terminó de iniciar. Mientras no tenga éxito, Kubernetes no ejecuta las probes de liveness y readiness. Es útil para aplicaciones cuyo arranque puede ser lento.
+- **Readiness probe:** determina si el contenedor está listo para recibir tráfico o realizar su trabajo. Si falla, el Pod permanece en ejecución, pero se marca como no disponible y se retira de los endpoints de los Services.
+- **Liveness probe:** determina si el proceso continúa funcionando correctamente. Cuando falla repetidamente, el kubelet reinicia el contenedor.
+
+La startup probe protege un arranque lento, la readiness controla la disponibilidad y la liveness permite recuperar procesos bloqueados. Una probe debe comprobar una condición real y utilizar variables o endpoints que existan; una probe mal configurada puede impedir un upgrade aunque la aplicación esté ejecutándose.
+
+---
+
+## 59.5 ¿Qué es una NetworkPolicy y por qué el tráfico es permitido por defecto?
+
+Una NetworkPolicy define qué tráfico de entrada y salida está permitido para grupos de Pods seleccionados por labels. Puede limitar la comunicación según otros Pods, namespaces, bloques IP y puertos.
+
+Kubernetes adopta inicialmente un modelo abierto para conservar compatibilidad y facilitar que las aplicaciones se comuniquen: si ninguna NetworkPolicy selecciona un Pod para una dirección determinada, todo el tráfico de esa dirección está permitido. Cuando una política selecciona el Pod para `Ingress`, `Egress` o ambos, el Pod queda aislado en esas direcciones y solamente se permiten las conexiones autorizadas explícitamente por las políticas aplicables.
+
+La aplicación práctica de las políticas también requiere un plugin de red compatible, como Calico. En ComicRent se parte de políticas `default deny` y después se habilitan únicamente los flujos necesarios entre Gateway, microservicios, PostgreSQL, RabbitMQ y DNS.
+
+---
+
+## 59.6 ¿Qué es un PodDisruptionBudget?
+
+Un PodDisruptionBudget, o PDB, limita cuántas réplicas de una aplicación pueden quedar simultáneamente no disponibles durante interrupciones **voluntarias**, como el drenado de un nodo, mantenimiento o ciertas operaciones administrativas. Se expresa mediante `minAvailable` o `maxUnavailable`.
+
+Un PDB no crea réplicas, no reemplaza las probes, no garantiza alta disponibilidad y no evita interrupciones involuntarias como fallos de hardware, caída del proceso o pérdida del nodo. Además, con una sola réplica y `minAvailable: 1`, un drenado puede quedar bloqueado hasta que exista otra réplica disponible o se modifique el presupuesto.
+
+En ComicRent se utiliza `minAvailable: 1` para proteger la disponibilidad de los componentes durante disrupciones voluntarias.
+
+---
+
+## 59.7 ¿Qué ventajas y qué nuevos problemas introduce la comunicación asíncrona?
+
+La comunicación asíncrona desacopla temporalmente al productor y al consumidor. Sus principales ventajas son:
+
+- El productor no necesita esperar a que el consumidor termine.
+- Los mensajes pueden acumularse si un consumidor se encuentra temporalmente caído.
+- Permite absorber picos de carga y procesarlos gradualmente.
+- Facilita agregar consumidores y escalar el procesamiento.
+- Reduce el acoplamiento directo entre servicios.
+
+También introduce nuevos problemas:
+
+- Consistencia eventual en lugar de resultados inmediatos.
+- Posibles mensajes duplicados y necesidad de idempotencia.
+- Riesgo de mensajes perdidos si no se configuran durabilidad, confirmaciones y ACK correctamente.
+- Reintentos, mensajes imposibles de procesar y necesidad de colas de mensajes muertos.
+- Mayor dificultad para rastrear, depurar y observar un flujo distribuido.
+- Posible procesamiento fuera de orden.
+- Operación y monitoreo adicional del broker.
+
+En ComicRent, RabbitMQ permite conservar eventos mientras un consumer está detenido. Los consumers confirman el mensaje después de procesarlo y aplican idempotencia para tolerar reentregas.
+
+---
+
+## 59.8 ¿Qué hace `helm rollback` internamente?
+
+`helm rollback <release> <revisión>` consulta el historial almacenado por Helm, recupera el manifiesto y la configuración correspondientes a la revisión indicada y los compara con el estado de la release actual. Después ejecuta una actualización hacia ese estado anterior: crea, aplica, modifica o elimina recursos de Kubernetes según las diferencias encontradas.
+
+El rollback no borra el historial ni cambia el código fuente o el repositorio Git. El resultado se registra como una **nueva revisión** de la release, cuya descripción indica que corresponde a un rollback. Dependiendo de las opciones utilizadas, Helm también puede ejecutar hooks y esperar a que los recursos queden listos.
+
+Helm restaura los manifiestos administrados por la release, pero esto no implica necesariamente revertir datos persistentes, migraciones de base de datos ni cambios realizados fuera de Helm. Por ello, la compatibilidad de datos debe considerarse antes de regresar una versión de la aplicación.
+
+---
+
+# 60. Conclusión
 
 La Práctica 5 permitió evolucionar ComicRent desde una arquitectura de microservicios funcional hacia un entorno administrado mediante Kubernetes y Helm.
 
