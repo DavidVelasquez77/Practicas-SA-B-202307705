@@ -8,17 +8,33 @@ global:
     allowInsecureImages: true
 
   secrets:
+    create: true
     postgresPassword: ""
     postgresUserPassword: ""
     rabbitmqPassword: ""
     jwtSecret: ""
     encryptionKey: ""
 
+  # When set, application workloads read their complete PostgreSQL URLs
+  # from this Secret instead of constructing local PostgreSQL URLs.
+  database:
+    existingSecret: ""
+    urlKeys:
+      auth: auth-database-url
+      comics: comics-database-url
+      rentals: rentals-database-url
+      copies: copies-database-url
+
+  networkPolicy:
+    externalPostgres:
+      enabled: false
+
 # ==================================================
 # PostgreSQL
 # ==================================================
 
 postgresql:
+  enabled: true
   namespaceOverride: sa-p5
 
   fullnameOverride: comicrent-postgresql

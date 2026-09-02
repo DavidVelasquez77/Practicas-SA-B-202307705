@@ -1,0 +1,8 @@
+# Local cloud secret values are never versioned.
+k8s/values-gke-secret.yaml
+k8s/values-gke.generated.yaml
+
+# Rendered manifests and captured command output may contain environment data.
+evidence/*.yaml
+evidence/*.json
+evidence/*.txt

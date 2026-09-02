@@ -1,0 +1,47 @@
+# GKE dataplane adaptation for DNS.
+# The deployment script replaces the placeholder with the current kube-dns
+# Service ClusterIP before applying this additive policy.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: comicrent-allow-gke-dns-ip
+  namespace: sa-p6
+  labels:
+    app.kubernetes.io/part-of: comicrent
+spec:
+  podSelector: {}
+  policyTypes:
+    - Egress
+  egress:
+    - to:
+        - ipBlock:
+            cidr: <KUBE_DNS_CLUSTER_IP>/32
+      ports:
+        - protocol: UDP
+          port: 53
+        - protocol: TCP
+          port: 53
+
+---
+# Public entry point for P6: only the API Gateway is exposed by LoadBalancer.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: comicrent-allow-public-gateway
+  namespace: sa-p6
+  labels:
+    app.kubernetes.io/part-of: comicrent
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/instance: comicrent
+      app.kubernetes.io/name: api-gateway
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - ipBlock:
+            cidr: 0.0.0.0/0
+      ports:
+        - protocol: TCP
+          port: 3000

@@ -62,6 +62,13 @@ spec:
                 name: {{ include "rentals-service.fullname" . }}-config
 
           env:
+{{ if .Values.global.database.existingSecret }}
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.global.database.existingSecret | quote }}
+                  key: {{ .Values.global.database.urlKeys.rentals | quote }}
+{{ else }}
             - name: DB_PASSWORD
               valueFrom:
                 secretKeyRef:
@@ -70,6 +77,7 @@ spec:
 
             - name: DATABASE_URL
               value: "postgresql+psycopg://comicrent_user:$(DB_PASSWORD)@comicrent-postgresql:5432/rentals_db"
+{{ end }}
 
             - name: RABBITMQ_PASSWORD
               valueFrom:

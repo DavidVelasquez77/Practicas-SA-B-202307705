@@ -1,0 +1,132 @@
+namespace: sa-p6
+
+global:
+  environment: gke-prod
+  namespace: sa-p6
+
+  security:
+    allowInsecureImages: false
+
+  # Secrets are created out-of-band by scripts/03-generate-secrets.ps1.
+  secrets:
+    create: false
+    postgresPassword: ""
+    postgresUserPassword: ""
+    rabbitmqPassword: ""
+    jwtSecret: ""
+    encryptionKey: ""
+
+  database:
+    existingSecret: comicrent-database-secret
+    urlKeys:
+      auth: auth-database-url
+      comics: comics-database-url
+      rentals: rentals-database-url
+      copies: copies-database-url
+
+  networkPolicy:
+    # Neon public endpoints require a controlled egress exception on TCP/5432.
+    externalPostgres:
+      enabled: true
+
+postgresql:
+  enabled: false
+
+rabbitmq:
+  namespaceOverride: sa-p6
+  fullnameOverride: comicrent-rabbitmq
+  replicaCount: 1
+
+  # P6 usa un solo nodo; no se necesita descubrimiento/cluster de RabbitMQ.
+  # Se conserva el plugin de management para probes y evidencias.
+  clustering:
+    enabled: false
+  plugins: "rabbitmq_management"
+  extraPlugins: ""
+
+  # The deploy script resolves the real GKE StorageClass and passes it with
+  # --set-string. Empty here is intentional: do not invent a provider name.
+  persistence:
+    enabled: true
+    size: 1Gi
+    storageClass: ""
+
+  service:
+    type: ClusterIP
+
+  auth:
+    username: comicrent
+    existingPasswordSecret: comicrent-rabbitmq-secret
+    existingSecretPasswordKey: rabbitmq-password
+
+api-gateway:
+  replicaCount: 1
+  image:
+    tag: "1.0.0-gke"
+    pullPolicy: IfNotPresent
+  service:
+    type: LoadBalancer
+    port: 3000
+  config:
+    logLevel: "info"
+
+auth-service:
+  replicaCount: 1
+  image:
+    tag: "1.0.0-gke"
+    pullPolicy: IfNotPresent
+  config:
+    logLevel: "info"
+
+comics-service:
+  replicaCount: 1
+  image:
+    tag: "1.0.0-gke"
+    pullPolicy: IfNotPresent
+  config:
+    logLevel: "info"
+
+rentals-service:
+  replicaCount: 1
+  image:
+    tag: "1.0.0-gke"
+    pullPolicy: IfNotPresent
+  config:
+    logLevel: "info"
+
+copies-service:
+  replicaCount: 1
+  image:
+    tag: "1.0.0-gke"
+    pullPolicy: IfNotPresent
+  config:
+    logLevel: "info"
+
+copies-consumer:
+  replicaCount: 1
+  image:
+    tag: "1.0.0-gke"
+    pullPolicy: IfNotPresent
+  config:
+    logLevel: "info"
+
+operations-jobs:
+  global:
+    namespace: sa-p6
+  image:
+    tag: "1.0.0-gke"
+    pullPolicy: IfNotPresent
+  database:
+    existingSecret: comicrent-database-secret
+    urlKey: operations-database-url
+  rabbitmq:
+    host: comicrent-rabbitmq
+    port: 5672
+    username: comicrent
+    secretName: comicrent-rabbitmq-secret
+    passwordKey: rabbitmq-password
+
+extraLabels:
+  project: "comicrent"
+  practice: "p6"
+  managedByCourse: "software-avanzado"

@@ -58,6 +58,13 @@ spec:
                 - ALL
 
           env:
+{{ if .Values.global.database.existingSecret }}
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.global.database.existingSecret | quote }}
+                  key: {{ .Values.global.database.urlKeys.comics | quote }}
+{{ else }}
             - name: DB_PASSWORD
               valueFrom:
                 secretKeyRef:
@@ -66,6 +73,7 @@ spec:
 
             - name: DATABASE_URL
               value: "postgresql://comicrent_user:$(DB_PASSWORD)@comicrent-postgresql:5432/comics_db?schema=public"
+{{ end }}
 
           resources:
             requests:
@@ -98,6 +106,13 @@ spec:
                 name: {{ include "comics-service.fullname" . }}-config
 
           env:
+{{ if .Values.global.database.existingSecret }}
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.global.database.existingSecret | quote }}
+                  key: {{ .Values.global.database.urlKeys.comics | quote }}
+{{ else }}
             - name: DB_PASSWORD
               valueFrom:
                 secretKeyRef:
@@ -106,6 +121,7 @@ spec:
 
             - name: DATABASE_URL
               value: "postgresql://comicrent_user:$(DB_PASSWORD)@comicrent-postgresql:5432/comics_db?schema=public"
+{{ end }}
 
           startupProbe:
             httpGet:

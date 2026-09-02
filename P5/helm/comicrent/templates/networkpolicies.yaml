@@ -746,3 +746,45 @@ spec:
 
         - protocol: TCP
           port: 8443
+
+{{- if .Values.global.networkPolicy.externalPostgres.enabled }}
+---
+# ============================================================
+# EXTERNAL POSTGRESQL (CLOUD)
+#
+# Neon uses public endpoints whose addresses may change. This additive
+# policy keeps the default-deny and service allowlists intact while allowing
+# only PostgreSQL egress from database clients to the external provider.
+# ============================================================
+
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: comicrent-external-postgresql
+  namespace: {{ .Values.namespace | default "sa-p5" | quote }}
+  labels:
+    app.kubernetes.io/part-of: "comicrent"
+spec:
+  podSelector:
+    matchExpressions:
+      - key: app.kubernetes.io/name
+        operator: In
+        values:
+          - auth-service
+          - comics-service
+          - rentals-service
+          - copies-service
+          - copies-consumer
+          - cron-tick
+          - cron-summary
+          - summary-consumer
+  policyTypes:
+    - Egress
+  egress:
+    - to:
+        - ipBlock:
+            cidr: 0.0.0.0/0
+      ports:
+        - protocol: TCP
+          port: 5432
+{{- end }}

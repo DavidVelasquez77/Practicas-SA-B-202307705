@@ -1,8 +1,11 @@
+{{- $namespace := .Values.namespace | default "sa-p5" -}}
+{{- if not (lookup "v1" "Namespace" "" $namespace) }}
 apiVersion: v1
 kind: Namespace
 metadata:
-  name: {{ .Values.namespace | default "sa-p5" | quote }}
+  name: {{ $namespace | quote }}
   labels:
     app.kubernetes.io/managed-by: {{ .Release.Service | quote }}
     app.kubernetes.io/part-of: "comicrent"
     {{- include "comicrent.extraLabels" . | nindent 4 }}
+{{- end }}

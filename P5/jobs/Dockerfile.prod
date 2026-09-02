@@ -1,0 +1,30 @@
+FROM python:3.12-alpine AS builder
+
+WORKDIR /app
+
+COPY requirements.txt .
+
+RUN pip install \
+    --no-cache-dir \
+    --prefix=/install \
+    -r requirements.txt
+
+
+FROM python:3.12-alpine AS runtime
+
+WORKDIR /app
+
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1
+
+RUN addgroup -S appgroup \
+    && adduser -S appuser -G appgroup
+
+COPY --from=builder /install /usr/local
+COPY db.py cron_tick.py cron_summary.py summary_consumer.py ./
+
+RUN chown -R appuser:appgroup /app
+
+USER appuser
+
+CMD ["python", "cron_tick.py"]

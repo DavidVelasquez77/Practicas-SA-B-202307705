@@ -11,6 +11,8 @@ database:
   port: 5432
   username: comicrent_user
   name: operations_db
+  existingSecret: ""
+  urlKey: operations-database-url
   secretName: comicrent-postgresql-secret
   passwordKey: password
 

@@ -26,5 +26,5 @@ dependencies:
 - name: operations-jobs
   repository: file://charts/operations-jobs
   version: 0.1.0
-digest: sha256:bd4674515717ebff4bba1261eee451226c0ee62cc7842cd51b88ba8f59708b2a
-generated: "2026-08-24T23:29:40.4231737-06:00"
+digest: sha256:a4fe922fc506fdffd643d4b173e2cc0c4de335d51717aa59240614a5063e942b
+generated: "2026-09-01T23:17:38.3611184-06:00"

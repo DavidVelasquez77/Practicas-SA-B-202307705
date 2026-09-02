@@ -19,8 +19,6 @@ spec:
             app.kubernetes.io/name: cron-tick
             app.kubernetes.io/part-of: comicrent
         spec:
-          serviceAccountName: comicrent-operations
-          automountServiceAccountToken: false
           restartPolicy: Never
 
           securityContext:
@@ -44,6 +42,13 @@ spec:
                 - cron_tick.py
 
               env:
+{{ if .Values.database.existingSecret }}
+                - name: DATABASE_URL
+                  valueFrom:
+                    secretKeyRef:
+                      name: {{ .Values.database.existingSecret | quote }}
+                      key: {{ .Values.database.urlKey | quote }}
+{{ else }}
                 - name: DB_PASSWORD
                   valueFrom:
                     secretKeyRef:
@@ -53,6 +58,7 @@ spec:
                 - name: DATABASE_URL
                   value: >-
                     postgresql://{{ .Values.database.username }}:$(DB_PASSWORD)@{{ .Values.database.host }}:{{ .Values.database.port }}/{{ .Values.database.name }}
+{{ end }}
 
               securityContext:
                 allowPrivilegeEscalation: false
