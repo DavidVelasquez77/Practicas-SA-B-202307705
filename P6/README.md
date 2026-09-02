@@ -22,12 +22,13 @@ Las aclaraciones del auxiliar prevalecen sobre las diferencias del PDF:
 - Proyecto GCP: `comicrent-p6-2026`.
 - Clúster: `comicrent-gke-p6`.
 - Zona: `us-central1-a`.
-- Node pool: `default-pool`, 1 nodo `e2-standard-2`.
+- Node pool: `default-pool`, pausado temporalmente con 0 nodos para evitar consumo innecesario.
 - Namespace: `sa-p6`.
 - Artifact Registry: `us-central1-docker.pkg.dev/comicrent-p6-2026/comicrent`.
 - StorageClass usada por RabbitMQ: `standard-rwo`.
 - API pública: [http://136.119.74.33:3000/docs](http://136.119.74.33:3000/docs).
-- El clúster queda encendido con 1 nodo para continuar la demostración. La eliminación final todavía no se ejecuta.
+- El clúster y sus configuraciones permanecen conservados; únicamente se redujo el node pool a 0 nodos.
+- Mientras el node pool esté en 0, los Pods no pueden ejecutarse y la API pública no estará disponible. El registro privado, Secrets, PVC, Helm release y Neon no se eliminaron.
 
 ### Captura: clúster visible en la consola de GCP
 
@@ -563,7 +564,43 @@ Para la entrega se reporta como costo facturable observado `USD 0.00`; el resume
 
 ![Informe detallado de Billing](evidence/gcp-billing-report.png)
 
-## 18. Limpieza final — todavía no ejecutada
+## 18. Pausa temporal del node pool para controlar costos
+
+Después de completar las pruebas se ejecutó el siguiente comando. Esta operación no elimina el clúster ni sus configuraciones:
+
+```powershell
+gcloud container clusters resize comicrent-gke-p6 `
+  --node-pool=default-pool `
+  --num-nodes=0 `
+  --zone=us-central1-a `
+  --project=comicrent-p6-2026 `
+  --quiet
+```
+
+La operación terminó correctamente y no quedaron VMs del node pool activas. Los PDB se restauraron a sus valores originales después del drenado.
+
+Para volver a levantar la plataforma cuando se autorice continuar, se debe ejecutar:
+
+```powershell
+gcloud container clusters resize comicrent-gke-p6 `
+  --node-pool=default-pool `
+  --num-nodes=1 `
+  --zone=us-central1-a `
+  --project=comicrent-p6-2026 `
+  --quiet
+```
+
+Después se verifica la recuperación con:
+
+```powershell
+kubectl get nodes
+kubectl get pods -n sa-p6
+kubectl get svc -n sa-p6
+```
+
+GKE volverá a crear la VM y Kubernetes programará nuevamente los Pods usando la misma configuración, Secrets, PVC e imágenes privadas. Debe esperarse a que RabbitMQ recupere su PVC y a que los probes estén saludables antes de probar la API pública.
+
+## 19. Limpieza final — todavía no ejecutada
 
 Por ahora no se elimina el clúster ni el registro porque la demostración continúa. Cuando se autorice la limpieza, el comando preparado es:
 
@@ -590,7 +627,7 @@ gcloud compute forwarding-rules list --project=comicrent-p6-2026
 
 Los proyectos Neon se eliminarían manualmente solo si se autoriza expresamente, porque el script no los borra para evitar pérdida accidental de datos.
 
-## 19. Archivos de evidencia
+## 20. Archivos de evidencia
 
 Los resultados de comandos están en:
 
