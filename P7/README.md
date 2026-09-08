@@ -241,6 +241,32 @@ No borrar el clúster, Secrets ni PVC de P6 como método de recuperación.
 | Paquetes GHCR | `evidence/09-ghcr-packages.png` |
 | Verificación GKE/Helm/health | `evidence/gke-final-verification.log` |
 
+### Galería visual de la ejecución
+
+#### Variables de GitHub Actions y fallo controlado
+
+![Variables de Actions](evidence/01-actions-variables.png)
+
+![Fallo controlado en CI](evidence/02-ci-failure-controlled.png)
+
+![Aserción modificada para provocar el fallo](evidence/03-auth-controlled-assertion.png)
+
+![CD detenido porque fallaron las pruebas](evidence/04-cd-blocked-by-tests.png)
+
+#### Identidad cloud y publicación de imágenes
+
+![Provider OIDC de GCP](evidence/05-gcp-wif-provider.png)
+
+![Service Account de despliegue](evidence/06-gcp-wif-service-account.png)
+
+![Paquetes públicos publicados en GHCR](evidence/09-ghcr-packages.png)
+
+#### Workflows exitosos
+
+![CI exitoso con build, pruebas e integraciones](evidence/08-ci-success.png)
+
+![CD exitoso con dockerización y despliegue GKE](evidence/07-cd-success.png)
+
 Ejecuciones:
 
 - [CI verde de main](https://github.com/DavidVelasquez77/Practicas-SA-B-202307705/actions/runs/34274196000)
