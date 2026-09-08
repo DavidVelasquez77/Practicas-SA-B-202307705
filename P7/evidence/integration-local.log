@@ -2,10 +2,10 @@ tests-1     | test_1_rentals_client_reads_real_comics_graphql (test_integration.
 tests-1     | test_2_rentals_reserves_real_copy_and_persists_rental (test_integration.ServiceIntegrationTests.test_2_rentals_reserves_real_copy_and_persists_rental) ... ok
 consumer-1  | error when creating transport: <AMQPConnectionError: (111, "Connect call failed ('172.18.0.2', 5672)")>
 tests-1     | test_3_return_event_crosses_rabbitmq_and_consumer_commits (test_integration.ServiceIntegrationTests.test_3_return_event_crosses_rabbitmq_and_consumer_commits) ... ok
-tests-1     | 
+tests-1     |
 tests-1     | ----------------------------------------------------------------------
 tests-1     | Ran 3 tests in 1.452s
-tests-1     | 
+tests-1     |
 consumer-1  | Traceback (most recent call last):
 tests-1     | OK
 consumer-1  |   File "/usr/local/lib/python3.12/site-packages/aiormq/connection.py", line 326, in create
@@ -27,9 +27,9 @@ consumer-1  |            ^^^^^^^^^
 consumer-1  |   File "/usr/local/lib/python3.12/asyncio/selector_events.py", line 691, in _sock_connect_cb
 consumer-1  |     raise OSError(err, f'Connect call failed {address}')
 consumer-1  | ConnectionRefusedError: [Errno 111] Connect call failed ('172.18.0.2', 5672)
-consumer-1  | 
+consumer-1  |
 consumer-1  | The above exception was the direct cause of the following exception:
-consumer-1  | 
+consumer-1  |
 consumer-1  | Traceback (most recent call last):
 consumer-1  |   File "<frozen runpy>", line 198, in _run_module_as_main
 consumer-1  |   File "<frozen runpy>", line 88, in _run_code

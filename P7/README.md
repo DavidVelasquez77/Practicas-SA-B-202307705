@@ -165,3 +165,14 @@ El fallo controlado debe hacerse en una rama de demostración con una aserción 
 - [Autenticación Google GitHub Actions mediante WIF](https://github.com/google-github-actions/auth)
 - [Credenciales GKE para Actions](https://github.com/google-github-actions/get-gke-credentials)
 - [WIF para pipelines de despliegue](https://cloud.google.com/iam/docs/workload-identity-federation-with-deployment-pipelines)
+
+## Hito: fallo controlado ejecutado y corregido
+
+El commit `e84b640` cambió solo una expectativa del test de Auth de 1 a 99. El código de aplicación permaneció intacto. [CI #1](https://github.com/DavidVelasquez77/Practicas-SA-B-202307705/actions/runs/34271159061) falló exactamente por `1 !== 99`; las otras unitarias y Helm pasaron. [CD v0.7.1](https://github.com/DavidVelasquez77/Practicas-SA-B-202307705/actions/runs/34273962993) volvió a detectar el fallo y omitió Docker y deploy. `v0.7.0` se publicó al registrar inicialmente los workflows y no produjo ejecución CD; se conserva como referencia sin despliegue. Ambos tags de demostración no son versiones para desplegar.
+
+La expectativa correcta se restauró antes de preparar `v0.7.2`. No se movieron tags ni se reescribió historial. El CronJob pasó su prueba unitaria en Actions. WIF y las dos variables GitHub están configurados, y el usuario autorizó levantar 1 nodo: `default-pool` está Ready.
+
+![CI rojo controlado](evidence/02-ci-failure-controlled.png)
+![Aserción de Auth](evidence/03-auth-controlled-assertion.png)
+![CD bloqueado por tests](evidence/04-cd-blocked-by-tests.png)
+![Variables no secretas](evidence/01-actions-variables.png)
