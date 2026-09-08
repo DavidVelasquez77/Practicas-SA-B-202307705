@@ -11,7 +11,7 @@ permissions:
 
 jobs:
   node:
-    name: TEST / Build y unitarias / ${{ matrix.service }}
+    name: BUILD + TEST / Node / ${{ matrix.service }}
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     strategy:
@@ -41,7 +41,7 @@ jobs:
       - name: Generar cliente Prisma
         if: matrix.service != 'api-gateway'
         run: npx --no-install prisma generate
-      - name: Build
+      - name: BUILD | Compilar servicio Node
         run: npm run build
       - name: TEST | Ejecutar pruebas unitarias
         env:
@@ -62,7 +62,7 @@ jobs:
           if-no-files-found: ignore
 
   python:
-    name: TEST / Build y unitarias / ${{ matrix.service }}
+    name: BUILD + TEST / Python / ${{ matrix.service }}
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     strategy:
@@ -90,7 +90,7 @@ jobs:
           cache-dependency-path: ${{ matrix.path }}/requirements.txt
       - name: Instalar dependencias
         run: python -m pip install -r requirements.txt
-      - name: Build Python (compilación de módulos)
+      - name: BUILD | Compilar módulos Python
         run: python -m compileall -q ${{ matrix.source }}
       - name: TEST | Ejecutar pruebas unitarias
         run: |
@@ -105,7 +105,7 @@ jobs:
           if-no-files-found: ignore
 
   integration:
-    name: TEST / Tres integraciones reales
+    name: TEST / Integraciones reales
     needs: [node, python]
     runs-on: ubuntu-24.04
     timeout-minutes: 30
@@ -134,7 +134,7 @@ jobs:
         run: docker compose down --volumes --remove-orphans
 
   helm:
-    name: TEST / Validar Helm P5 + P6 + P7
+    name: TEST / Validación Helm P5 + P6 + P7
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
