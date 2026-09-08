@@ -2,11 +2,11 @@
 
 ## Estado de implementación
 
-Auditoría e implementación inicial realizadas el 8 de septiembre de 2026. Pasaron los builds de los tres servicios Node, diez unitarias (Gateway/Auth/Comics/Rentals/Copies), tres integraciones reales y Helm lint. Se construyeron cuatro imágenes de producción (Comics, Rentals, Copies y operations-jobs). La prueba del CronJob, imágenes Gateway/Auth, validación en Actions, publicación GHCR y CD están pendientes. No confundir validación local con despliegue cloud completado.
+Práctica completada y publicada el 8 de septiembre de 2026. CI y CD están verdes para `v0.7.2`: build, 11 unitarias, 3 integraciones, Helm, 6 imágenes GHCR y despliegue automático en GKE mediante OIDC/WIF. Helm revisión 2 está desplegada; los siete Deployments y RabbitMQ están `1/1`, y el gateway público responde correctamente.
 
 ## Auditoría previa a modificaciones
 
-- Repositorio local: `C:\Users\Vela\Desktop\SA\LAB\PRACTICAS`. Rama `main`, sin cambios pendientes al iniciar. El estado local indica seguimiento de `origin/main`; no se ha consultado todavía el estado remoto.
+- Repositorio local: `C:\Users\Vela\Desktop\SA\LAB\PRACTICAS`. La auditoría comenzó en `main`, siguiendo `origin/main` y sin cambios locales.
 - El remoto configurado es `DavidVelasquez77/Pr-cticas-SA-B-202307705`. El usuario decidió conservarlo. Se verificó en GitHub que redirige al nombre canónico `DavidVelasquez77/Practicas-SA-B-202307705`: es el mismo repositorio. WIF usa el nombre canónico y los IDs numéricos del repositorio/propietario.
 - Enunciado oficial revisado: `0780_Practica_7_2S2026.md`, recuperado del adjunto de la conversación de referencia.
 - P4 conserva Gateway, Auth y Comics (NestJS/TypeScript), Rentals y Copies (Python/FastAPI), código y Dockerfiles de producción.
@@ -15,17 +15,17 @@ Auditoría e implementación inicial realizadas el 8 de septiembre de 2026. Pasa
 - P5 conserva el chart padre `P5/helm/comicrent`, sus subcharts y `P5/jobs`. Copies Consumer reutiliza la imagen de Copies; Summary Consumer y CronJobs reutilizan operations-jobs.
 - P6 conserva `P6/k8s/values-gke-prod.yaml`, la adaptación de NetworkPolicy DNS y los scripts GKE.
 - Datos documentados en P6: proyecto `comicrent-p6-2026`, clúster `comicrent-gke-p6`, zona `us-central1-a`, node pool `default-pool`, namespace `sa-p6`, release Helm `comicrent`.
-- La consulta autenticada a GCP confirmó el clúster RUNNING y ninguna VM del proyecto. El control plane permanece disponible aunque no haya nodos. No se ha escalado ni recreado infraestructura.
+- La consulta autenticada a GCP confirmó el clúster existente. Para la prueba final se escaló únicamente `default-pool` de 0 a 1 nodo; no se recreó infraestructura.
 - P6 usa Secrets preexistentes para bases de datos, RabbitMQ y Auth. CD debe reutilizarlos sin imprimir su contenido.
 - El script de P6 resuelve la StorageClass y la IP de kube-dns en el clúster. CD debe conservar esa adaptación y la imagen RabbitMQ actualmente desplegada.
 
-## Cambios previstos
+## Cambios implementados
 
 1. Añadir 11 pruebas unitarias: dos por microservicio y una del CronJob. Añadir tres integraciones reales: Rentals–Comics, Rentals–Copies y publicación/consumo RabbitMQ.
 2. CI en PR y push a main: instalación reproducible, build y tests. CD reutiliza la validación al recibir tags `v*`, publica seis imágenes en GHCR y despliega con Helm sobre GKE mediante OIDC/WIF.
 3. Reutilizar P4/P5/P6 sin duplicarlos. P7 contiene documentación, diagrama, evidencias y configuración exclusiva de CI/CD.
 4. Publicar imágenes con versión release y trazabilidad al commit. El registry público es un requisito del enunciado.
-5. Documentar las ejecuciones reales y un fallo controlado seguido de corrección. No presentar capturas pendientes como evidencia realizada.
+5. Documentar las ejecuciones reales y el fallo controlado seguido de su corrección.
 
 ## Estrategia de pruebas
 
@@ -105,17 +105,17 @@ Después crear **Variables**, no Secrets, en [Settings → Actions → Variables
 | GCP_WIF_PROVIDER | projects/950813313175/locations/global/workloadIdentityPools/github-p7/providers/github |
 | GCP_SERVICE_ACCOUNT | github-p7-deployer@comicrent-p6-2026.iam.gserviceaccount.com |
 
-Estos identificadores no son credenciales. No enviar tokens ni llaves al chat, capturas o repositorio. Esperar la propagación de WIF antes de probar CD. La configuración aún debe confirmarse mediante una ejecución real de GitHub Actions.
+Estos identificadores no son credenciales. No enviar tokens ni llaves al chat, capturas o repositorio. La autenticación se confirmó en el job real de despliegue de `v0.7.2`; GitHub obtuvo credenciales efímeras mediante OIDC y no se creó ninguna llave JSON.
 
 ## GHCR y versiones
 
 Se publican `ghcr.io/davidvelasquez77/comicrent-{api-gateway,auth-service,comics-service,rentals-service,copies-service,operations-jobs}` con tags de release y `sha-COMMIT_COMPLETO`. Las etiquetas OCI registran repositorio, commit y versión. Copies Consumer reutiliza copies-service; Summary Consumer y ambos CronJobs reutilizan operations-jobs.
 
-GHCR puede crear los paquetes privados en la primera publicación. El propietario debe cambiar cada uno a **Public** en Package settings → Change visibility. CD comprueba lectura anónima antes de tocar GKE; si falla por visibilidad, hacer públicos los paquetes y reejecutar solamente los jobs fallidos. Esto satisface el requisito de registry público y evita un imagePullSecret con PAT.
+Los seis paquetes quedaron publicados y accesibles de forma anónima. CD verifica esa lectura antes de tocar GKE, lo que evita depender de un `imagePullSecret` con PAT. La versión desplegada usa `v0.7.2`; cada paquete conserva además el tag `sha-41b1298f50b3848eb1f659af370744f6ee6fd530` para trazabilidad.
 
 ## Despliegue GKE
 
-Antes del tag de evaluación, el propietario sube **el pool existente**:
+Antes del tag de evaluación se subió **el pool existente** con:
 
 ```powershell
 gcloud container clusters resize comicrent-gke-p6 --node-pool=default-pool --num-nodes=1 --zone=us-central1-a --project=comicrent-p6-2026
@@ -123,22 +123,20 @@ gcloud container clusters resize comicrent-gke-p6 --node-pool=default-pool --num
 
 El script CD `P7/config/deploy.sh` verifica release Helm existente y nodo Ready, conserva imagen y StorageClass del RabbitMQ desplegado, comprueba la existencia de Secrets sin mostrar contenido y aplica la adaptación DNS/entrada pública de P6. Ejecuta Helm upgrade con los valores P6/P7, tag común y SHA, `--atomic --wait --timeout 15m`. Un fallo durante el upgrade activa rollback de Helm. La verificación posterior exige rollouts de siete deployments, RabbitMQ y respuesta pública `/health`; si falla health después de finalizar Helm, el job falla pero esa comprobación posterior no dispara automáticamente rollback.
 
-No se instala un clúster nuevo, no se escala desde el workflow y no se recrean credenciales de bases de datos. Al terminar la evaluación, el propietario puede seguir el procedimiento de pausa de P6 para volver a 0 nodos.
+No se instaló un clúster nuevo, no se escala desde el workflow y no se recrearon credenciales de bases de datos. El nodo permanece en `Ready` para la evaluación. Al terminarla, el propietario puede seguir el procedimiento de pausa de P6 para volver a 0 nodos.
 
 ## Evidencia y fallo controlado
 
-Estado actual: validaciones locales reales; evidencias de Actions/GHCR/GKE pendientes. CI guarda logs de unitarias e integración como artifacts incluso al fallar. No adjunta manifests con datos sensibles ni logs de producción.
-
-El fallo controlado debe hacerse en una rama de demostración con una aserción incorrecta en un test existente, abrir PR, capturar el test rojo, corregir la aserción y capturar el mismo PR verde antes de integrar. Para demostrar específicamente el bloqueo de dockerización/deploy se debe registrar también un CD cuyo job de tests falle; no publicar un tag de producción roto en main. La realización exacta y las URLs se documentarán al ejecutar la demostración; hasta entonces no se afirma que exista evidencia.
+CI guarda logs de unitarias e integración como artifacts incluso al fallar. No adjunta manifests con datos sensibles ni logs de producción. La demostración controlada cambió solo una aserción y después se corrigió; el código funcional nunca se alteró. El tag posterior `v0.7.2` acredita la recuperación completa.
 
 | Evidencia | Estado |
 | --- | --- |
-| Unitarias/build local y tres integraciones | Ejecuciones obtenidas; captura visual pendiente |
-| CI verde de PR/main | Pendiente |
-| Fallo controlado y corrección | Pendiente |
-| Seis paquetes GHCR públicos/versionados | Pendiente |
-| WIF/Service Account sin credenciales visibles | Pendiente de configuración por el propietario |
-| CD verde, Helm/version, pods y gateway GKE | Pendiente |
+| Unitarias/build local y tres integraciones | Completado localmente y en Actions; logs/artifacts conservados |
+| CI verde de `main` | [Run 34274196000](https://github.com/DavidVelasquez77/Practicas-SA-B-202307705/actions/runs/34274196000) |
+| Fallo controlado y corrección | CI rojo y CD bloqueado documentados; repositorio corregido |
+| Seis paquetes GHCR públicos/versionados | Publicados con `v0.7.2` y SHA |
+| WIF/Service Account sin credenciales visibles | Configurado y validado por el CD real |
+| CD verde, Helm/version, pods y gateway GKE | [Run 34274200611](https://github.com/DavidVelasquez77/Practicas-SA-B-202307705/actions/runs/34274200611), Helm revisión 2 y health OK |
 
 ## Preguntas teóricas de preparación
 
@@ -176,3 +174,22 @@ La expectativa correcta se restauró antes de preparar `v0.7.2`. No se movieron 
 ![Aserción de Auth](evidence/03-auth-controlled-assertion.png)
 ![CD bloqueado por tests](evidence/04-cd-blocked-by-tests.png)
 ![Variables no secretas](evidence/01-actions-variables.png)
+
+## Hito: identidad cloud y validaciones del release corregido
+
+El provider OIDC y la Service Account están conectados en GCP; las variables se guardaron en GitHub. `v0.7.2` pasó build, las 11 unitarias, las 3 integraciones, Helm, las 6 dockerizaciones y el despliegue GKE. Las capturas muestran configuración real, sin llaves ni tokens.
+
+![Provider OIDC habilitado](evidence/05-gcp-wif-provider.png)
+![Service Account conectada](evidence/06-gcp-wif-service-account.png)
+
+## Hito: release `v0.7.2` desplegado
+
+[CI de `main`](https://github.com/DavidVelasquez77/Practicas-SA-B-202307705/actions/runs/34274196000) terminó en verde en 2m 38s: seis jobs de build/unitarias, Helm y tres integraciones reales. [CD de `v0.7.2`](https://github.com/DavidVelasquez77/Practicas-SA-B-202307705/actions/runs/34274200611) terminó en verde en 15m 18s: repitió los controles, publicó seis imágenes en GHCR y desplegó mediante OIDC.
+
+Helm registra la revisión 2 como `deployed` con descripción `Upgrade complete`. El nodo `default-pool` está `Ready`; los siete Deployments y RabbitMQ muestran `1/1`. Todas las cargas de la aplicación usan imágenes GHCR `v0.7.2`. El gateway público responde en [http://136.119.74.33:3000/health](http://136.119.74.33:3000/health) con `{"service":"api-gateway","status":"ok"}`.
+
+El resultado textual de la comprobación final se conserva en [`evidence/gke-final-verification.log`](evidence/gke-final-verification.log).
+
+![CD completo: tests, Docker y GKE](evidence/07-cd-success.png)
+![CI completo: unitarias, integraciones y Helm](evidence/08-ci-success.png)
+![Seis paquetes publicados en GHCR](evidence/09-ghcr-packages.png)

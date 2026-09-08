@@ -1,0 +1,18 @@
+Verification: 2026-09-08
+Cluster: comicrent-gke-p6 / us-central1-a
+Node pool: default-pool / 1 Ready
+
+Helm: comicrent revision 2, deployed, Upgrade complete
+
+Workloads:
+api-gateway 1/1 ghcr.io/davidvelasquez77/comicrent-api-gateway:v0.7.2
+auth-service 1/1 ghcr.io/davidvelasquez77/comicrent-auth-service:v0.7.2
+comics-service 1/1 ghcr.io/davidvelasquez77/comicrent-comics-service:v0.7.2
+rentals-service 1/1 ghcr.io/davidvelasquez77/comicrent-rentals-service:v0.7.2
+copies-service 1/1 ghcr.io/davidvelasquez77/comicrent-copies-service:v0.7.2
+copies-consumer 1/1 ghcr.io/davidvelasquez77/comicrent-copies-service:v0.7.2
+summary-consumer 1/1 ghcr.io/davidvelasquez77/comicrent-operations-jobs:v0.7.2
+rabbitmq 1/1
+
+Public health: http://136.119.74.33:3000/health
+{"service":"api-gateway","status":"ok"}
