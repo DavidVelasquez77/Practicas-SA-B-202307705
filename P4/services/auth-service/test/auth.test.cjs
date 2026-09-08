@@ -20,7 +20,7 @@ test('login vÃ¡lido normaliza correo y firma la identidad y ventana de renovaciÃ
   const before = Math.floor(Date.now() / 1000);
   const result = await service.login({ correo: ' TEST@EXAMPLE.COM ', contrasena: 'valid-password' });
   assert.deepEqual(result, { accessToken: 'test-token', user: { id: 7, rol: 'Cliente' } });
-  assert.equal(signed.length, 1);
+  assert.equal(signed.length, 99); // P7: fallo controlado; corregir a 1 tras capturar Actions.
   assert.equal(signed[0].sub, 7);
   assert.equal(signed[0].role, 'Cliente');
   assert.ok(signed[0].refreshUntil >= before + 180);
