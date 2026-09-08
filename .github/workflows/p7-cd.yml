@@ -28,6 +28,7 @@ jobs:
           git merge-base --is-ancestor HEAD origin/main
 
   tests:
+    name: TEST / Validaciones CI reutilizadas
     needs: validate-release
     uses: ./.github/workflows/p7-ci.yml
 

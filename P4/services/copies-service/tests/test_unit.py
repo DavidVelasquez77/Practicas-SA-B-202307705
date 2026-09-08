@@ -10,7 +10,7 @@ from app.services.copies_service import CopiesService
 
 
 class CopiesUnitTests(unittest.IsolatedAsyncioTestCase):
-    async def test_rent_available_copy_commits_new_status(self):
+    async def test_reserva_copia_disponible_actualiza_estado_y_confirma(self):
         copy = SimpleNamespace(id=7, estado='DISPONIBLE')
         session = AsyncMock()
         session.get.return_value = copy
@@ -24,7 +24,7 @@ class CopiesUnitTests(unittest.IsolatedAsyncioTestCase):
         session.commit.assert_awaited_once()
         session.refresh.assert_awaited_once_with(copy)
 
-    async def test_missing_copy_returns_404_without_commit(self):
+    async def test_copia_inexistente_responde_404_sin_confirmar(self):
         session = AsyncMock()
         session.get.return_value = None
         context = MagicMock()

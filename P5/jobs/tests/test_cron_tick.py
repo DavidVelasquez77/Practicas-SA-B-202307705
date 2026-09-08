@@ -5,7 +5,7 @@ import cron_tick
 
 
 class CronTickUnitTests(unittest.TestCase):
-    def test_tick_records_carnet_and_guatemala_time_then_commits(self):
+    def test_registra_carnet_hora_de_guatemala_y_confirma(self):
         fixed = datetime(2026, 9, 8, 10, 30, tzinfo=cron_tick.GT_OFFSET)
         connection = MagicMock()
         connection.__enter__.return_value = connection

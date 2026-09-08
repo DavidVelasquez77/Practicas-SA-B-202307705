@@ -44,14 +44,14 @@ class ServiceIntegrationTests(unittest.IsolatedAsyncioTestCase):
         rental = await RentalsService.create(CreateRentalInput(user_id=1, comic_id=self.comic['id'], dias=2))
         return rental, copy
 
-    async def test_1_rentals_client_reads_real_comics_graphql(self):
+    async def test_1_rentals_consulta_comics_graphql_real(self):
         comic = await comics_client.ComicsClient.find_one(self.comic['id'])
         self.assertEqual(comic, self.comic)
         self.assertEqual(comic['precioAlquiler'], 12.5)
         with self.assertRaisesRegex(RemoteServiceError, 'no existe'):
             await comics_client.ComicsClient.find_one(2147483647)
 
-    async def test_2_rentals_reserves_real_copy_and_persists_rental(self):
+    async def test_2_rentals_reserva_copia_real_y_persiste_alquiler(self):
         rental, copy = await self.make_rental()
         self.assertEqual(rental.copy_id, copy['id'])
         self.assertEqual(rental.precio_alquiler, 12.5)
@@ -63,7 +63,7 @@ class ServiceIntegrationTests(unittest.IsolatedAsyncioTestCase):
         with self.assertRaisesRegex(RemoteServiceError, 'No existen ejemplares'):
             await copies_client.CopiesClient.find_available(self.comic['id'])
 
-    async def test_3_return_event_crosses_rabbitmq_and_consumer_commits(self):
+    async def test_3_evento_devolucion_cruza_rabbitmq_y_consumidor_confirma(self):
         rental, copy = await self.make_rental()
         # Espera la cola declarada por el consumer para evitar perder un evento temprano.
         ready = False
