@@ -1,0 +1,89 @@
+tests-1     | test_1_rentals_client_reads_real_comics_graphql (test_integration.ServiceIntegrationTests.test_1_rentals_client_reads_real_comics_graphql) ... ok
+tests-1     | test_2_rentals_reserves_real_copy_and_persists_rental (test_integration.ServiceIntegrationTests.test_2_rentals_reserves_real_copy_and_persists_rental) ... ok
+consumer-1  | error when creating transport: <AMQPConnectionError: (111, "Connect call failed ('172.18.0.2', 5672)")>
+tests-1     | test_3_return_event_crosses_rabbitmq_and_consumer_commits (test_integration.ServiceIntegrationTests.test_3_return_event_crosses_rabbitmq_and_consumer_commits) ... ok
+tests-1     | 
+tests-1     | ----------------------------------------------------------------------
+tests-1     | Ran 3 tests in 1.452s
+tests-1     | 
+consumer-1  | Traceback (most recent call last):
+tests-1     | OK
+consumer-1  |   File "/usr/local/lib/python3.12/site-packages/aiormq/connection.py", line 326, in create
+consumer-1  |     return await asyncio.open_connection(
+consumer-1  |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+consumer-1  |   File "/usr/local/lib/python3.12/asyncio/streams.py", line 48, in open_connection
+consumer-1  |     transport, _ = await loop.create_connection(
+consumer-1  |                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+consumer-1  |   File "/usr/local/lib/python3.12/asyncio/base_events.py", line 1132, in create_connection
+consumer-1  |     raise exceptions[0]
+consumer-1  |   File "/usr/local/lib/python3.12/asyncio/base_events.py", line 1107, in create_connection
+consumer-1  |     sock = await self._connect_sock(
+consumer-1  |            ^^^^^^^^^^^^^^^^^^^^^^^^^
+consumer-1  |   File "/usr/local/lib/python3.12/asyncio/base_events.py", line 1010, in _connect_sock
+consumer-1  |     await self.sock_connect(sock, address)
+consumer-1  |   File "/usr/local/lib/python3.12/asyncio/selector_events.py", line 651, in sock_connect
+consumer-1  |     return await fut
+consumer-1  |            ^^^^^^^^^
+consumer-1  |   File "/usr/local/lib/python3.12/asyncio/selector_events.py", line 691, in _sock_connect_cb
+consumer-1  |     raise OSError(err, f'Connect call failed {address}')
+consumer-1  | ConnectionRefusedError: [Errno 111] Connect call failed ('172.18.0.2', 5672)
+consumer-1  | 
+consumer-1  | The above exception was the direct cause of the following exception:
+consumer-1  | 
+consumer-1  | Traceback (most recent call last):
+consumer-1  |   File "<frozen runpy>", line 198, in _run_module_as_main
+consumer-1  |   File "<frozen runpy>", line 88, in _run_code
+consumer-1  |   File "/app/app/messaging/consumer.py", line 260, in <module>
+consumer-1  |     asyncio.run(
+consumer-1  |   File "/usr/local/lib/python3.12/asyncio/runners.py", line 195, in run
+consumer-1  |     return runner.run(main)
+consumer-1  |            ^^^^^^^^^^^^^^^^
+consumer-1  |   File "/usr/local/lib/python3.12/asyncio/runners.py", line 118, in run
+consumer-1  |     return self._loop.run_until_complete(task)
+consumer-1  |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+consumer-1  |   File "/usr/local/lib/python3.12/asyncio/base_events.py", line 691, in run_until_complete
+consumer-1  |     return future.result()
+consumer-1  |            ^^^^^^^^^^^^^^^
+consumer-1  |   File "/app/app/messaging/consumer.py", line 194, in main
+consumer-1  |     await aio_pika.connect_robust(
+consumer-1  |   File "/usr/local/lib/python3.12/site-packages/aio_pika/robust_connection.py", line 419, in connect_robust
+consumer-1  |     await connection.connect(timeout=timeout)
+consumer-1  |   File "/usr/local/lib/python3.12/site-packages/aio_pika/robust_connection.py", line 223, in connect
+consumer-1  |     await self.__fail_fast_future
+consumer-1  |   File "/usr/local/lib/python3.12/site-packages/aio_pika/robust_connection.py", line 160, in __connection_factory
+consumer-1  |     await Connection.connect(self, self.__connect_timeout)
+consumer-1  |   File "/usr/local/lib/python3.12/site-packages/aio_pika/connection.py", line 148, in connect
+consumer-1  |     self.transport = await UnderlayConnection.connect(
+consumer-1  |                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+consumer-1  |   File "/usr/local/lib/python3.12/site-packages/aio_pika/abc.py", line 731, in connect
+consumer-1  |     connection = await cls.make_connection(
+consumer-1  |                  ^^^^^^^^^^^^^^^^^^^^^^^^^^
+consumer-1  |   File "/usr/local/lib/python3.12/site-packages/aio_pika/abc.py", line 715, in make_connection
+consumer-1  |     connection: aiormq.abc.AbstractConnection = await asyncio.wait_for(
+consumer-1  |                                                 ^^^^^^^^^^^^^^^^^^^^^^^
+consumer-1  |   File "/usr/local/lib/python3.12/asyncio/tasks.py", line 520, in wait_for
+consumer-1  |     return await fut
+consumer-1  |            ^^^^^^^^^
+consumer-1  |   File "/usr/local/lib/python3.12/site-packages/aiormq/connection.py", line 1014, in connect
+consumer-1  |     await connection.connect(client_properties or {})
+consumer-1  |   File "/usr/local/lib/python3.12/site-packages/aiormq/base.py", line 164, in wrap
+consumer-1  |     return await self.create_task(func(self, *args, **kwargs))
+consumer-1  |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+consumer-1  |   File "/usr/local/lib/python3.12/site-packages/aiormq/abc.py", line 44, in __inner
+consumer-1  |     return await self.task
+consumer-1  |            ^^^^^^^^^^^^^^^
+consumer-1  |   File "/usr/local/lib/python3.12/site-packages/aiormq/connection.py", line 551, in connect
+consumer-1  |     raise e
+consumer-1  |   File "/usr/local/lib/python3.12/site-packages/aiormq/connection.py", line 540, in connect
+consumer-1  |     reader, writer = await self._transport_factory.create(
+consumer-1  |                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+consumer-1  |   File "/usr/local/lib/python3.12/site-packages/aiormq/connection.py", line 330, in create
+consumer-1  |     raise AMQPConnectionError(*e.args) from e
+consumer-1  | aiormq.exceptions.AMQPConnectionError: [Errno 111] Connect call failed ('172.18.0.2', 5672)
+consumer-1  | [Copies Consumer] Conectado a RabbitMQ.
+consumer-1  | [Copies Consumer] Exchange: comicrent.events
+consumer-1  | [Copies Consumer] Queue: copies.return.requested
+consumer-1  | [Copies Consumer] Esperando eventos...
+consumer-1  | [Copies Consumer] Evento recibido: 003ed6bb-b917-4e55-aa1d-f21cf2e71d17 rentalId=2 copyId=2
+consumer-1  | [Copies Consumer] Copy 2 -> DISPONIBLE
+consumer-1  | [Copies Consumer] Evento 003ed6bb-b917-4e55-aa1d-f21cf2e71d17 procesado.

@@ -1,0 +1,93 @@
+# Infraestructura efímera exclusiva de tests. No usa Neon, GKE ni .env locales.
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: test
+      POSTGRES_PASSWORD: test
+      POSTGRES_DB: test
+    volumes:
+      - ./init.sql:/docker-entrypoint-initdb.d/01-tests.sql:ro
+    healthcheck:
+      test: [CMD-SHELL, 'pg_isready -U test -d test']
+      interval: 2s
+      timeout: 3s
+      retries: 30
+  rabbitmq:
+    image: rabbitmq:3.13-alpine
+    environment:
+      RABBITMQ_DEFAULT_USER: test
+      RABBITMQ_DEFAULT_PASS: test
+    healthcheck:
+      test: [CMD-SHELL, 'rabbitmq-diagnostics -q check_running && rabbitmq-diagnostics -q check_port_connectivity']
+      interval: 5s
+      timeout: 5s
+      retries: 30
+  comics:
+    image: comicrent-p7-test-comics
+    build:
+      context: ../../services/comics-service
+      dockerfile: Dockerfile.prod
+    environment:
+      DATABASE_URL: postgresql://test:test@postgres:5432/comics_test
+      PORT: '3002'
+    command: [sh, -c, 'npx --no-install prisma migrate deploy && node dist/main.js']
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: [CMD, node, -e, "fetch('http://localhost:3002/health').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))"]
+      interval: 3s
+      timeout: 5s
+      retries: 40
+  copies:
+    image: comicrent-p7-test-copies
+    build:
+      context: ../../services/copies-service
+      dockerfile: Dockerfile.prod
+    environment: &copies-env
+      DATABASE_URL: postgresql+psycopg://test:test@postgres:5432/copies_test
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_USER: test
+      RABBITMQ_PASSWORD: test
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: [CMD, python, -c, "import urllib.request; urllib.request.urlopen('http://localhost:8002/health')"]
+      interval: 3s
+      timeout: 5s
+      retries: 40
+  consumer:
+    image: comicrent-p7-test-copies
+    environment: *copies-env
+    command: [python, -u, -m, app.messaging.consumer]
+    depends_on:
+      copies:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+  tests:
+    image: comicrent-p7-test-rentals
+    build:
+      context: ../../services/rentals-service
+      dockerfile: Dockerfile.prod
+    environment:
+      DATABASE_URL: postgresql+psycopg://test:test@postgres:5432/rentals_test
+      COMICS_SERVICE_URL: http://comics:3002/graphql
+      COPIES_SERVICE_URL: http://copies:8002
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_USER: test
+      RABBITMQ_PASSWORD: test
+      COPIES_TEST_DATABASE_URL: postgresql://test:test@postgres:5432/copies_test
+      PYTHONDONTWRITEBYTECODE: '1'
+    volumes:
+      - ./test_integration.py:/app/test_integration.py:ro
+    command: [python, -m, unittest, -v, test_integration]
+    depends_on:
+      comics:
+        condition: service_healthy
+      copies:
+        condition: service_healthy
+      consumer:
+        condition: service_started

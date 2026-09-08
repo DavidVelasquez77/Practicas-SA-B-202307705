@@ -1,0 +1,130 @@
+name: P7 CD
+
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: read
+
+# Un solo despliegue a la vez; no interrumpir un Helm upgrade en marcha.
+concurrency:
+  group: p7-production
+  cancel-in-progress: false
+
+jobs:
+  validate-release:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Release semántico desde main
+        env:
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: |
+          [[ "$RELEASE_TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]] || { echo 'Usar vX.Y.Z'; exit 1; }
+          git merge-base --is-ancestor HEAD origin/main
+
+  tests:
+    needs: validate-release
+    uses: ./.github/workflows/p7-ci.yml
+
+  docker:
+    name: Dockerización / ${{ matrix.image }}
+    needs: tests
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      packages: write
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - image: api-gateway
+            context: P4/api-gateway
+          - image: auth-service
+            context: P4/services/auth-service
+          - image: comics-service
+            context: P4/services/comics-service
+          - image: rentals-service
+            context: P4/services/rentals-service
+          - image: copies-service
+            context: P4/services/copies-service
+          - image: operations-jobs
+            context: P5/jobs
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Build y push GHCR
+        uses: docker/build-push-action@v6
+        with:
+          context: ${{ matrix.context }}
+          file: ${{ matrix.context }}/Dockerfile.prod
+          push: true
+          platforms: linux/amd64
+          tags: |
+            ghcr.io/davidvelasquez77/comicrent-${{ matrix.image }}:${{ github.ref_name }}
+            ghcr.io/davidvelasquez77/comicrent-${{ matrix.image }}:sha-${{ github.sha }}
+          labels: |
+            org.opencontainers.image.source=https://github.com/${{ github.repository }}
+            org.opencontainers.image.revision=${{ github.sha }}
+            org.opencontainers.image.version=${{ github.ref_name }}
+          cache-from: type=gha,scope=${{ matrix.image }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.image }}
+
+  deploy:
+    name: Despliegue GKE con OIDC
+    needs: docker
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      id-token: write
+    env:
+      RELEASE_TAG: ${{ github.ref_name }}
+      COMMIT_SHA: ${{ github.sha }}
+      GCP_PROJECT_ID: comicrent-p6-2026
+      GKE_CLUSTER: comicrent-gke-p6
+      GKE_LOCATION: us-central1-a
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verificar configuración y acceso público a imágenes
+        env:
+          WIF_PROVIDER: ${{ vars.GCP_WIF_PROVIDER }}
+          DEPLOY_SA: ${{ vars.GCP_SERVICE_ACCOUNT }}
+        run: |
+          test -n "$WIF_PROVIDER" || { echo 'Falta variable GCP_WIF_PROVIDER'; exit 1; }
+          test -n "$DEPLOY_SA" || { echo 'Falta variable GCP_SERVICE_ACCOUNT'; exit 1; }
+          for image in api-gateway auth-service comics-service rentals-service copies-service operations-jobs; do
+            token=$(curl -fsSG https://ghcr.io/token --data-urlencode service=ghcr.io --data-urlencode "scope=repository:davidvelasquez77/comicrent-$image:pull" | jq -er .token)
+            echo "::add-mask::$token"
+            curl -fsS -o /dev/null -H "Authorization: Bearer $token" -H 'Accept: application/vnd.oci.image.index.v1+json, application/vnd.docker.distribution.manifest.v2+json' "https://ghcr.io/v2/davidvelasquez77/comicrent-$image/manifests/$RELEASE_TAG" || { echo "Hacer público el package comicrent-$image y reejecutar solo jobs fallidos"; exit 1; }
+          done
+      - uses: google-github-actions/auth@v3
+        with:
+          project_id: ${{ env.GCP_PROJECT_ID }}
+          workload_identity_provider: ${{ vars.GCP_WIF_PROVIDER }}
+          service_account: ${{ vars.GCP_SERVICE_ACCOUNT }}
+      - uses: google-github-actions/get-gke-credentials@v3
+        with:
+          cluster_name: ${{ env.GKE_CLUSTER }}
+          location: ${{ env.GKE_LOCATION }}
+          project_id: ${{ env.GCP_PROJECT_ID }}
+      - uses: azure/setup-helm@v4.3.0
+        with:
+          version: v3.17.3
+      - name: Helm upgrade y verificación
+        run: bash P7/config/deploy.sh
+      - name: Resumen de despliegue
+        if: success()
+        run: |
+          echo "Release $RELEASE_TAG — commit $COMMIT_SHA — GKE $GKE_CLUSTER" >> "$GITHUB_STEP_SUMMARY"
+          echo 'Verificación de Helm, rollouts y health completada.' >> "$GITHUB_STEP_SUMMARY"

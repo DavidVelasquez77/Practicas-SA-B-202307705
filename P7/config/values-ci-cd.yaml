@@ -1,0 +1,31 @@
+# Solo overrides de P7. CD inyecta el mismo tag de release en todas las imágenes.
+api-gateway:
+  image:
+    repository: ghcr.io/davidvelasquez77/comicrent-api-gateway
+    tag: must-set-release-tag
+auth-service:
+  image:
+    repository: ghcr.io/davidvelasquez77/comicrent-auth-service
+    tag: must-set-release-tag
+comics-service:
+  image:
+    repository: ghcr.io/davidvelasquez77/comicrent-comics-service
+    tag: must-set-release-tag
+rentals-service:
+  image:
+    repository: ghcr.io/davidvelasquez77/comicrent-rentals-service
+    tag: must-set-release-tag
+copies-service:
+  image:
+    repository: ghcr.io/davidvelasquez77/comicrent-copies-service
+    tag: must-set-release-tag
+copies-consumer:
+  image:
+    repository: ghcr.io/davidvelasquez77/comicrent-copies-service
+    tag: must-set-release-tag
+operations-jobs:
+  image:
+    repository: ghcr.io/davidvelasquez77/comicrent-operations-jobs
+    tag: must-set-release-tag
+extraLabels:
+  practice: p7

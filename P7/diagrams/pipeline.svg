@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1400" height="650" viewBox="0 0 1400 650">
+<defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10Z" fill="#546784"/></marker></defs>
+<rect width="1400" height="650" fill="#f4f7fc"/>
+<g font-family="Arial,sans-serif" fill="#15283e">
+<text x="50" y="62" font-size="32" font-weight="700">ComicRent · Práctica 7</text>
+<text x="50" y="97" font-size="18">GitHub Actions → GHCR → GCP / GKE · Sin duplicar P4, P5 ni P6</text>
+<g fill="#fff" stroke="#bac8dc" stroke-width="2">
+<rect x="50" y="140" width="300" height="80" rx="14"/><rect x="400" y="140" width="350" height="80" rx="14"/>
+<rect x="50" y="275" width="260" height="135" rx="14"/><rect x="355" y="275" width="290" height="135" rx="14"/>
+<rect x="690" y="275" width="290" height="135" rx="14"/><rect x="1025" y="275" width="325" height="135" rx="14"/>
+<rect x="690" y="465" width="290" height="80" rx="14"/><rect x="1025" y="465" width="325" height="110" rx="14"/>
+</g>
+<text x="72" y="174" font-size="20" font-weight="700">Developer → GitHub</text><text x="72" y="202" font-size="16">PR / push a main: CI</text>
+<text x="422" y="174" font-size="20" font-weight="700">Tag vX.Y.Z en main: CD</text><text x="422" y="202" font-size="16">Reutiliza CI antes de publicar</text>
+<g font-size="23" font-weight="700"><text x="72" y="311">1 · BUILD</text><text x="377" y="311">2 · TEST</text><text x="712" y="311">3 · DOCKERIZACIÓN</text><text x="1047" y="311">4 · DESPLIEGUE</text></g>
+<g font-size="17"><text x="72" y="344">P4: NestJS + Python</text><text x="72" y="373">P5: operations-jobs</text>
+<text x="377" y="344">11 unitarias / 3 integraciones</text><text x="377" y="373">PostgreSQL + RabbitMQ reales</text>
+<text x="712" y="344">6 × Dockerfile.prod</text><text x="712" y="373">GHCR público · release + SHA</text>
+<text x="1047" y="344">Helm upgrade → GKE existente</text><text x="1047" y="373">Rollout, versión y health</text>
+<text x="712" y="497">GitHub OIDC → GCP WIF</text><text x="712" y="526">Service Account sin llave JSON</text>
+<text x="1047" y="496">P5 Helm + P6 values GKE</text><text x="1047" y="525">+ P7 overrides GHCR / tags</text><text x="1047" y="553">Propietario sube pool 0 → 1</text></g>
+<g stroke="#546784" stroke-width="2.5" fill="none" marker-end="url(#arrow)">
+<path d="M180 220V275"/><path d="M575 220V245H180V275"/><path d="M310 340H355"/><path d="M645 340H690"/><path d="M980 340H1025"/><path d="M835 410V465"/><path d="M980 502H1002V390H1025"/><path d="M1187 465V410"/>
+</g>
+<text x="661" y="254" font-size="15" fill="#38577f">Solo tags con tests verdes</text>
+<rect x="50" y="465" width="595" height="110" rx="14" fill="#fff0ef" stroke="#e0aaa4"/>
+<text x="72" y="500" font-size="20" font-weight="700" fill="#913e36">Si build o tests fallan: workflow rojo</text>
+<text x="72" y="530" font-size="17">Dockerización y deploy quedan bloqueados por needs.</text>
+<text x="72" y="555" font-size="17">PR/main verdes finalizan CI; no despliegan producción.</text>
+<text x="50" y="618" font-size="16" fill="#546784">El entorno Docker de pruebas vive en el runner. El despliegue de evaluación vive en GCP, namespace sa-p6.</text>
+</g></svg>

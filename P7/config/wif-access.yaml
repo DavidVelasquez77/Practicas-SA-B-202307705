@@ -1,0 +1,71 @@
+# Aplicar por el propietario mediante setup-wif.ps1; no contiene credenciales.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: p7-helm-deployer
+  namespace: sa-p6
+rules:
+  - apiGroups: ['', apps, batch, autoscaling, networking.k8s.io, policy, rbac.authorization.k8s.io]
+    resources: ['*']
+    verbs: ['*']
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: p7-helm-deployer
+  namespace: sa-p6
+subjects:
+  - kind: User
+    name: '<DEPLOY_SERVICE_ACCOUNT>'
+    apiGroup: rbac.authorization.k8s.io
+roleRef:
+  kind: Role
+  name: p7-helm-deployer
+  apiGroup: rbac.authorization.k8s.io
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: p7-cluster-read
+rules:
+  - apiGroups: ['']
+    resources: [nodes, namespaces]
+    verbs: [get, list, watch]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: p7-cluster-read
+subjects:
+  - kind: User
+    name: '<DEPLOY_SERVICE_ACCOUNT>'
+    apiGroup: rbac.authorization.k8s.io
+roleRef:
+  kind: ClusterRole
+  name: p7-cluster-read
+  apiGroup: rbac.authorization.k8s.io
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: p7-dns-read
+  namespace: kube-system
+rules:
+  - apiGroups: ['']
+    resources: [services]
+    resourceNames: [kube-dns]
+    verbs: [get]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: p7-dns-read
+  namespace: kube-system
+subjects:
+  - kind: User
+    name: '<DEPLOY_SERVICE_ACCOUNT>'
+    apiGroup: rbac.authorization.k8s.io
+roleRef:
+  kind: Role
+  name: p7-dns-read
+  apiGroup: rbac.authorization.k8s.io

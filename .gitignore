@@ -1,0 +1,7 @@
+# Artefactos de compilación/pruebas, no fuentes de la práctica.
+**/*.tsbuildinfo
+**/__pycache__/
+**/unit-tests.log
+/integration-*.log
+# Credenciales temporales generadas por Google GitHub Actions.
+gha-creds-*.json

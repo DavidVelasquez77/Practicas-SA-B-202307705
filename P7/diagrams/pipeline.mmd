@@ -1,0 +1,15 @@
+flowchart LR
+  D[Developer: commit / PR] --> G[GitHub]
+  G -->|PR o push main| B[1. BUILD: Node + Python]
+  G -->|tag vX.Y.Z en main| R[CD: validar release]
+  R --> B
+  B --> T[2. TEST: 11 unitarias + 3 integraciones]
+  T -->|fallo| F[Workflow rojo: detener publicación y deploy]
+  T -->|CI verde: fin para PR/main| CI[Artifacts de tests]
+  T -->|tag y tests verdes| I[3. DOCKERIZACIÓN: 6 Dockerfile.prod]
+  I -->|GITHUB_TOKEN| GH[GHCR público: versión + SHA]
+  GH --> A[GitHub OIDC → WIF → Service Account]
+  A --> K[4. DESPLIEGUE: Helm upgrade → GKE existente]
+  P[P5 Helm + P6 GKE + P7 overrides] --> K
+  K --> V[Rollout + versión + health público]
+  U[Propietario: subir pool 0 → 1 antes del tag] -.-> K
