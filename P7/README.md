@@ -222,6 +222,28 @@ No se debe reutilizar un tag para otro commit. Al terminar la evaluación, se pu
 gcloud container clusters resize comicrent-gke-p6 --node-pool=default-pool --num-nodes=0 --zone=us-central1-a --project=comicrent-p6-2026
 ```
 
+Para pausar el entorno sin dejar trabajos ejecutándose mientras el pool está en cero, se detienen temporalmente las Deployments, RabbitMQ y los CronJobs:
+
+```powershell
+kubectl scale deployment --all -n sa-p6 --replicas=0
+kubectl scale statefulset comicrent-rabbitmq -n sa-p6 --replicas=0
+kubectl patch cronjob comicrent-cron-tick -n sa-p6 --type=merge -p '{"spec":{"suspend":true}}'
+kubectl patch cronjob comicrent-cron-summary -n sa-p6 --type=merge -p '{"spec":{"suspend":true}}'
+```
+
+El día de la evaluación, después de subir el pool a 1, se restaura el entorno:
+
+```powershell
+gcloud container clusters resize comicrent-gke-p6 --node-pool=default-pool --num-nodes=1 --zone=us-central1-a --project=comicrent-p6-2026
+kubectl scale deployment --all -n sa-p6 --replicas=1
+kubectl scale statefulset comicrent-rabbitmq -n sa-p6 --replicas=1
+kubectl patch cronjob comicrent-cron-tick -n sa-p6 --type=merge -p '{"spec":{"suspend":false}}'
+kubectl patch cronjob comicrent-cron-summary -n sa-p6 --type=merge -p '{"spec":{"suspend":false}}'
+kubectl get pods -n sa-p6
+```
+
+Este procedimiento no borra imágenes, Helm, Secrets ni el PVC de RabbitMQ; únicamente pausa los workloads para evitar consumo y ejecuciones mientras no hay nodos.
+
 ## 10. Fallos y recuperación
 
 - Si falla una prueba, CI termina en rojo y Docker/deploy quedan omitidos.

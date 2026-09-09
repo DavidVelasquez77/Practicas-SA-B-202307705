@@ -62,3 +62,9 @@ Previous images v0.7.2 were replaced by v0.7.3; no old Deployment pod remained.
 Capacity observation:
 With one node, Kubernetes reported `Insufficient cpu` while maxSurge=1 was creating replacement pods.
 The node pool was temporarily scaled to 2, the rollout completed, and it was returned to 1 node.
+
+Cost control verification: 2026-09-09
+Node pool current size: 0
+Deployments and RabbitMQ were scaled to 0 before the resize; both CronJobs were suspended.
+PVC data-comicrent-rabbitmq-0: Bound / standard-rwo / 1Gi
+No cluster, Helm release, Secret, image or PVC was deleted.
