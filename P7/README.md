@@ -10,7 +10,7 @@ Build → Test → Dockerización → Despliegue
 
 P7 agrega únicamente la automatización, la configuración específica, el diagrama, las evidencias y este manual. El código de P4, el chart de P5 y la configuración GKE de P6 se reutilizan desde sus ubicaciones originales.
 
-Resultado validado: el release `v0.7.2` pasó CI/CD, publicó seis imágenes en GHCR y quedó desplegado en GKE mediante GitHub OIDC + Google Workload Identity Federation. El gateway responde en [http://136.119.74.33:3000/health](http://136.119.74.33:3000/health).
+Resultado validado: el release `v0.7.3` pasó CI/CD, publicó seis imágenes en GHCR y quedó desplegado en GKE mediante GitHub OIDC + Google Workload Identity Federation. El gateway responde en [http://136.119.74.33:3000/health](http://136.119.74.33:3000/health).
 
 ## 2. Arquitectura y datos del entorno
 
@@ -25,7 +25,7 @@ Resultado validado: el release `v0.7.2` pasó CI/CD, publicó seis imágenes en 
 | Namespace | `sa-p6` |
 | Release Helm | `comicrent` |
 | Registry | `ghcr.io/davidvelasquez77` |
-| Versión validada | `v0.7.2` |
+| Versión validada | `v0.7.3` |
 
 Los workflows son:
 
@@ -273,11 +273,12 @@ Ejecuciones:
 
 - [CI verde de main](https://github.com/DavidVelasquez77/Practicas-SA-B-202307705/actions/runs/34274196000)
 - [CD verde de v0.7.2](https://github.com/DavidVelasquez77/Practicas-SA-B-202307705/actions/runs/34274200611)
+- [CD verde de v0.7.3](https://github.com/DavidVelasquez77/Practicas-SA-B-202307705/actions/runs/34297527796)
 - [CI final documental](https://github.com/DavidVelasquez77/Practicas-SA-B-202307705/actions/runs/34278748090)
 - [Fallo controlado](https://github.com/DavidVelasquez77/Practicas-SA-B-202307705/actions/runs/34271159061)
 - [CD bloqueado por tests](https://github.com/DavidVelasquez77/Practicas-SA-B-202307705/actions/runs/34273962993)
 
-El release `v0.7.2` dejó Helm en revisión 2 (`deployed`, `Upgrade complete`), un nodo `Ready`, siete Deployments `1/1`, RabbitMQ `1/1` y el endpoint público respondiendo `{"service":"api-gateway","status":"ok"}`. La revisión 1 usaba imágenes `1.0.0-gke` de Artifact Registry; la revisión 2 usa las imágenes públicas `ghcr.io/davidvelasquez77/comicrent-*:v0.7.2`. Esa comparación y la salida equivalente al comando `kubectl get pods` están en `evidence/gke-final-verification.log`.
+El release `v0.7.3` dejó Helm en revisión 3 (`deployed`, `Upgrade complete`), siete Deployments `1/1`, todos con imágenes `ghcr.io/davidvelasquez77/comicrent-*:v0.7.3`, estrategia `RollingUpdate` y el endpoint público respondiendo `{"service":"api-gateway","status":"ok"}`. Durante la prueba fue necesario escalar temporalmente el pool a 2 nodos porque `maxSurge: 1` requiere capacidad para crear el pod nuevo antes de retirar el anterior; al terminar, el pool volvió a 1 nodo. La transición v0.7.2 → v0.7.3 y la salida equivalente al comando `kubectl get pods` están en `evidence/gke-final-verification.log`.
 
 ## 12. Preguntas teóricas
 

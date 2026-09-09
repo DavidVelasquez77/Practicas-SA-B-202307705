@@ -37,3 +37,28 @@ rentals-service strategy=RollingUpdate maxUnavailable=0 maxSurge=1
 copies-service strategy=RollingUpdate maxUnavailable=0 maxSurge=1
 copies-consumer strategy=RollingUpdate maxUnavailable=0 maxSurge=1
 summary-consumer strategy=RollingUpdate (Kubernetes default for this internal consumer)
+
+Verification: 2026-09-09 / release v0.7.3
+CD: https://github.com/DavidVelasquez77/Practicas-SA-B-202307705/actions/runs/34297527796
+Helm: comicrent revision 3, deployed, Upgrade complete
+
+Workloads after RollingUpdate:
+api-gateway 1/1 ghcr.io/davidvelasquez77/comicrent-api-gateway:v0.7.3
+auth-service 1/1 ghcr.io/davidvelasquez77/comicrent-auth-service:v0.7.3
+comics-service 1/1 ghcr.io/davidvelasquez77/comicrent-comics-service:v0.7.3
+rentals-service 1/1 ghcr.io/davidvelasquez77/comicrent-rentals-service:v0.7.3
+copies-service 1/1 ghcr.io/davidvelasquez77/comicrent-copies-service:v0.7.3
+copies-consumer 1/1 ghcr.io/davidvelasquez77/comicrent-copies-service:v0.7.3
+summary-consumer 1/1 ghcr.io/davidvelasquez77/comicrent-operations-jobs:v0.7.3
+rabbitmq 1/1
+
+Public health: http://136.119.74.33:3000/health
+{"service":"api-gateway","status":"ok"}
+
+RollingUpdate verification:
+All seven Deployments: strategy=RollingUpdate, READY=1, UPDATED=1, AVAILABLE=1
+Previous images v0.7.2 were replaced by v0.7.3; no old Deployment pod remained.
+
+Capacity observation:
+With one node, Kubernetes reported `Insufficient cpu` while maxSurge=1 was creating replacement pods.
+The node pool was temporarily scaled to 2, the rollout completed, and it was returned to 1 node.
