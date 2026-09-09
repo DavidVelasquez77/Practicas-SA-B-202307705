@@ -14,7 +14,7 @@ Resultado validado: el release `v0.7.2` pasó CI/CD, publicó seis imágenes en 
 
 ## 2. Arquitectura y datos del entorno
 
-![Pipeline de P7](diagrams/pipeline.svg)
+![Pipeline de P7](diagrams/ComicRent%20-%20CI_CD%20Pipeline.png)
 
 | Elemento | Valor |
 | --- | --- |
@@ -212,7 +212,9 @@ git tag vX.Y.Z
 git push origin vX.Y.Z
 ```
 
-El tag dispara CD. El job comprueba el nodo `Ready`, Secrets existentes, StorageClass, RabbitMQ y kube-dns; luego ejecuta el upgrade Helm con `--atomic --wait --timeout 15m`. Finalmente valida rollouts, versión de imágenes, CronJobs, RabbitMQ, Helm history y `/health`.
+El tag dispara CD. El job comprueba el nodo `Ready`, Secrets existentes, StorageClass, RabbitMQ y kube-dns; luego ejecuta el upgrade Helm con `--atomic --wait --timeout 15m`. Finalmente valida rollouts, versión de imágenes, estrategia `RollingUpdate`, CronJobs, RabbitMQ, Helm history y `/health`.
+
+En cada Deployment, `P7/config/deploy.sh` guarda la imagen anterior antes del upgrade y, después de Helm, comprueba que la imagen termine en el tag nuevo, que la estrategia sea `RollingUpdate` y que el rollout termine correctamente. En los microservicios principales el chart fija `maxUnavailable: 0` y `maxSurge: 1`: se crea el pod nuevo, se espera su disponibilidad y luego se retira el anterior. El `summary-consumer` usa la estrategia `RollingUpdate` predeterminada de Kubernetes porque es un consumidor interno.
 
 No se debe reutilizar un tag para otro commit. Al terminar la evaluación, se puede volver a cero nodos:
 
@@ -275,7 +277,7 @@ Ejecuciones:
 - [Fallo controlado](https://github.com/DavidVelasquez77/Practicas-SA-B-202307705/actions/runs/34271159061)
 - [CD bloqueado por tests](https://github.com/DavidVelasquez77/Practicas-SA-B-202307705/actions/runs/34273962993)
 
-El release `v0.7.2` dejó Helm en revisión 2 (`deployed`, `Upgrade complete`), un nodo `Ready`, siete Deployments `1/1`, RabbitMQ `1/1` y el endpoint público respondiendo `{"service":"api-gateway","status":"ok"}`.
+El release `v0.7.2` dejó Helm en revisión 2 (`deployed`, `Upgrade complete`), un nodo `Ready`, siete Deployments `1/1`, RabbitMQ `1/1` y el endpoint público respondiendo `{"service":"api-gateway","status":"ok"}`. La revisión 1 usaba imágenes `1.0.0-gke` de Artifact Registry; la revisión 2 usa las imágenes públicas `ghcr.io/davidvelasquez77/comicrent-*:v0.7.2`. Esa comparación y la salida equivalente al comando `kubectl get pods` están en `evidence/gke-final-verification.log`.
 
 ## 12. Preguntas teóricas
 

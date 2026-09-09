@@ -38,15 +38,32 @@ for service in api-gateway auth-service comics-service rentals-service copies-se
   args+=(--set-string "$service.image.tag=$RELEASE_TAG")
   args+=(--set-string "$service.deploymentRevision=$COMMIT_SHA")
 done
+
+deployment_services=(api-gateway auth-service comics-service rentals-service copies-service copies-consumer summary-consumer)
+declare -A previous_images=()
+for service in "${deployment_services[@]}"; do
+  previous_images["$service"]=$(kubectl get "deployment/comicrent-$service" -n "$ns" \
+    -o jsonpath='{.spec.template.spec.containers[0].image}' 2>/dev/null || true)
+done
+
 helm lint "$chart" "${args[@]}"
 helm upgrade comicrent "$chart" -n "$ns" "${args[@]}" --atomic --wait --timeout 15m --history-max 5
 
-for service in api-gateway auth-service comics-service rentals-service copies-service copies-consumer summary-consumer; do
+for service in "${deployment_services[@]}"; do
   kubectl rollout status "deployment/comicrent-$service" -n "$ns" --timeout=5m
   deployed=$(kubectl get "deployment/comicrent-$service" -n "$ns" -o jsonpath='{.spec.template.spec.containers[0].image}')
   [[ "$deployed" == ghcr.io/davidvelasquez77/comicrent-*:"$RELEASE_TAG" ]] || {
     echo "Versión inesperada en $service"; exit 1;
   }
+  strategy=$(kubectl get "deployment/comicrent-$service" -n "$ns" -o jsonpath='{.spec.strategy.type}')
+  [[ "$strategy" == RollingUpdate ]] || {
+    echo "Estrategia inesperada en $service: $strategy"; exit 1;
+  }
+  previous=${previous_images["$service"]:-}
+  if [[ -n "$previous" && "$previous" == "$deployed" ]]; then
+    echo "La imagen no cambió en $service: $deployed"; exit 1;
+  fi
+  echo "ROLLING UPDATE PASS / $service: ${previous:-none} -> $deployed"
 done
 kubectl rollout status statefulset/comicrent-rabbitmq -n "$ns" --timeout=5m
 kubectl get pods -n "$ns" -o wide

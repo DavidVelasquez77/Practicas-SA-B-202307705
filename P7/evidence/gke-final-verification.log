@@ -16,3 +16,24 @@ rabbitmq 1/1
 
 Public health: http://136.119.74.33:3000/health
 {"service":"api-gateway","status":"ok"}
+
+Helm image comparison:
+revision 1: us-central1-docker.pkg.dev/comicrent-p6-2026/comicrent/api-gateway:1.0.0-gke
+revision 2: ghcr.io/davidvelasquez77/comicrent-api-gateway:v0.7.2
+revision 1: us-central1-docker.pkg.dev/comicrent-p6-2026/comicrent/auth-service:1.0.0-gke
+revision 2: ghcr.io/davidvelasquez77/comicrent-auth-service:v0.7.2
+revision 1: us-central1-docker.pkg.dev/comicrent-p6-2026/comicrent/comics-service:1.0.0-gke
+revision 2: ghcr.io/davidvelasquez77/comicrent-comics-service:v0.7.2
+revision 1: us-central1-docker.pkg.dev/comicrent-p6-2026/comicrent/rentals-service:1.0.0-gke
+revision 2: ghcr.io/davidvelasquez77/comicrent-rentals-service:v0.7.2
+revision 1: us-central1-docker.pkg.dev/comicrent-p6-2026/comicrent/copies-service:1.0.0-gke
+revision 2: ghcr.io/davidvelasquez77/comicrent-copies-service:v0.7.2
+
+RollingUpdate verification:
+api-gateway strategy=RollingUpdate maxUnavailable=0 maxSurge=1
+auth-service strategy=RollingUpdate maxUnavailable=0 maxSurge=1
+comics-service strategy=RollingUpdate maxUnavailable=0 maxSurge=1
+rentals-service strategy=RollingUpdate maxUnavailable=0 maxSurge=1
+copies-service strategy=RollingUpdate maxUnavailable=0 maxSurge=1
+copies-consumer strategy=RollingUpdate maxUnavailable=0 maxSurge=1
+summary-consumer strategy=RollingUpdate (Kubernetes default for this internal consumer)
