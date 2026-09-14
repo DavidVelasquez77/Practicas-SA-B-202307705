@@ -12,6 +12,19 @@ ComicRent evoluciona el CI/CD de P7 hacia GitOps. GitHub Actions valida el códi
 4. Argo Rollouts entrega `api-gateway` mediante Canary: 10% → 25% → 50% → 100%. Cada etapa ejecuta el `AnalysisTemplate` `api-gateway-smoke` con k6.
 5. Una versión defectuosa produce un análisis fallido y un rollback automático.
 
+## Estado de validación del despliegue
+
+La validación en GKE se realizó el 14 de septiembre de 2026 después de integrar los últimos cambios del repositorio GitOps:
+
+- ArgoCD `comicrent-p8`: `Synced` y `Healthy`.
+- Argo Rollout `comicrent-api-gateway-rollout`: `Healthy`, paso actual `10`, estable `7fb647ddcc`.
+- RabbitMQ `comicrent-rabbitmq-0`: `1/1 Running`.
+- `copies-consumer` y `summary-consumer`: `1/1 Running`.
+- CronJobs `comicrent-cron-tick` y `comicrent-cron-summary`: activos, sin ejecuciones pendientes.
+- `helm lint P8/charts/comicrent -f P8/config/values-gke.yaml`: correcto.
+
+Los detalles de la comprobación y los comandos reproducibles están en [`evidence/live-validation-2026-09-14.txt`](evidence/live-validation-2026-09-14.txt). Los archivos de evidencia visual se conservan separados para agregar capturas de GitHub Actions, ArgoCD y el clúster sin incluir credenciales.
+
 ## Repositorios y componentes
 
 | Elemento | Valor |
