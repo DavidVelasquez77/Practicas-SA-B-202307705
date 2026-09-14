@@ -29,6 +29,8 @@ jobs:
     name: BUILD / Node / ${{ matrix.service }}
     runs-on: ubuntu-24.04
     timeout-minutes: 20
+    env:
+      DATABASE_URL: postgresql://ci:ci@127.0.0.1:5432/ci
     strategy:
       fail-fast: false
       matrix:
@@ -209,7 +211,7 @@ jobs:
       - name: Preparar código
         uses: actions/checkout@v4
       - name: SECURITY / Trivy bloqueante
-        uses: aquasecurity/trivy-action@0.36.0
+        uses: aquasecurity/trivy-action@v0.36.0
         with:
           scan-type: config
           scan-ref: P8
