@@ -47,6 +47,17 @@ spec:
         - protocol: TCP
           port: 53
 
+    # GKE's DNS service is exposed through the cluster DNS VIP.  Keeping this
+    # explicit makes DNS resolution work with Dataplane V2/default-deny.
+    - to:
+        - ipBlock:
+            cidr: 34.118.224.10/32
+      ports:
+        - protocol: UDP
+          port: 53
+        - protocol: TCP
+          port: 53
+
 ---
 # ============================================================
 # API GATEWAY
@@ -787,4 +798,6 @@ spec:
       ports:
         - protocol: TCP
           port: 5432
+        - protocol: TCP
+          port: 443
 {{- end }}

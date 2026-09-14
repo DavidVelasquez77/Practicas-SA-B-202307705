@@ -17,7 +17,7 @@ spec:
       app.kubernetes.io/instance: comicrent
   strategy:
     canary:
-      stableService: comicrent-api-gateway
+      stableService: comicrent-p8-api-gateway
       canaryService: comicrent-api-gateway-canary
       steps:
         - setWeight: 10
@@ -46,7 +46,7 @@ spec:
         app.kubernetes.io/instance: comicrent
         app.kubernetes.io/part-of: comicrent
     spec:
-      serviceAccountName: comicrent-api-gateway
+      serviceAccountName: comicrent-p8-api-gateway
       automountServiceAccountToken: false
       securityContext:
         runAsNonRoot: true
@@ -64,7 +64,7 @@ spec:
               containerPort: 3000
           envFrom:
             - configMapRef:
-                name: comicrent-api-gateway-config
+                name: comicrent-p8-api-gateway-config
           readinessProbe:
             httpGet:
               path: /health
