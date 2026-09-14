@@ -29,6 +29,13 @@ rabbitmq:
   namespaceOverride: sa-p8
   fullnameOverride: comicrent-rabbitmq
   replicaCount: 1
+  # Explicit pod-level identity required by the P8 non-root Kyverno policy.
+  podSecurityContext:
+    enabled: true
+    runAsNonRoot: true
+    runAsUser: 1001
+    runAsGroup: 1001
+    fsGroup: 1001
   clustering:
     enabled: false
   persistence:
