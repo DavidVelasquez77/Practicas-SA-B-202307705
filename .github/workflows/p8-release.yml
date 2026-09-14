@@ -103,7 +103,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          critical_count="$(jq '[.Results[]?.Vulnerabilities[]? | select(.Severity == "CRITICAL")] | length' "trivy-${{ matrix.image }}.json")"
+          critical_count="$(jq '[.Results[]? | (.Vulnerabilities // [])[] | select(.Severity == "CRITICAL")] | length' "trivy-${{ matrix.image }}.json")"
           echo "Trivy CRITICAL encontradas: ${critical_count}" >> "$GITHUB_STEP_SUMMARY"
           if [ "$critical_count" -gt 0 ]; then
             echo "Se detectaron vulnerabilidades CRITICAL." >&2
