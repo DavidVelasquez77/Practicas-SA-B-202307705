@@ -62,6 +62,7 @@ spec:
           ports:
             - name: http
               containerPort: 3000
+              protocol: TCP
           envFrom:
             - configMapRef:
                 name: comicrent-p8-api-gateway-config
