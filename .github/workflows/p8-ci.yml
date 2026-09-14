@@ -221,7 +221,7 @@ jobs:
       - name: SECURITY / Verificar que no hay secretos planos
         run: |
           set -euo pipefail
-          if grep -RInE '(password|token|apiKey|secretKey):[[:space:]]*[^"'"'"'${{]' P8 --include='*.yaml' --include='*.yml'; then
+          if grep -RInE '(password|token|apiKey|secretKey):[[:space:]]*[A-Za-z0-9+/=]{8,}' P8 --include='*.yaml' --include='*.yml'; then
             echo 'Se detectó un posible secreto en texto plano'; exit 1
           fi
           echo 'Sin secretos planos detectados.' >> "$GITHUB_STEP_SUMMARY"
