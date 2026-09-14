@@ -32,6 +32,12 @@ spec:
       namespace: sa-p8
       jsonPointers:
         - /data
+    - group: apps
+      kind: StatefulSet
+      name: comicrent-rabbitmq
+      namespace: sa-p8
+      jsonPointers:
+        - /spec/template/metadata/annotations/checksum~1secret
   syncPolicy:
     automated:
       prune: true
