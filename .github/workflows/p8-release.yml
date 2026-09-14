@@ -90,7 +90,7 @@ jobs:
           cache-from: type=gha,scope=p8-${{ matrix.image }}
           cache-to: type=gha,mode=max,scope=p8-${{ matrix.image }}
       - name: SECURITY / Trivy bloquea CRITICAL
-        uses: aquasecurity/trivy-action@0.29.0
+        uses: aquasecurity/trivy-action@v0.36.0
         with:
           image-ref: ${{ env.REGISTRY }}/comicrent-${{ matrix.image }}:${{ env.RELEASE_TAG }}
           format: table
