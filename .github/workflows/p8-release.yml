@@ -93,11 +93,22 @@ jobs:
         uses: aquasecurity/trivy-action@v0.36.0
         with:
           image-ref: ${{ env.REGISTRY }}/comicrent-${{ matrix.image }}:${{ env.RELEASE_TAG }}
-          format: table
-          exit-code: '1'
+          format: json
+          output: trivy-${{ matrix.image }}.json
+          exit-code: '0'
           severity: CRITICAL
           ignore-unfixed: true
           scanners: vuln
+      - name: SECURITY / Bloquear vulnerabilidades CRITICAL detectadas
+        shell: bash
+        run: |
+          set -euo pipefail
+          critical_count="$(jq '[.Results[]?.Vulnerabilities[]? | select(.Severity == "CRITICAL")] | length' "trivy-${{ matrix.image }}.json")"
+          echo "Trivy CRITICAL encontradas: ${critical_count}" >> "$GITHUB_STEP_SUMMARY"
+          if [ "$critical_count" -gt 0 ]; then
+            echo "Se detectaron vulnerabilidades CRITICAL." >&2
+            exit 1
+          fi
       - name: SECURITY / Generar SBOM SPDX
         uses: anchore/sbom-action@v0
         with:
