@@ -1,0 +1,14 @@
+flowchart LR
+    Dev[Developer] --> PR[Pull Request]
+    PR --> CI["P8 CI\nBuild · Test · Helm · Trivy"]
+    CI -->|merge main / tag vX.Y.Z| REL["P8 Release\nBuild images · SBOM · Cosign"]
+    REL --> GHCR[(GHCR)]
+    REL --> GPR["Pull Request\nrepositorio GitOps"]
+    GPR -->|merge| ARGO["ArgoCD\nnamespace argocd"]
+    ARGO --> ROLLOUT["Argo Rollouts\nCanary 10% → 25% → 50% → 100%"]
+    ROLLOUT --> ANALYSIS["AnalysisTemplate\nk6 smoke + thresholds"]
+    ANALYSIS -->|PASS| PROMOTE[Promoción]
+    ANALYSIS -->|FAIL| ROLLBACK[Rollback automático]
+    ROLLOUT --> GKE[(GKE / sa-p8)]
+    POL["Kyverno\nno latest · limits · non-root"] --> GKE
+    GHCR --> GKE

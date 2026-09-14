@@ -1,0 +1,22 @@
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: comicrent-p8
+  namespace: argocd
+spec:
+  description: ComicRent P8 GitOps project
+  sourceRepos:
+    - https://github.com/DavidVelasquez77/Practicas-SA-B-202307705-gitops.git
+  destinations:
+    - namespace: sa-p8
+      server: https://kubernetes.default.svc
+  clusterResourceWhitelist:
+    - group: ""
+      kind: Namespace
+    - group: argoproj.io
+      kind: Rollout
+    - group: argoproj.io
+      kind: AnalysisTemplate
+  namespaceResourceWhitelist:
+    - group: "*"
+      kind: "*"

@@ -1,0 +1,26 @@
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: p8-disallow-latest
+  annotations:
+    policies.kyverno.io/title: No latest image tags
+    policies.kyverno.io/category: Supply Chain
+spec:
+  validationFailureAction: Enforce
+  background: true
+  rules:
+    - name: require-versioned-image
+      match:
+        any:
+          - resources:
+              kinds: [Pod]
+      validate:
+        message: Images must use an immutable release tag or digest, never latest.
+        foreach:
+          - list: "request.object.spec.containers[]"
+            deny:
+              conditions:
+                any:
+                  - key: "{{ contains(element.image, ':latest') }}"
+                    operator: Equals
+                    value: true

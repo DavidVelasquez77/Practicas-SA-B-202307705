@@ -1,0 +1,14 @@
+{{- if .Values.podDisruptionBudget.enabled }}
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: {{ include "comics-service.fullname" . }}
+  namespace: {{ .Values.global.namespace | default "sa-p5" | quote }}
+  labels:
+    {{- include "comics-service.labels" . | nindent 4 }}
+spec:
+  minAvailable: {{ .Values.podDisruptionBudget.minAvailable }}
+  selector:
+    matchLabels:
+      {{- include "comics-service.selectorLabels" . | nindent 6 }}
+{{- end }}

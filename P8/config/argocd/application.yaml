@@ -1,0 +1,28 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: comicrent-p8
+  namespace: argocd
+  labels:
+    app.kubernetes.io/part-of: comicrent
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: comicrent-p8
+  source:
+    repoURL: https://github.com/DavidVelasquez77/Practicas-SA-B-202307705-gitops.git
+    targetRevision: main
+    path: apps/comicrent
+    helm:
+      valueFiles:
+        - values-gke.yaml
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: sa-p8
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=false
+      - ServerSideApply=true

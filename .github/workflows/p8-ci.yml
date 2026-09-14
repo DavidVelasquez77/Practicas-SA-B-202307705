@@ -1,0 +1,227 @@
+name: P8 CI — Build, Tests, Helm y Seguridad
+
+on:
+  pull_request:
+    paths:
+      - 'P8/**'
+      - 'P4/**'
+      - 'P5/**'
+      - 'P6/**'
+      - '.github/workflows/p8-ci.yml'
+      - '.github/workflows/p8-release.yml'
+  push:
+    branches: [main]
+  workflow_call:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: p8-ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  NODE_VERSION: '22'
+  PYTHON_VERSION: '3.12'
+
+jobs:
+  build-node:
+    name: BUILD / Node / ${{ matrix.service }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - service: api-gateway
+            path: P4/api-gateway
+          - service: auth-service
+            path: P4/services/auth-service
+          - service: comics-service
+            path: P4/services/comics-service
+    defaults:
+      run:
+        working-directory: ${{ matrix.path }}
+    steps:
+      - name: Preparar código
+        uses: actions/checkout@v4
+      - name: Configurar Node.js ${{ env.NODE_VERSION }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: ${{ matrix.path }}/package-lock.json
+      - name: Instalar dependencias bloqueadas
+        run: npm ci
+      - name: Generar cliente Prisma
+        if: matrix.service != 'api-gateway'
+        run: npx --no-install prisma generate
+      - name: BUILD / Compilar servicio
+        run: npm run build 2>&1 | tee build-${{ matrix.service }}.log
+      - name: TEST / Pruebas unitarias
+        run: |
+          set -euo pipefail
+          if [[ "${{ matrix.service }}" == "auth-service" ]]; then npm test 2>&1 | tee unit-${{ matrix.service }}.log; else npm test -- --runInBand 2>&1 | tee unit-${{ matrix.service }}.log; fi
+          echo '==================== PASS / TEST UNITARIAS ===================='
+          echo "### ${{ matrix.service }}" >> "$GITHUB_STEP_SUMMARY"
+          echo '- BUILD: PASS' >> "$GITHUB_STEP_SUMMARY"
+          echo '- TEST UNITARIAS: PASS' >> "$GITHUB_STEP_SUMMARY"
+      - name: Guardar logs Node
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: p8-logs-node-${{ matrix.service }}
+          path: ${{ matrix.path }}/*.log
+          if-no-files-found: ignore
+
+  build-python:
+    name: BUILD / Python / ${{ matrix.service }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - service: rentals-service
+            path: P4/services/rentals-service
+            source: app
+          - service: copies-service
+            path: P4/services/copies-service
+            source: app
+          - service: operations-jobs
+            path: P5/jobs
+            source: .
+    defaults:
+      run:
+        working-directory: ${{ matrix.path }}
+    steps:
+      - name: Preparar código
+        uses: actions/checkout@v4
+      - name: Configurar Python ${{ env.PYTHON_VERSION }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+          cache-dependency-path: ${{ matrix.path }}/requirements.txt
+      - name: Instalar dependencias
+        run: python -m pip install -r requirements.txt
+      - name: BUILD / Compilar módulos
+        run: python -m compileall -q ${{ matrix.source }} 2>&1 | tee build-${{ matrix.service }}.log
+      - name: TEST / Pruebas unitarias
+        run: |
+          set -euo pipefail
+          python -m unittest discover -s tests -p 'test_*.py' -v 2>&1 | tee unit-${{ matrix.service }}.log
+          echo '==================== PASS / TEST UNITARIAS ===================='
+          echo "### ${{ matrix.service }}" >> "$GITHUB_STEP_SUMMARY"
+          echo '- BUILD: PASS' >> "$GITHUB_STEP_SUMMARY"
+          echo '- TEST UNITARIAS: PASS' >> "$GITHUB_STEP_SUMMARY"
+      - name: Guardar logs Python
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: p8-logs-python-${{ matrix.service }}
+          path: ${{ matrix.path }}/*.log
+          if-no-files-found: ignore
+
+  integration:
+    name: TEST / Integraciones reales
+    needs: [build-node, build-python]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      COMPOSE_FILE: P4/tests/integration/compose.yaml
+      COMPOSE_PROJECT_NAME: comicrent-p8-tests
+    steps:
+      - name: Preparar código
+        uses: actions/checkout@v4
+      - name: BUILD / Imágenes efímeras de integración
+        run: docker compose build 2>&1 | tee integration-build.log
+      - name: TEST / Rentals-Comics, Rentals-Copies y RabbitMQ
+        run: |
+          set -euo pipefail
+          docker compose up --abort-on-container-exit --exit-code-from tests 2>&1 | tee integration-tests.log
+          echo '==================== PASS / TEST INTEGRACION ===================='
+      - name: Diagnóstico de servicios
+        if: always()
+        run: docker compose logs --no-color > integration-services.log
+      - name: Guardar logs de integración
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: p8-logs-integration
+          path: integration-*.log
+      - name: Retirar entorno efímero
+        if: always()
+        run: docker compose down --volumes --remove-orphans
+
+  helm:
+    name: HELM / Lint y Template / P8
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Preparar código
+        uses: actions/checkout@v4
+      - name: Instalar Helm
+        uses: azure/setup-helm@v4.3.0
+        with:
+          version: v3.17.3
+      - name: TEST / helm lint
+        run: |
+          set -euo pipefail
+          helm lint P8/charts/comicrent -f P8/config/values-ci.yaml 2>&1 | tee helm-lint.log
+          helm template comicrent P8/charts/comicrent --namespace sa-p8 -f P8/config/values-ci.yaml > rendered-p8.yaml
+          test -s rendered-p8.yaml
+          grep -q 'kind: Rollout' rendered-p8.yaml
+          grep -q 'kind: AnalysisTemplate' rendered-p8.yaml
+          echo '==================== PASS / HELM ===================='
+      - name: Guardar render y logs Helm
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: p8-helm-validation
+          path: |
+            helm-lint.log
+            rendered-p8.yaml
+
+  terraform:
+    name: TERRAFORM / Format y Validate
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Preparar código
+        uses: actions/checkout@v4
+      - name: Instalar Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.9.8
+      - name: FORMAT / terraform fmt
+        run: terraform -chdir=P8/terraform fmt -check -recursive
+      - name: INIT / backend local
+        run: terraform -chdir=P8/terraform init -backend=false -input=false
+      - name: VALIDATE / terraform validate
+        run: terraform -chdir=P8/terraform validate
+
+  security:
+    name: SECURITY / Trivy IaC y secretos
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Preparar código
+        uses: actions/checkout@v4
+      - name: SECURITY / Trivy bloqueante
+        uses: aquasecurity/trivy-action@0.29.0
+        with:
+          scan-type: config
+          scan-ref: P8
+          hide-progress: false
+          format: table
+          exit-code: '1'
+          severity: CRITICAL,HIGH
+          ignore-unfixed: true
+      - name: SECURITY / Verificar que no hay secretos planos
+        run: |
+          set -euo pipefail
+          if grep -RInE '(password|token|apiKey|secretKey):[[:space:]]*[^"'"'"'${{]' P8 --include='*.yaml' --include='*.yml'; then
+            echo 'Se detectó un posible secreto en texto plano'; exit 1
+          fi
+          echo 'Sin secretos planos detectados.' >> "$GITHUB_STEP_SUMMARY"
