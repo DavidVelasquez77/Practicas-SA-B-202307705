@@ -1,0 +1,30 @@
+dependencies:
+- name: api-gateway
+  repository: ""
+  version: 0.1.0
+- name: auth-service
+  repository: ""
+  version: 0.1.0
+- name: comics-service
+  repository: ""
+  version: 0.1.0
+- name: rentals-service
+  repository: ""
+  version: 0.1.0
+- name: copies-service
+  repository: ""
+  version: 0.1.0
+- name: copies-consumer
+  repository: ""
+  version: 0.1.0
+- name: postgresql
+  repository: https://charts.bitnami.com/bitnami
+  version: 18.8.9
+- name: rabbitmq
+  repository: https://charts.bitnami.com/bitnami
+  version: 14.6.3
+- name: operations-jobs
+  repository: file://charts/operations-jobs
+  version: 0.1.0
+digest: sha256:a4fe922fc506fdffd643d4b173e2cc0c4de335d51717aa59240614a5063e942b
+generated: "2026-09-01T23:17:38.3611184-06:00"

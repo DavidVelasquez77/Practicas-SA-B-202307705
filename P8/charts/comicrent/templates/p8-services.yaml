@@ -1,0 +1,27 @@
+{{- if .Values.global.progressiveDelivery.apiGateway.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: comicrent-api-gateway-canary
+  namespace: {{ .Values.global.namespace | quote }}
+  labels:
+    app.kubernetes.io/part-of: comicrent
+    app.kubernetes.io/component: api-gateway
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: api-gateway
+    app.kubernetes.io/instance: comicrent
+  ports:
+    - name: http
+      port: 3000
+      targetPort: http
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: p8-analysis
+  namespace: {{ .Values.global.namespace | quote }}
+  labels:
+    app.kubernetes.io/part-of: comicrent
+{{- end }}

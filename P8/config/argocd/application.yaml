@@ -1,0 +1,47 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: comicrent-p8
+  namespace: argocd
+  labels:
+    app.kubernetes.io/part-of: comicrent
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: comicrent-p8
+  source:
+    repoURL: https://github.com/DavidVelasquez77/Practicas-SA-B-202307705-gitops.git
+    targetRevision: main
+    path: apps/comicrent
+    helm:
+      valueFiles:
+        - values-gke.yaml
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: sa-p8
+  ignoreDifferences:
+    - group: argoproj.io
+      kind: Rollout
+      name: comicrent-api-gateway-rollout
+      namespace: sa-p8
+      jsonPointers:
+        - /metadata/annotations/rollout.argoproj.io~1revision
+    - group: ""
+      kind: Secret
+      name: comicrent-rabbitmq
+      namespace: sa-p8
+      jsonPointers:
+        - /data
+    - group: apps
+      kind: StatefulSet
+      name: comicrent-rabbitmq
+      namespace: sa-p8
+      jsonPointers:
+        - /spec/template/metadata/annotations/checksum~1secret
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=false
+      - ServerSideApply=true

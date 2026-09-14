@@ -1,0 +1,4 @@
+# Example only. Do not commit credentials.
+kubeconfig           = "~/.kube/config"
+application_namespace = "sa-p8"
+analysis_service_account = "p8-analysis"

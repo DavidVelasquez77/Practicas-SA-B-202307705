@@ -1,0 +1,189 @@
+name: P8 Release — GHCR, Firma y Pull Request GitOps
+
+on:
+  push:
+    tags: ['v*.*.*']
+
+permissions:
+  contents: read
+  packages: write
+  id-token: write
+
+concurrency:
+  group: p8-release-production
+  cancel-in-progress: false
+
+env:
+  RELEASE_TAG: ${{ github.ref_name }}
+  REGISTRY: ghcr.io/davidvelasquez77
+
+jobs:
+  validate-release:
+    name: RELEASE / Validar SemVer
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - name: Preparar código completo
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: VALIDATE / Confirmar tag desde main
+        run: |
+          set -euo pipefail
+          [[ "$RELEASE_TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]] || { echo 'El release debe usar vX.Y.Z'; exit 1; }
+          git merge-base --is-ancestor origin/main HEAD
+          echo "Release $RELEASE_TAG validado." >> "$GITHUB_STEP_SUMMARY"
+
+  ci:
+    name: CI / Validaciones reutilizadas
+    needs: validate-release
+    uses: ./.github/workflows/p8-ci.yml
+    permissions:
+      contents: read
+
+  publish:
+    name: PUBLISH / GHCR / ${{ matrix.image }}
+    needs: ci
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - image: api-gateway
+            context: P4/api-gateway
+          - image: auth-service
+            context: P4/services/auth-service
+          - image: comics-service
+            context: P4/services/comics-service
+          - image: rentals-service
+            context: P4/services/rentals-service
+          - image: copies-service
+            context: P4/services/copies-service
+          - image: operations-jobs
+            context: P5/jobs
+    steps:
+      - name: Preparar código
+        uses: actions/checkout@v4
+      - name: Configurar Buildx
+        uses: docker/setup-buildx-action@v3
+      - name: Autenticar Docker en GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: BUILD / Construir y publicar imagen versionada
+        uses: docker/build-push-action@v6
+        with:
+          context: ${{ matrix.context }}
+          file: ${{ matrix.context }}/Dockerfile.prod
+          push: true
+          platforms: linux/amd64
+          tags: |
+            ${{ env.REGISTRY }}/comicrent-${{ matrix.image }}:${{ env.RELEASE_TAG }}
+            ${{ env.REGISTRY }}/comicrent-${{ matrix.image }}:sha-${{ github.sha }}
+          labels: |
+            org.opencontainers.image.source=https://github.com/${{ github.repository }}
+            org.opencontainers.image.revision=${{ github.sha }}
+            org.opencontainers.image.version=${{ env.RELEASE_TAG }}
+          cache-from: type=gha,scope=p8-${{ matrix.image }}
+          cache-to: type=gha,mode=max,scope=p8-${{ matrix.image }}
+      - name: SECURITY / Trivy bloquea CRITICAL
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          image-ref: ${{ env.REGISTRY }}/comicrent-${{ matrix.image }}:${{ env.RELEASE_TAG }}
+          format: json
+          output: trivy-${{ matrix.image }}.json
+          exit-code: '0'
+          severity: CRITICAL
+          ignore-unfixed: true
+          scanners: vuln
+      - name: SECURITY / Bloquear vulnerabilidades CRITICAL detectadas
+        shell: bash
+        run: |
+          set -euo pipefail
+          critical_count="$(jq '[.Results[]? | (.Vulnerabilities // [])[] | select(.Severity == "CRITICAL")] | length' "trivy-${{ matrix.image }}.json")"
+          echo "Trivy CRITICAL encontradas: ${critical_count}" >> "$GITHUB_STEP_SUMMARY"
+          if [ "$critical_count" -gt 0 ]; then
+            echo "Se detectaron vulnerabilidades CRITICAL." >&2
+            exit 1
+          fi
+      - name: SECURITY / Generar SBOM SPDX
+        uses: anchore/sbom-action@v0
+        with:
+          image: ${{ env.REGISTRY }}/comicrent-${{ matrix.image }}:${{ env.RELEASE_TAG }}
+          format: spdx-json
+          output-file: sbom-${{ matrix.image }}.spdx.json
+      - name: SECURITY / Firmar con Cosign OIDC
+        uses: sigstore/cosign-installer@v3.7.0
+      - name: SECURITY / Cosign sign y verify
+        env:
+          COSIGN_YES: 'true'
+          IMAGE: ${{ env.REGISTRY }}/comicrent-${{ matrix.image }}:${{ env.RELEASE_TAG }}
+        run: |
+          set -euo pipefail
+          cosign sign "$IMAGE"
+          cosign verify "$IMAGE" --certificate-oidc-issuer=https://token.actions.githubusercontent.com --certificate-identity-regexp="https://github.com/${{ github.repository }}/.github/workflows/.*" > cosign-${{ matrix.image }}.txt
+          echo '==================== PASS / COSIGN ====================' >> "$GITHUB_STEP_SUMMARY"
+      - name: Guardar SBOM y evidencia de firma
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: p8-supply-chain-${{ matrix.image }}
+          path: |
+            sbom-${{ matrix.image }}.spdx.json
+            cosign-${{ matrix.image }}.txt
+
+  gitops-pr:
+    name: GITOPS / Crear Pull Request de versión
+    needs: publish
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout del repositorio GitOps
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ vars.GITOPS_REPOSITORY }}
+          token: ${{ secrets.GITOPS_TOKEN }}
+          path: gitops
+      - name: GITOPS / Actualizar tags versionados
+        env:
+          RELEASE_TAG: ${{ env.RELEASE_TAG }}
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+          import re
+          path = Path('gitops/apps/comicrent/values-gke.yaml')
+          text = path.read_text(encoding='utf-8')
+          text = re.sub(r'(tag:\s*)"v[0-9]+\.[0-9]+\.[0-9]+"', rf'\1"{__import__("os").environ["RELEASE_TAG"]}"', text)
+          path.write_text(text, encoding='utf-8')
+          Path('gitops/releases').mkdir(exist_ok=True)
+          Path(f'gitops/releases/{__import__("os").environ["RELEASE_TAG"]}.md').write_text(f'# {__import__("os").environ["RELEASE_TAG"]}\n\nImages signed and scanned by GitHub Actions run {__import__("os").environ["GITHUB_RUN_ID"]}.\n', encoding='utf-8')
+          PY
+          git -C gitops diff --check
+          echo "GitOps actualizado a $RELEASE_TAG" >> "$GITHUB_STEP_SUMMARY"
+      - name: GITOPS / Abrir Pull Request automático
+        uses: peter-evans/create-pull-request@v7
+        with:
+          token: ${{ secrets.GITOPS_TOKEN }}
+          repository: ${{ vars.GITOPS_REPOSITORY }}
+          path: gitops
+          branch: automation/release-${{ env.RELEASE_TAG }}
+          base: main
+          delete-branch: true
+          title: "chore(release): actualizar ComicRent a ${{ env.RELEASE_TAG }}"
+          commit-message: "chore(release): actualizar imágenes a ${{ env.RELEASE_TAG }}"
+          body: |
+            Actualización automática de imágenes para `${{ env.RELEASE_TAG }}`.
+
+            - Trivy sin CVE CRITICAL bloqueantes.
+            - SBOM SPDX generado por imagen.
+            - Imágenes firmadas y verificadas con Cosign.
+            - ArgoCD sincronizará después del merge.
+          add-paths: |
+            apps/comicrent/values-gke.yaml
+            releases/

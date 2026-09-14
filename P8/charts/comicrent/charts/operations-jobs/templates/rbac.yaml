@@ -1,0 +1,67 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: comicrent-cron-tick
+  namespace: {{ .Values.global.namespace | default "sa-p5" | quote }}
+rules: []
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: comicrent-cron-tick
+  namespace: {{ .Values.global.namespace | default "sa-p5" | quote }}
+subjects:
+  - kind: ServiceAccount
+    name: comicrent-cron-tick
+    namespace: {{ .Values.global.namespace | default "sa-p5" | quote }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: comicrent-cron-tick
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: comicrent-cron-summary
+  namespace: {{ .Values.global.namespace | default "sa-p5" | quote }}
+rules: []
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: comicrent-cron-summary
+  namespace: {{ .Values.global.namespace | default "sa-p5" | quote }}
+subjects:
+  - kind: ServiceAccount
+    name: comicrent-cron-summary
+    namespace: {{ .Values.global.namespace | default "sa-p5" | quote }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: comicrent-cron-summary
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: comicrent-summary-consumer
+  namespace: {{ .Values.global.namespace | default "sa-p5" | quote }}
+rules: []
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: comicrent-summary-consumer
+  namespace: {{ .Values.global.namespace | default "sa-p5" | quote }}
+subjects:
+  - kind: ServiceAccount
+    name: comicrent-summary-consumer
+    namespace: {{ .Values.global.namespace | default "sa-p5" | quote }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: comicrent-summary-consumer

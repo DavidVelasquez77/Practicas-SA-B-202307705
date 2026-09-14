@@ -1,0 +1,38 @@
+Validación técnica P8 — 2026-09-14
+
+Contexto:
+  cluster: comicrent-gke-p6
+  zona: us-central1-a
+  namespace: sa-p8
+  ArgoCD Application: comicrent-p8
+  GitOps revision validada: 1de021f4815cea7e1d0bcd745564e21f889c9d17
+
+ArgoCD:
+  sync: Synced
+  health: Healthy
+
+Argo Rollouts:
+  rollout: comicrent-api-gateway-rollout
+  phase: Healthy
+  currentStep: 10
+  stableRS: 7fb647ddcc
+
+Pods relevantes:
+  comicrent-rabbitmq-0: 1/1 Running
+  comicrent-p8-copies-consumer: 1/1 Running
+  comicrent-summary-consumer: 1/1 Running
+  api-gateway rollout: 3 pods 1/1 Running
+
+CronJobs:
+  comicrent-cron-tick: */2 * * * * (America/Guatemala)
+  comicrent-cron-summary: */10 * * * * (America/Guatemala)
+
+Validación local:
+  helm lint P8/charts/comicrent -f P8/config/values-gke.yaml
+  Resultado: 1 chart linted, 0 charts failed
+
+Correcciones verificadas en esta validación:
+  - NetworkPolicy AMQP alineada con app.kubernetes.io/instance=comicrent-p8.
+  - RabbitMQ con pod securityContext compatible con Kyverno.
+  - DNS de GKE y HTTPS de Prisma permitidos explícitamente.
+  - protocol: TCP declarado en el puerto HTTP del Rollout para evitar drift de ArgoCD.

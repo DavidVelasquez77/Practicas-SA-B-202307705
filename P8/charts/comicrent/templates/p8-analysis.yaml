@@ -1,0 +1,66 @@
+{{- if .Values.global.progressiveDelivery.apiGateway.enabled }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: p8-k6-smoke
+  namespace: {{ .Values.global.namespace | quote }}
+  labels:
+    app.kubernetes.io/part-of: comicrent
+data:
+  smoke.js: |
+{{ .Files.Get "tests/load/smoke.js" | indent 4 }}
+---
+apiVersion: argoproj.io/v1alpha1
+kind: AnalysisTemplate
+metadata:
+  name: api-gateway-smoke
+  namespace: {{ .Values.global.namespace | quote }}
+  labels:
+    app.kubernetes.io/part-of: comicrent
+spec:
+  metrics:
+    - name: k6-smoke-health
+      count: 1
+      failureLimit: 0
+      provider:
+        job:
+          metadata:
+            labels:
+              app.kubernetes.io/part-of: comicrent
+              app.kubernetes.io/component: analysis
+          spec:
+            backoffLimit: 0
+            activeDeadlineSeconds: 120
+            template:
+              metadata:
+                labels:
+                  app.kubernetes.io/part-of: comicrent
+                  app.kubernetes.io/component: analysis
+              spec:
+                serviceAccountName: p8-analysis
+                restartPolicy: Never
+                securityContext:
+                  runAsNonRoot: true
+                  runAsUser: 12345
+                  seccompProfile:
+                    type: RuntimeDefault
+                containers:
+                  - name: k6
+                    image: grafana/k6:0.54.0
+                    command: ["k6", "run", "/scripts/smoke.js"]
+                    volumeMounts:
+                      - name: script
+                        mountPath: /scripts
+                    resources:
+                      requests: { cpu: 10m, memory: 32Mi }
+                      limits: { cpu: 100m, memory: 128Mi }
+                    securityContext:
+                      allowPrivilegeEscalation: false
+                      readOnlyRootFilesystem: true
+                      capabilities:
+                        drop: [ALL]
+                volumes:
+                  - name: script
+                    configMap:
+                      name: p8-k6-smoke
+{{- end }}

@@ -1,0 +1,49 @@
+# Local CI values: disables external dependencies and uses deterministic test images.
+namespace: sa-p8
+
+global:
+  environment: ci
+  namespace: sa-p8
+  progressiveDelivery:
+    apiGateway:
+      enabled: true
+  secrets:
+    create: false
+  database:
+    existingSecret: ""
+  networkPolicy:
+    externalPostgres:
+      enabled: false
+
+api-gateway:
+  replicaCount: 0
+  autoscaling:
+    enabled: false
+  image:
+    repository: ghcr.io/davidvelasquez77/comicrent-api-gateway
+    tag: "ci"
+
+auth-service:
+  image:
+    repository: ghcr.io/davidvelasquez77/comicrent-auth-service
+    tag: "ci"
+comics-service:
+  image:
+    repository: ghcr.io/davidvelasquez77/comicrent-comics-service
+    tag: "ci"
+rentals-service:
+  image:
+    repository: ghcr.io/davidvelasquez77/comicrent-rentals-service
+    tag: "ci"
+copies-service:
+  image:
+    repository: ghcr.io/davidvelasquez77/comicrent-copies-service
+    tag: "ci"
+copies-consumer:
+  image:
+    repository: ghcr.io/davidvelasquez77/comicrent-copies-service
+    tag: "ci"
+operations-jobs:
+  image:
+    repository: ghcr.io/davidvelasquez77/comicrent-operations-jobs
+    tag: "ci"

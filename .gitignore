@@ -5,3 +5,14 @@
 /integration-*.log
 # Credenciales temporales generadas por Google GitHub Actions.
 gha-creds-*.json
+*.sh
+
+# Artefacto local usado para inicializar el repositorio GitOps.
+/P8/work/
+# Enunciado local adjunto; la entrega usa P8/README.md.
+/P8/Practica_8_2S2026 (1).md
+
+/.tools/
+**/.terraform/
+**/terraform.tfstate
+**/terraform.tfstate.*
