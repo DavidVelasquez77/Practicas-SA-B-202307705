@@ -8,7 +8,7 @@ global:
     apiGateway:
       enabled: true
   secrets:
-    create: true
+    create: false
   database:
     existingSecret: ""
   networkPolicy:
