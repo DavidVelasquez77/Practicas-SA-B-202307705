@@ -97,6 +97,7 @@ jobs:
           exit-code: '1'
           severity: CRITICAL
           ignore-unfixed: true
+          scanners: vuln
       - name: SECURITY / Generar SBOM SPDX
         uses: anchore/sbom-action@v0
         with:

@@ -220,6 +220,7 @@ jobs:
           exit-code: '1'
           severity: CRITICAL,HIGH
           ignore-unfixed: true
+          scanners: vuln
       - name: SECURITY / Verificar que no hay secretos planos
         run: |
           set -euo pipefail
