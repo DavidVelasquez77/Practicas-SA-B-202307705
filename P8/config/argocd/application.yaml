@@ -53,25 +53,6 @@ spec:
       jqPathExpressions:
         - .metadata.annotations."argo-rollouts.argoproj.io/managed-by-rollouts"
         - .spec.selector."rollouts-pod-template-hash"
-    # Kyverno añade el digest verificado a las imágenes admitidas.
-    - group: apps
-      kind: Deployment
-      namespace: sa-p8
-      jqPathExpressions:
-        - .spec.template.spec.containers[].image
-        - .spec.template.spec.initContainers[].image
-    - group: batch
-      kind: CronJob
-      namespace: sa-p8
-      jqPathExpressions:
-        - .spec.jobTemplate.spec.template.spec.containers[].image
-        - .spec.jobTemplate.spec.template.spec.initContainers[].image
-    - group: argoproj.io
-      kind: Rollout
-      namespace: sa-p8
-      jqPathExpressions:
-        - .spec.template.spec.containers[].image
-        - .spec.template.spec.initContainers[].image
   syncPolicy:
     automated:
       prune: true
