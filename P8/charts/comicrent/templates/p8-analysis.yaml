@@ -28,6 +28,7 @@ spec:
             labels:
               app.kubernetes.io/part-of: comicrent
               app.kubernetes.io/component: analysis
+              comicrent.io/upgrade-test: "true"
           spec:
             backoffLimit: 0
             activeDeadlineSeconds: 120
@@ -36,6 +37,7 @@ spec:
                 labels:
                   app.kubernetes.io/part-of: comicrent
                   app.kubernetes.io/component: analysis
+                  comicrent.io/upgrade-test: "true"
               spec:
                 serviceAccountName: p8-analysis
                 restartPolicy: Never
