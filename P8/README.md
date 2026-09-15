@@ -62,7 +62,7 @@ Los detalles de la comprobación y los comandos reproducibles están en [`eviden
 | ArgoCD y políticas | [`argocd-synced-healthy.txt`](evidence/argocd-synced-healthy.txt) y [`policies-active.txt`](evidence/policies-active.txt) |
 | Rechazo de imagen no firmada | [`kyverno-cosign-rejected.txt`](evidence/kyverno-cosign-rejected.txt) |
 | Imagen firmada de referencia | `ghcr.io/davidvelasquez77/comicrent-api-gateway:v0.8.4` |
-| Terraform | [`terraform-validation.txt`](evidence/terraform-validation.txt) |
+| Terraform plan/apply | [`terraform-validation.txt`](evidence/terraform-validation.txt) — plan sin cambios y apply reproducible (0 agregados, 0 modificados, 0 destruidos) |
 | k6 y umbrales | [`k6-summary.json`](evidence/k6-summary.json) |
 | Informe del incidente | [`docs/incident-report.md`](docs/incident-report.md) |
 | Video de entrega | Pendiente de grabar |

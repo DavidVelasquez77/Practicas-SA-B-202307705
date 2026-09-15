@@ -16,3 +16,4 @@ gha-creds-*.json
 **/.terraform/
 **/terraform.tfstate
 **/terraform.tfstate.*
+**/tfplan
