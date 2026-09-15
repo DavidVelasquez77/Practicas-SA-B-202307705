@@ -28,6 +28,7 @@ La validación final en GKE se realizó el 14–15 de septiembre de 2026 despué
 - `copies-consumer` y `summary-consumer`: `1/1 Running`.
 - CronJobs `comicrent-cron-tick` y `comicrent-cron-summary`: activos, sin ejecuciones pendientes.
 - `helm lint P8/charts/comicrent -f P8/config/values-gke.yaml`: correcto.
+- La validación live se realizó después de reconstruir el clúster desde estado vacío.
 
 Los detalles de la comprobación y los comandos reproducibles están en [`evidence/live-validation-2026-09-15.txt`](evidence/live-validation-2026-09-15.txt). Las evidencias textuales adicionales no contienen credenciales y se pueden revisar directamente desde el repositorio.
 
@@ -74,16 +75,16 @@ repositorio sigan siendo descifrables después de reconstruir el clúster.
 |---|---|
 | Repositorio de código | [Practicas-SA-B-202307705](https://github.com/DavidVelasquez77/Practicas-SA-B-202307705) |
 | Repositorio GitOps | [Practicas-SA-B-202307705-gitops](https://github.com/DavidVelasquez77/Practicas-SA-B-202307705-gitops) |
-| CI exitoso | [Actions run 34908240306](https://github.com/DavidVelasquez77/Practicas-SA-B-202307705/actions/runs/34908240306) |
+| CI exitoso | [Actions run 35005762218](https://github.com/DavidVelasquez77/Practicas-SA-B-202307705/actions/runs/35005762218) |
 | Gate Trivy de imágenes en Pull Request | [PR #6](https://github.com/DavidVelasquez77/Practicas-SA-B-202307705/pull/6) — 16/16 comprobaciones correctas; el job usa `exit-code: 1` ante CVE `CRITICAL` |
 | Release, SBOM, Trivy y Cosign | [Actions run 34937258452](https://github.com/DavidVelasquez77/Practicas-SA-B-202307705/actions/runs/34937258452) — release `v0.8.5` |
 | Corrección de drift de Argo Rollouts | [PR #7](https://github.com/DavidVelasquez77/Practicas-SA-B-202307705/pull/7) — Service estable con campos dinámicos ignorados de forma declarativa |
 | PR de políticas Cosign y drift ArgoCD | [GitOps PR #11](https://github.com/DavidVelasquez77/Practicas-SA-B-202307705-gitops/pull/11), [PR #15](https://github.com/DavidVelasquez77/Practicas-SA-B-202307705-gitops/pull/15), [PR #16](https://github.com/DavidVelasquez77/Practicas-SA-B-202307705-gitops/pull/16) y [documentación final #17](https://github.com/DavidVelasquez77/Practicas-SA-B-202307705-gitops/pull/17) |
 | Rollback Canary | [PR de prueba #12](https://github.com/DavidVelasquez77/Practicas-SA-B-202307705-gitops/pull/12) y [restauración #13](https://github.com/DavidVelasquez77/Practicas-SA-B-202307705-gitops/pull/13) |
-| ArgoCD y políticas Terraform | [`argocd-synced-healthy.txt`](evidence/argocd-synced-healthy.txt) y [`policies-active.txt`](evidence/policies-active.txt) |
+| ArgoCD y políticas Terraform | [`live-validation-2026-09-15.txt`](evidence/live-validation-2026-09-15.txt) y [`policies-active.txt`](evidence/policies-active.txt) |
 | Rechazo de imagen no firmada | [`kyverno-cosign-rejected.txt`](evidence/kyverno-cosign-rejected.txt) |
 | Imagen firmada de referencia | `ghcr.io/davidvelasquez77/comicrent-api-gateway:v0.8.5` |
-| Terraform plan/apply | [`terraform-validation.txt`](evidence/terraform-validation.txt) — plan sin cambios y apply reproducible (0 agregados, 0 modificados, 0 destruidos) |
+| Terraform plan/apply | [`terraform-validation.txt`](evidence/terraform-validation.txt) — reconstrucción desde estado vacío (19 agregados) y plan posterior sin cambios |
 | k6 y umbrales | [`k6-summary.json`](evidence/k6-summary.json) |
 | Informe del incidente | [`docs/incident-report.md`](docs/incident-report.md) |
 | Video de entrega | Pendiente de grabar |

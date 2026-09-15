@@ -1,10 +1,10 @@
-Estado observado después de adoptar la plataforma con Terraform
+Estado observado después de reconstruir la plataforma con Terraform
 Fecha: 2026-09-15
 
 ArgoCD Application comicrent-p8:
 - namespace: argocd
 - repositorio: https://github.com/DavidVelasquez77/Practicas-SA-B-202307705-gitops.git
-- revisión GitOps: 46d61ac1ea00976996716c9995c7956bf5c89fdf (PR #24)
+- revisión GitOps: 004e4baa4d9b04e3eecd4d0e6ef4ae5a925dbc0e (PR #25)
 - recursos reconciliados: Synced
 - salud de aplicación: Healthy
 - propietario del recurso Application: Helm release p8-platform-bootstrap
