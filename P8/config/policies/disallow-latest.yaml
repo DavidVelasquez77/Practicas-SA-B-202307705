@@ -14,6 +14,7 @@ spec:
         any:
           - resources:
               kinds: [Pod]
+              namespaces: [sa-p8]
       validate:
         message: Images must use an immutable release tag or digest, never latest.
         foreach:

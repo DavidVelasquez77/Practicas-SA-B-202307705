@@ -28,6 +28,7 @@ spec:
             labels:
               app.kubernetes.io/part-of: comicrent
               app.kubernetes.io/component: analysis
+              comicrent.io/upgrade-test: "true"
           spec:
             backoffLimit: 0
             activeDeadlineSeconds: 120
@@ -36,6 +37,7 @@ spec:
                 labels:
                   app.kubernetes.io/part-of: comicrent
                   app.kubernetes.io/component: analysis
+                  comicrent.io/upgrade-test: "true"
               spec:
                 serviceAccountName: p8-analysis
                 restartPolicy: Never
@@ -48,6 +50,9 @@ spec:
                   - name: k6
                     image: grafana/k6:0.54.0
                     command: ["k6", "run", "/scripts/smoke.js"]
+                    env:
+                      - name: BASE_URL
+                        value: "http://comicrent-api-gateway-canary.{{ .Values.global.namespace }}.svc.cluster.local:3000/health"
                     volumeMounts:
                       - name: script
                         mountPath: /scripts

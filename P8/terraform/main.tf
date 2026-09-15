@@ -5,11 +5,21 @@ terraform {
       source  = "hashicorp/kubernetes"
       version = "~> 2.32"
     }
+    helm = {
+      source  = "hashicorp/helm"
+      version = "~> 3.2"
+    }
   }
 }
 
 provider "kubernetes" {
   config_path = var.kubeconfig
+}
+
+provider "helm" {
+  kubernetes = {
+    config_path = var.kubeconfig
+  }
 }
 
 resource "kubernetes_namespace_v1" "argocd" {
@@ -33,6 +43,95 @@ resource "kubernetes_namespace_v1" "application" {
   lifecycle {
     ignore_changes = [metadata[0].labels, metadata[0].annotations]
   }
+}
+
+resource "kubernetes_namespace_v1" "argo_rollouts" {
+  metadata {
+    name   = "argo-rollouts"
+    labels = { "app.kubernetes.io/part-of" = "argo-rollouts" }
+  }
+
+  lifecycle {
+    ignore_changes = [metadata[0].labels, metadata[0].annotations]
+  }
+}
+
+resource "kubernetes_namespace_v1" "kyverno" {
+  metadata {
+    name   = "kyverno"
+    labels = { "app.kubernetes.io/part-of" = "kyverno" }
+  }
+
+  lifecycle {
+    ignore_changes = [metadata[0].labels, metadata[0].annotations]
+  }
+}
+
+resource "helm_release" "argocd" {
+  name       = "argocd"
+  namespace  = kubernetes_namespace_v1.argocd.metadata[0].name
+  repository = "https://argoproj.github.io/argo-helm"
+  chart      = "argo-cd"
+  version    = "10.9.1"
+
+  atomic          = true
+  cleanup_on_fail = true
+  timeout         = 600
+
+  values = [yamlencode({
+    applicationSet = { replicas = 1 }
+    notifications  = { enabled = false }
+    configs = {
+      params = { "server.insecure" = true }
+    }
+  })]
+}
+
+resource "helm_release" "argo_rollouts" {
+  name       = "argo-rollouts"
+  namespace  = kubernetes_namespace_v1.argo_rollouts.metadata[0].name
+  repository = "https://argoproj.github.io/argo-helm"
+  chart      = "argo-rollouts"
+  version    = "2.43.1"
+
+  atomic          = true
+  cleanup_on_fail = true
+  timeout         = 600
+}
+
+resource "helm_release" "kyverno" {
+  name       = "kyverno"
+  namespace  = kubernetes_namespace_v1.kyverno.metadata[0].name
+  repository = "https://kyverno.github.io/kyverno"
+  chart      = "kyverno"
+  version    = "3.9.1"
+
+  atomic          = true
+  cleanup_on_fail = true
+  timeout         = 900
+
+  values = [yamlencode({
+    admissionController  = { replicas = 1 }
+    backgroundController = { replicas = 1 }
+    cleanupController    = { replicas = 1 }
+    reportsController    = { replicas = 1 }
+  })]
+}
+
+resource "helm_release" "sealed_secrets" {
+  name       = "sealed-secrets"
+  namespace  = "kube-system"
+  repository = "https://charts.bitnami.com/bitnami"
+  chart      = "sealed-secrets"
+  version    = "2.5.19"
+
+  atomic          = true
+  cleanup_on_fail = true
+  timeout         = 600
+
+  values = [yamlencode({
+    fullnameOverride = "sealed-secrets-controller"
+  })]
 }
 
 resource "kubernetes_resource_quota_v1" "application" {
