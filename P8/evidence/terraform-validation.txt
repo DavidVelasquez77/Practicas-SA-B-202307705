@@ -7,8 +7,13 @@ terraform validate:
 helm lint P8/terraform/bootstrap:
   1 chart(s) linted, 0 chart(s) failed
 
-Adopción del clúster existente:
-  Apply complete! Resources: 3 added, 1 changed, 0 destroyed.
+Prueba desde estado vacío (2026-09-15):
+  terraform destroy: Destroy complete! Resources: 19 destroyed.
+  terraform apply: Apply complete! Resources: 19 added, 0 changed, 0 destroyed.
+
+El destroy corregido desinstaló primero bootstrap, ArgoCD, Argo Rollouts,
+Kyverno y Sealed Secrets; después eliminó el node pool y el clúster sin
+intervención manual.
 
 Estado administrado:
 - google_project_service.container

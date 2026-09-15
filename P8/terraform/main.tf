@@ -187,6 +187,8 @@ resource "helm_release" "argocd" {
       params = { "server.insecure" = true }
     }
   })]
+
+  depends_on = [google_container_node_pool.primary]
 }
 
 resource "helm_release" "argo_rollouts" {
@@ -199,6 +201,8 @@ resource "helm_release" "argo_rollouts" {
   atomic          = true
   cleanup_on_fail = true
   timeout         = 600
+
+  depends_on = [google_container_node_pool.primary]
 }
 
 resource "helm_release" "kyverno" {
@@ -218,6 +222,8 @@ resource "helm_release" "kyverno" {
     cleanupController    = { replicas = 1 }
     reportsController    = { replicas = 1 }
   })]
+
+  depends_on = [google_container_node_pool.primary]
 }
 
 resource "helm_release" "sealed_secrets" {

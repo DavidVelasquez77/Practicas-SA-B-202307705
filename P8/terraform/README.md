@@ -51,6 +51,10 @@ Para eliminar todos los recursos administrados:
 terraform destroy
 ```
 
+El `Application` no usa finalizer de cascada porque Terraform elimina después el
+namespace y el propio clúster. Esto evita que Helm borre el `AppProject` antes de
+que ArgoCD termine una eliminación en cascada y bloquee el `destroy`.
+
 Para reconstruirlos usando la misma clave sellada:
 
 ```bash
