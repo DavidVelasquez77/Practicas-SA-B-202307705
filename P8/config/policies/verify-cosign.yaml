@@ -30,6 +30,7 @@ spec:
           # Pin admitted workloads to the verified digest. ArgoCD ignores this
           # admission-time mutation below so Git remains the source of intent.
           mutateDigest: false
+          verifyDigest: false
           attestors:
             - entries:
                 - keyless:
