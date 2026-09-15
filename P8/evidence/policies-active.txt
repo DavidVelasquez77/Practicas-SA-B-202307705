@@ -2,7 +2,7 @@ Validación ejecutada en GKE el 2026-09-14/15 (namespace de aplicación: sa-p8)
 
 ArgoCD Application: comicrent-p8-policies (namespace argocd)
 Estado observado: Synced / Healthy
-Revisión GitOps: ba5f8ad (PR #15)
+Revisión GitOps: df10a01 (PR #16)
 
 ClusterPolicies Kyverno:
 - p8-disallow-latest    validationFailureAction=Enforce  Ready=True
