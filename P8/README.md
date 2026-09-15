@@ -44,13 +44,102 @@ Los detalles de la comprobación y los comandos reproducibles están en [`eviden
 | Registry | `ghcr.io/davidvelasquez77` |
 | Clúster | `comicrent-gke-p6` / `us-central1-a` |
 
-## Documentación y evidencias visuales
+## Documentación técnica
 
-- [Documentación técnica](docs/technical-documentation.md): flujo GitOps, validaciones y decisiones de diseño.
-- [Informe de incidente](docs/incident-report.md): fallo inducido y rollback automático en una página.
-- [Diagrama del flujo](diagrams/p8-gitops-pipeline.png)
-- [Estado live validado](diagrams/p8-live-validation.png)
-- [Flujo de rollback](diagrams/p8-canary-rollback.png)
+*(Extensión prevista: máximo dos páginas.)*
+
+La Práctica 8 evoluciona el CI/CD de la Práctica 7 hacia GitOps. El repositorio de
+código contiene los microservicios, charts, pruebas y workflows. El repositorio
+GitOps independiente contiene el estado declarativo de la aplicación. ArgoCD
+observa ese repositorio y es el único componente que aplica la aplicación al
+clúster.
+
+![Flujo GitOps de ComicRent](diagrams/p8-gitops-pipeline.png)
+
+El desarrollador crea un Pull Request o integra cambios en `main`. `p8-ci.yml`
+ejecuta compilación, pruebas unitarias, integración efímera con Docker Compose,
+`helm lint`, render de Helm, `terraform validate` y análisis Trivy. La publicación
+se realiza únicamente mediante un tag SemVer como `v0.8.5`. `p8-release.yml`
+construye las seis imágenes con `Dockerfile.prod`, las publica en GHCR, genera un
+SBOM SPDX, bloquea vulnerabilidades `CRITICAL` con Trivy, firma cada imagen con
+Cosign keyless y verifica la firma. Al terminar, el workflow abre un Pull Request
+que solo modifica los tags de `values-gke.yaml` en el repositorio GitOps.
+
+Después de aprobar y fusionar ese Pull Request, ArgoCD sincroniza
+`apps/comicrent` en el namespace `sa-p8`. Los workflows no tienen kubeconfig y no
+ejecutan `kubectl apply`, `kubectl set image` ni `helm upgrade` contra el clúster.
+Terraform instala ArgoCD, Argo Rollouts, Kyverno y Sealed Secrets, crea los
+namespaces, cuotas, límites, roles y bindings RBAC, y registra la única
+`Application` `comicrent-p8` en el namespace `argocd`.
+
+Terraform administra el ciclo de vida completo de GKE, el node pool y la
+plataforma. El chart de la aplicación contiene servicios, configuraciones, probes,
+HPA, NetworkPolicies y el Rollout; no duplica recursos que pertenecen a
+Terraform. Kyverno mantiene cuatro políticas en modo `Enforce`: prohíbe `latest`,
+exige límites de CPU y memoria, exige ejecución sin privilegios de root y verifica
+la firma Cosign de las imágenes GHCR. Las credenciales no se guardan en `values`
+ni en un `Secret` plano. GitOps versiona únicamente `SealedSecret` con
+`encryptedData`; la clave privada permanece fuera de Git y Terraform la restaura
+al reconstruir el clúster.
+
+![Estado live verificado en ArgoCD](evidence/argocd-live.png)
+
+El `api-gateway` se declara como `kind: Rollout` cuando
+`global.progressiveDelivery.apiGateway.enabled` está activo. La estrategia Canary
+usa `10% → 25% → 50% → 100%`. Después de cada uno de los tres primeros porcentajes
+se ejecuta el `AnalysisTemplate` `api-gateway-smoke`, que crea un Job k6 contra el
+Service Canary. La promoción requiere cero solicitudes fallidas
+(`http_req_failed: rate==0`) y un percentil 95 menor de 500 ms
+(`http_req_duration: p(95)<500`). Si el análisis falla, Argo Rollouts aborta la
+revisión nueva y conserva el ReplicaSet estable.
+
+![Canary y rollback automático](diagrams/p8-canary-rollback.png)
+
+La validación final del 15 de septiembre de 2026 confirmó Terraform sin cambios,
+ArgoCD `Synced/Healthy`, Rollout `Healthy`, cuatro políticas Kyverno activas y
+tres `SealedSecret` sincronizados. La evidencia reproducible está en
+[`live-validation-2026-09-15.txt`](evidence/live-validation-2026-09-15.txt).
+
+## Informe de incidente
+
+*(Extensión prevista: máximo una página.)*
+
+**Qué falló:** se publicó temporalmente una revisión defectuosa de `api-gateway`.
+Para inducir el fallo, el smoke test consultó `/definitely-not-health` en lugar de
+`/health`; la revisión llegó al primer paso Canary, pero no superó la validación.
+
+**Cómo se detectó:** Argo Rollouts ejecutó `api-gateway-smoke`, cuyo Job k6
+reportó el métrico `k6-smoke-health` como `Failed`: `http_req_failed` superó
+`rate==0` con `failureLimit: 0`. El `AnalysisRun`
+`comicrent-api-gateway-rollout-6cf578987c-3-1` inició a las
+`2026-09-15T00:27:57Z` y terminó a las `00:30:06Z`.
+
+**Cómo se contuvo:** Argo Rollouts abortó automáticamente la revisión durante la
+promoción y mantuvo el ReplicaSet estable atendiendo el tráfico. La versión sana
+se restauró mediante la [PR GitOps #13](https://github.com/DavidVelasquez77/Practicas-SA-B-202307705-gitops/pull/13),
+sin aplicar cambios manuales a la aplicación.
+
+**Tiempo de recuperación:** el análisis tardó 129 segundos. Después de fusionar
+la restauración, el Rollout volvió a `Healthy` en el paso 10.
+
+**Control preventivo:** mantener el análisis k6 como condición obligatoria de cada
+promoción, `failureLimit: 0`, pruebas de integración antes de publicar la imagen
+y las puertas Trivy, SBOM, Cosign y Kyverno antes de recibir tráfico completo.
+
+![Evidencia del rollback](diagrams/p8-canary-rollback.png)
+
+## Evidencia visual
+
+![CI exitoso](evidence/github-actions-ci.png)
+
+![Release con SBOM, Trivy y Cosign](evidence/github-actions-release.png)
+
+![Salida reproducible de validación del terminal](evidence/terminal-validation.png)
+
+Las capturas se complementan con los registros de texto reproducibles en la
+carpeta [`evidence`](evidence/). Las copias de apoyo de la documentación se
+conservan en [`docs/`](docs/), pero este README es el documento principal de
+entrega.
 
 ## Seguridad
 
@@ -94,11 +183,10 @@ repositorio sigan siendo descifrables después de reconstruir el clúster.
 | Imagen firmada de referencia | `ghcr.io/davidvelasquez77/comicrent-api-gateway:v0.8.5` |
 | Terraform plan/apply | [`terraform-validation.txt`](evidence/terraform-validation.txt) — reconstrucción desde estado vacío (19 agregados) y plan posterior sin cambios |
 | k6 y umbrales | [`k6-summary.json`](evidence/k6-summary.json) |
-| Informe del incidente | [`docs/incident-report.md`](docs/incident-report.md) |
+| Informe del incidente | [Sección de incidente](#informe-de-incidente) |
+| Captura de ArgoCD | [`argocd-live.png`](evidence/argocd-live.png) |
+| Capturas de GitHub Actions | [`github-actions-ci.png`](evidence/github-actions-ci.png) y [`github-actions-release.png`](evidence/github-actions-release.png) |
+| Captura de validación de terminal | [`terminal-validation.png`](evidence/terminal-validation.png) |
 | Video de entrega | Pendiente de grabar |
 
 El `README` del repositorio GitOps deja explícito que ese repositorio contiene únicamente la aplicación y no ejecuta pipelines.
-
-## Incidente controlado
-
-La prueba controlada cambió temporalmente el endpoint del smoke test a una ruta inexistente. El `AnalysisTemplate` detectó el error durante el primer paso Canary, detuvo la promoción, mantuvo el tráfico en la versión estable y Argo Rollouts abortó la revisión nueva. La configuración sana se restauró mediante una PR posterior. El informe completo está en [`docs/incident-report.md`](docs/incident-report.md).
