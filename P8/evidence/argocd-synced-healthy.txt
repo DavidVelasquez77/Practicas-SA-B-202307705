@@ -6,6 +6,7 @@ ArgoCD Application comicrent-p8:
 - revisión GitOps final: 7fbb6d89ff6748e0ae9fa442e039067bbf08091c (PR #17; documentación final posterior a PR #16)
 - recursos reconciliados: Synced
 - salud de aplicación: Healthy
+- ignoreDifferences de Argo Rollouts aplicado también al Service estable mediante PR #7.
 
 ArgoCD Application comicrent-p8-policies:
 - namespace: argocd
