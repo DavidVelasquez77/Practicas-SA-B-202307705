@@ -17,12 +17,21 @@ resource "kubernetes_namespace_v1" "argocd" {
     name   = "argocd"
     labels = { "app.kubernetes.io/part-of" = "argocd" }
   }
+
+  # ArgoCD/Helm añade etiquetas de identificación al namespace existente.
+  lifecycle {
+    ignore_changes = [metadata[0].labels, metadata[0].annotations]
+  }
 }
 
 resource "kubernetes_namespace_v1" "application" {
   metadata {
     name   = var.application_namespace
     labels = { "app.kubernetes.io/part-of" = "comicrent" }
+  }
+
+  lifecycle {
+    ignore_changes = [metadata[0].labels, metadata[0].annotations]
   }
 }
 
@@ -33,12 +42,21 @@ resource "kubernetes_resource_quota_v1" "application" {
   }
   spec {
     hard = {
-      "requests.cpu"    = "2"
-      "requests.memory" = "4Gi"
-      "limits.cpu"      = "4"
-      "limits.memory"   = "8Gi"
-      pods              = "40"
+      "requests.cpu"         = "2"
+      "requests.memory"      = "2Gi"
+      "limits.cpu"           = "4"
+      "limits.memory"        = "4Gi"
+      pods                   = "20"
+      "requests.storage"     = "10Gi"
+      persistentvolumeclaims = "5"
+      services               = "15"
+      configmaps             = "20"
+      secrets                = "15"
     }
+  }
+
+  lifecycle {
+    ignore_changes = [metadata[0].labels, metadata[0].annotations]
   }
 }
 
@@ -62,7 +80,15 @@ resource "kubernetes_limit_range_v1" "application" {
         cpu    = "10m"
         memory = "32Mi"
       }
+      max = {
+        cpu    = "1"
+        memory = "1Gi"
+      }
     }
+  }
+
+  lifecycle {
+    ignore_changes = [metadata[0].labels, metadata[0].annotations]
   }
 }
 

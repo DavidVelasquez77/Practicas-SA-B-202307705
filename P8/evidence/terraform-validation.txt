@@ -9,5 +9,15 @@ P8/terraform/main.tf declara y valida:
 - Role y RoleBinding de lectura del Rollout
 - ClusterRole y ClusterRoleBinding de lectura de la Application ArgoCD
 
-Terraform no estaba instalado localmente en la estación durante esta revisión;
-la validación reproducible quedó ejecutada en el job aislado de Actions.
+Validación local reproducible contra el contexto GKE `comicrent-gke-p6`:
+- `terraform fmt -check -recursive`: correcto.
+- `terraform init -backend=false -input=false`: correcto.
+- `terraform validate`: correcto.
+- `terraform plan -var kubeconfig=...`: `No changes. Your infrastructure matches the configuration.`
+- `terraform apply tfplan`: `Apply complete! Resources: 0 added, 0 changed, 0 destroyed.`
+
+El plan limpio confirma que los namespaces, la cuota, el LimitRange y el RBAC
+declarados por Terraform coinciden con el estado aplicado. Las etiquetas y
+anotaciones de rastreo que ArgoCD agrega a estos recursos se ignoran de forma
+explícita en Terraform para evitar deriva de metadatos, sin ignorar la
+configuración de seguridad ni los límites efectivos.
