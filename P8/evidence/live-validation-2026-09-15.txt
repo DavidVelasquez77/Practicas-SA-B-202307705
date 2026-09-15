@@ -1,0 +1,125 @@
+P8 - VALIDACION FUNCIONAL EN GKE
+Fecha: 2026-09-15
+
+Esta evidencia no contiene credenciales, kubeconfig ni datos secretos.
+
+1. Infraestructura administrada con Terraform y Helm
+
+Recursos presentes en el estado de Terraform:
+- helm_release.argocd
+- helm_release.argo_rollouts
+- helm_release.kyverno
+- helm_release.sealed_secrets
+- namespaces argocd, argo-rollouts, kyverno y sa-p8
+- ResourceQuota, LimitRange y RBAC de sa-p8
+
+Releases observados en el cluster:
+- argocd 10.9.1, revision 2, deployed, namespace argocd
+- argo-rollouts 2.43.1, revision 2, deployed, namespace argo-rollouts
+- kyverno 3.9.1, revision 2, deployed, namespace kyverno
+- sealed-secrets 2.5.19, revision 2, deployed, namespace kube-system
+
+Comando reproducible desde P8/terraform:
+  terraform plan -input=false -var="kubeconfig=$HOME/.kube/config"
+
+2. Estado GitOps
+
+Comando:
+  kubectl -n argocd get applications \
+    -o custom-columns='NAME:.metadata.name,SYNC:.status.sync.status,HEALTH:.status.health.status,REVISION:.status.sync.revision'
+
+Resultado:
+  comicrent-p8           Synced  Healthy  394de07087105f72f4ae6c573fd9b8c522dfd7de
+  comicrent-p8-policies  Synced  Healthy  394de07087105f72f4ae6c573fd9b8c522dfd7de
+
+ArgoCD es el componente que aplica los manifiestos de la aplicacion. Los workflows
+de GitHub Actions no almacenan kubeconfig ni ejecutan despliegue directo.
+
+3. Release y actualizacion de imagenes
+
+Tag publicado: v0.8.5
+GitHub Actions:
+  https://github.com/DavidVelasquez77/Practicas-SA-B-202307705/actions/runs/34937258452
+
+Las seis imagenes pasaron Trivy, se publicaron en GHCR, generaron SBOM y fueron
+firmadas con Cosign. El pipeline abrio el Pull Request de version al repositorio
+GitOps. Despues del merge, ArgoCD actualizo los workloads.
+
+Imagenes observadas:
+  Rollout/comicrent-api-gateway-rollout = comicrent-api-gateway:v0.8.5
+  Deployment/comicrent-p8-auth-service = comicrent-auth-service:v0.8.5
+  Deployment/comicrent-p8-comics-service = comicrent-comics-service:v0.8.5
+  Deployment/comicrent-p8-copies-service = comicrent-copies-service:v0.8.5
+  Deployment/comicrent-p8-rentals-service = comicrent-rentals-service:v0.8.5
+  Deployment/comicrent-p8-copies-consumer = comicrent-copies-service:v0.8.5
+  Deployment/comicrent-summary-consumer = comicrent-operations-jobs:v0.8.5
+  CronJob/comicrent-cron-summary = comicrent-operations-jobs:v0.8.5
+  CronJob/comicrent-cron-tick = comicrent-operations-jobs:v0.8.5
+
+Comando:
+  kubectl -n sa-p8 get rollout,deploy,cronjob -o yaml
+
+4. Canary real con Argo Rollouts
+
+Comando:
+  kubectl argo rollouts get rollout comicrent-api-gateway-rollout -n sa-p8
+
+Estado final:
+  Phase: Healthy
+  Step: 10
+  Current pod hash: 696d66b484
+  Stable ReplicaSet: 696d66b484
+  Imagen estable: ghcr.io/davidvelasquez77/comicrent-api-gateway:v0.8.5
+
+AnalysisRuns exitosos de la revision v0.8.5:
+  comicrent-api-gateway-rollout-696d66b484-6-1  Successful
+  comicrent-api-gateway-rollout-696d66b484-6-4  Successful
+  comicrent-api-gateway-rollout-696d66b484-6-7  Successful
+
+El AnalysisRun fallido comicrent-api-gateway-rollout-b56c6675-5-1 demostro que
+la promocion se detiene y conserva la revision estable cuando el smoke test falla.
+Despues de corregir el acceso de red del Job, una nueva revision completo todos
+los pasos 10%, 25%, 50% y 100%.
+
+5. Smoke test ejecutado dentro del cluster
+
+El AnalysisTemplate crea un Job k6 y consulta el Service canary por DNS interno:
+  http://comicrent-api-gateway-canary.sa-p8.svc.cluster.local:3000/health
+
+Ultimo resultado exitoso:
+  checks: 100.00% (10 de 10)
+  http_req_failed: 0.00% (0 de 10)
+  http_req_duration p(95): 47.19 ms
+  umbral de latencia: p(95) < 500 ms
+
+Comandos:
+  kubectl -n sa-p8 get analysisruns
+  kubectl -n sa-p8 get jobs
+  kubectl -n sa-p8 logs job/b8c5287a-a862-4c08-9e47-9745fabe6c87.k6-smoke-health.1
+
+6. Politicas activas
+
+Comando:
+  kubectl get clusterpolicies \
+    -o custom-columns='NAME:.metadata.name,MODE:.spec.validationFailureAction,READY:.status.conditions[?(@.type=="Ready")].status'
+
+Resultado:
+  p8-disallow-latest    Enforce  True
+  p8-require-nonroot   Enforce  True
+  p8-require-resources Enforce  True
+  p8-verify-cosign     Enforce  True
+
+Las politicas se limitan al namespace sa-p8 para no bloquear los controladores de
+plataforma. p8-verify-cosign comprueba la identidad OIDC usada por GitHub Actions.
+Los secretos de la aplicacion se versionan como SealedSecret con encryptedData.
+
+7. Comprobacion visual en ArgoCD
+
+Con el port-forward activo:
+  kubectl -n argocd port-forward svc/argocd-server 8080:80
+
+Abrir:
+  http://localhost:8080
+
+Se deben observar las aplicaciones comicrent-p8 y comicrent-p8-policies como
+Synced y Healthy, junto con el arbol de recursos administrado por GitOps.
