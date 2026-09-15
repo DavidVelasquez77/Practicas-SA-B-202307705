@@ -38,7 +38,7 @@ Comando:
     -o custom-columns='NAME:.metadata.name,SYNC:.status.sync.status,HEALTH:.status.health.status,REVISION:.status.sync.revision'
 
 Resultado:
-  comicrent-p8  Synced  Healthy  46d61ac1ea00976996716c9995c7956bf5c89fdf
+  comicrent-p8  Synced  Healthy  004e4baa4d9b04e3eecd4d0e6ef4ae5a925dbc0e
 
 Solo existe esa Application. Las políticas pertenecen al release Terraform/Helm
 p8-platform-bootstrap.
@@ -134,3 +134,18 @@ Abrir:
 
 Se debe observar la aplicación comicrent-p8 como Synced y Healthy, junto con el
 árbol de recursos de ComicRent administrado por GitOps.
+
+8. Reconstruccion completa verificada
+
+Desde el estado vacio se ejecutaron:
+  terraform destroy -input=false -auto-approve
+  terraform apply -input=false -auto-approve
+
+Resultados:
+  destroy: 19 recursos destruidos sin parches manuales.
+  apply: 19 recursos creados; ArgoCD Synced/Healthy; Rollout Healthy.
+  endpoint externo /health: HTTP 200, {"service":"api-gateway","status":"ok"}
+  terraform plan: No changes.
+
+Terraform es propietario del namespace sa-p8, ResourceQuota y LimitRange; esos
+tres recursos no se duplican en el chart GitOps.

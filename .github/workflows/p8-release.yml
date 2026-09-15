@@ -170,7 +170,7 @@ jobs:
         uses: peter-evans/create-pull-request@v7
         with:
           token: ${{ secrets.GITOPS_TOKEN }}
-          repository: ${{ vars.GITOPS_REPOSITORY }}
+          push-to-fork: ${{ vars.GITOPS_REPOSITORY }}
           path: gitops
           branch: automation/release-${{ env.RELEASE_TAG }}
           base: main

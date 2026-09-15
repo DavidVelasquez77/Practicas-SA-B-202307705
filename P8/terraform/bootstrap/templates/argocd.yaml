@@ -26,8 +26,6 @@ metadata:
   namespace: argocd
   labels:
     app.kubernetes.io/part-of: comicrent
-  finalizers:
-    - resources-finalizer.argocd.argoproj.io
 spec:
   project: comicrent-p8
   source:
