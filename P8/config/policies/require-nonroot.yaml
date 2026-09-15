@@ -14,6 +14,7 @@ spec:
         any:
           - resources:
               kinds: [Pod]
+              namespaces: [sa-p8]
       validate:
         message: Workloads must run as non-root with privilege escalation disabled.
         pattern:
