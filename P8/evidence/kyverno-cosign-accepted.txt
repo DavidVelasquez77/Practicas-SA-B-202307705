@@ -1,0 +1,8 @@
+Prueba de admisión (server dry-run)
+Fecha: 2026-09-14
+Imagen: ghcr.io/davidvelasquez77/comicrent-api-gateway:v0.8.4
+Resultado: ACEPTADA
+Salida: pod/p8-cosign-accepted-test created (server dry run)
+
+La imagen corresponde a una publicación firmada por p8-release.yml y la
+política p8-verify-cosign permaneció en Enforce.

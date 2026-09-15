@@ -1,7 +1,9 @@
 # Informe de incidente controlado — P8
 
-- **Qué falló:** versión Canary de `api-gateway` con health check no satisfactorio.
-- **Cómo se detectó:** `AnalysisTemplate/api-gateway-smoke` ejecutó k6 y superó el umbral de error permitido (0%).
-- **Cómo se contuvo:** la promoción se detuvo antes del 25%; el tráfico permaneció en la versión estable.
-- **Tiempo de recuperación:** se medirá con los timestamps del historial de Argo Rollouts durante la demostración.
-- **Prevención:** pruebas k6 por etapa, Trivy, SBOM, Cosign y políticas Kyverno antes de permitir una nueva versión.
+- **Qué falló:** el smoke test Canary llamó temporalmente a `/definitely-not-health`; el endpoint no devolvió el estado esperado.
+- **Cómo se detectó:** `AnalysisTemplate/api-gateway-smoke` ejecutó k6 y el métrico `http_req_failed` superó `rate==0`; el `AnalysisRun` terminó `Failed`.
+- **Cómo se contuvo:** Argo Rollouts abortó la revisión 3 a las `2026-09-15T00:30:06Z`, detuvo la promoción antes del 25% y conservó el ReplicaSet estable `7fb647ddcc`.
+- **Tiempo de recuperación:** el análisis inició `2026-09-15T00:27:57Z` y finalizó `2026-09-15T00:30:06Z` (129 segundos). La configuración sana quedó restaurada por la [PR #13](https://github.com/DavidVelasquez77/Practicas-SA-B-202307705-gitops/pull/13) y el Rollout volvió a `Healthy`, paso 10.
+- **Prevención:** cada promoción ejecuta k6 con umbrales de error y latencia; Trivy bloquea CVE `CRITICAL`, se genera SBOM, Cosign firma y verifica las imágenes, y Kyverno rechaza imágenes sin firma, `latest`, sin recursos o ejecutadas como root.
+
+Evidencia detallada: [`../evidence/canary-rollback.txt`](../evidence/canary-rollback.txt).

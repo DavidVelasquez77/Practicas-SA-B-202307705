@@ -1,0 +1,21 @@
+{
+  "analysisTemplate": "api-gateway-smoke",
+  "tool": "k6",
+  "script": "apps/comicrent/tests/load/smoke.js",
+  "options": {
+    "vus": 2,
+    "iterations": 10,
+    "thresholds": {
+      "http_req_failed": "rate==0",
+      "http_req_duration": "p(95)<500ms"
+    }
+  },
+  "healthyRun": "Configured for the final /health endpoint; Rollout finished Healthy at step 10.",
+  "rollbackRun": {
+    "analysisRun": "comicrent-api-gateway-rollout-6cf578987c-3-1",
+    "startedAt": "2026-09-15T00:27:57Z",
+    "completedAt": "2026-09-15T00:30:06Z",
+    "phase": "Failed",
+    "reason": "http_req_failed exceeded failureLimit=0"
+  }
+}

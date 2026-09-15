@@ -1,0 +1,9 @@
+Prueba de admisión (server dry-run)
+Fecha: 2026-09-14
+Imagen: ghcr.io/davidvelasquez77/comicrent-api-gateway:v0.8.999
+Resultado: RECHAZADA
+Motivo observado por Kyverno: p8-verify-cosign / verify-comicrent-ghcr-images
+falló la verificación del artefacto (MANIFEST_UNKNOWN); el webhook
+mutate.kyverno.svc-fail denegó el Pod.
+
+No se guardan tokens ni credenciales en esta evidencia.

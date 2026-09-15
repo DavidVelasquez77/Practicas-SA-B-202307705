@@ -1,0 +1,25 @@
+Demostración controlada de rollback Canary
+
+PR de prueba: https://github.com/DavidVelasquez77/Practicas-SA-B-202307705-gitops/pull/12
+Commit de prueba: 5c050bcdbce5be4d6903e45c7ec4de525f9f71e8
+Cambio temporal: smoke.js llamó a /definitely-not-health y api-gateway usó
+el tag SHA firmado sha-9d689571cb7f840b6d275427606395ecd8315e60.
+
+AnalysisRun: comicrent-api-gateway-rollout-6cf578987c-3-1
+Inicio: 2026-09-15T00:27:57Z
+Fin: 2026-09-15T00:30:06Z
+Resultado: Failed
+Motivo: Metric "k6-smoke-health" assessed Failed due to failed (1) >
+failureLimit (0)
+
+Rollout:
+- revisión nueva: 3
+- abortado: 2026-09-15T00:30:06Z
+- estado observado: Degraded / RolloutAborted
+- ReplicaSet estable conservado: 7fb647ddcc
+- pods estables continuaron con imagen v0.8.4
+
+Restauración:
+https://github.com/DavidVelasquez77/Practicas-SA-B-202307705-gitops/pull/13
+Commit de restauración: b92fc98a4b3bfe15fcbec5d9c36f0f3902fd3b18
+El estado final volvió a Healthy en el paso 10.
