@@ -228,3 +228,51 @@ jobs:
             echo 'Se detectó un posible secreto en texto plano'; exit 1
           fi
           echo 'Sin secretos planos detectados.' >> "$GITHUB_STEP_SUMMARY"
+
+  image-security:
+    name: SECURITY / Trivy imagen / ${{ matrix.image }}
+    needs: [build-node, build-python]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - image: api-gateway
+            context: P4/api-gateway
+          - image: auth-service
+            context: P4/services/auth-service
+          - image: comics-service
+            context: P4/services/comics-service
+          - image: rentals-service
+            context: P4/services/rentals-service
+          - image: copies-service
+            context: P4/services/copies-service
+          - image: operations-jobs
+            context: P5/jobs
+    steps:
+      - name: Preparar código
+        uses: actions/checkout@v4
+      - name: Configurar Buildx
+        uses: docker/setup-buildx-action@v3
+      - name: BUILD / Imagen local para análisis
+        uses: docker/build-push-action@v6
+        with:
+          context: ${{ matrix.context }}
+          file: ${{ matrix.context }}/Dockerfile.prod
+          tags: local/comicrent-${{ matrix.image }}:${{ github.sha }}
+          load: true
+          platforms: linux/amd64
+          cache-from: type=gha,scope=p8-ci-${{ matrix.image }}
+          cache-to: type=gha,mode=max,scope=p8-ci-${{ matrix.image }}
+      - name: SECURITY / Trivy bloquea CVE CRITICAL
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          image-ref: local/comicrent-${{ matrix.image }}:${{ github.sha }}
+          format: table
+          exit-code: '1'
+          severity: CRITICAL
+          ignore-unfixed: true
+          scanners: vuln
+      - name: Registrar resultado de seguridad
+        run: echo '==================== PASS / TRIVY IMAGEN ====================' >> "$GITHUB_STEP_SUMMARY"
