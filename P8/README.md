@@ -14,7 +14,7 @@ ComicRent evoluciona el CI/CD de P7 hacia GitOps. GitHub Actions valida el códi
 
 ## Estado de validación del despliegue
 
-La validación en GKE se realizó el 14 de septiembre de 2026 después de integrar los últimos cambios del repositorio GitOps:
+La validación final en GKE se realizó el 14–15 de septiembre de 2026 después de integrar los últimos cambios del repositorio GitOps:
 
 - ArgoCD `comicrent-p8`: `Synced` y `Healthy`.
 - ArgoCD `comicrent-p8-policies`: `Synced` y `Healthy`; las cuatro políticas Kyverno están en `Enforce`.
@@ -55,7 +55,7 @@ Los detalles de la comprobación y los comandos reproducibles están en [`eviden
 | Repositorio GitOps | [Practicas-SA-B-202307705-gitops](https://github.com/DavidVelasquez77/Practicas-SA-B-202307705-gitops) |
 | CI exitoso | [Actions run 34908240306](https://github.com/DavidVelasquez77/Practicas-SA-B-202307705/actions/runs/34908240306) |
 | Release, SBOM, Trivy y Cosign | [Actions run 34898901057](https://github.com/DavidVelasquez77/Practicas-SA-B-202307705/actions/runs/34898901057) |
-| PR de políticas Cosign y drift ArgoCD | [GitOps PR #11](https://github.com/DavidVelasquez77/Practicas-SA-B-202307705-gitops/pull/11) y [PR #15](https://github.com/DavidVelasquez77/Practicas-SA-B-202307705-gitops/pull/15) |
+| PR de políticas Cosign y drift ArgoCD | [GitOps PR #11](https://github.com/DavidVelasquez77/Practicas-SA-B-202307705-gitops/pull/11), [PR #15](https://github.com/DavidVelasquez77/Practicas-SA-B-202307705-gitops/pull/15) y [PR #16](https://github.com/DavidVelasquez77/Practicas-SA-B-202307705-gitops/pull/16) |
 | Rollback Canary | [PR de prueba #12](https://github.com/DavidVelasquez77/Practicas-SA-B-202307705-gitops/pull/12) y [restauración #13](https://github.com/DavidVelasquez77/Practicas-SA-B-202307705-gitops/pull/13) |
 | ArgoCD y políticas | [`argocd-synced-healthy.txt`](evidence/argocd-synced-healthy.txt) y [`policies-active.txt`](evidence/policies-active.txt) |
 | Rechazo de imagen no firmada | [`kyverno-cosign-rejected.txt`](evidence/kyverno-cosign-rejected.txt) |

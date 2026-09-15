@@ -5,7 +5,7 @@ Contexto:
   zona: us-central1-a
   namespace: sa-p8
   ArgoCD Application: comicrent-p8
-  GitOps revision validada: 1de021f4815cea7e1d0bcd745564e21f889c9d17
+  GitOps revision validada: df10a01ad696ba39a7ce538c306786f610e1c42b
 
 ArgoCD:
   sync: Synced
