@@ -45,6 +45,14 @@ spec:
       jqPathExpressions:
         - .metadata.annotations."argo-rollouts.argoproj.io/managed-by-rollouts"
         - .spec.selector."rollouts-pod-template-hash"
+    # Argo Rollouts también administra el Service estable durante una promoción.
+    - group: ""
+      kind: Service
+      name: comicrent-p8-api-gateway
+      namespace: sa-p8
+      jqPathExpressions:
+        - .metadata.annotations."argo-rollouts.argoproj.io/managed-by-rollouts"
+        - .spec.selector."rollouts-pod-template-hash"
     # Kyverno añade el digest verificado a las imágenes admitidas.
     - group: apps
       kind: Deployment
