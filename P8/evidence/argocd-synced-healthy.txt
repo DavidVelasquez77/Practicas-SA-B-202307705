@@ -1,20 +1,20 @@
-Estado final observado después de la restauración
+Estado observado después de adoptar la plataforma con Terraform
+Fecha: 2026-09-15
 
 ArgoCD Application comicrent-p8:
 - namespace: argocd
 - repositorio: https://github.com/DavidVelasquez77/Practicas-SA-B-202307705-gitops.git
-- revisión GitOps final: 7fbb6d89ff6748e0ae9fa442e039067bbf08091c (PR #17; documentación final posterior a PR #16)
+- revisión GitOps: 46d61ac1ea00976996716c9995c7956bf5c89fdf (PR #24)
 - recursos reconciliados: Synced
 - salud de aplicación: Healthy
-- ignoreDifferences de Argo Rollouts aplicado también al Service estable mediante PR #7.
+- propietario del recurso Application: Helm release p8-platform-bootstrap
 
-ArgoCD Application comicrent-p8-policies:
-- namespace: argocd
-- revisión: 7fbb6d89ff6748e0ae9fa442e039067bbf08091c
-- estado: Synced / Healthy
+No existe comicrent-p8-policies. Terraform instala las cuatro ClusterPolicy
+mediante el release p8-platform-bootstrap; ArgoCD administra únicamente el chart
+de la aplicación.
 
 Argo Rollout comicrent-api-gateway-rollout (sa-p8):
 - phase: Healthy
 - currentStepIndex: 10
-- stableRS: 7fb647ddcc
-- pods gateway: 3/3 Ready con imagen v0.8.4
+- stableRS: 696d66b484
+- pods gateway: 3/3 Ready con imagen v0.8.5

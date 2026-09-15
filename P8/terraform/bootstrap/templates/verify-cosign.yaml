@@ -2,12 +2,6 @@ apiVersion: kyverno.io/v1
 kind: ClusterPolicy
 metadata:
   name: p8-verify-cosign
-  annotations:
-    policies.kyverno.io/title: Verify ComicRent images with Cosign
-    policies.kyverno.io/category: Supply Chain
-    policies.kyverno.io/description: >-
-      Only admits ComicRent images signed keylessly by the P8 release workflow
-      through GitHub Actions and recorded in the Sigstore transparency log.
 spec:
   validationFailureAction: Enforce
   background: false
@@ -19,16 +13,12 @@ spec:
       match:
         any:
           - resources:
-              kinds:
-                - Pod
-              namespaces:
-                - sa-p8
+              kinds: [Pod]
+              namespaces: [sa-p8]
       verifyImages:
         - imageReferences:
-            - ghcr.io/davidvelasquez77/comicrent-*:* 
+            - ghcr.io/davidvelasquez77/comicrent-*:*
           failureAction: Enforce
-          # Pin admitted workloads to the verified digest. ArgoCD ignores this
-          # admission-time mutation below so Git remains the source of intent.
           mutateDigest: false
           verifyDigest: false
           attestors:

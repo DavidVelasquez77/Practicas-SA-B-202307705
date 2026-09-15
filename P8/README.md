@@ -4,11 +4,16 @@
 
 ComicRent evoluciona el CI/CD de P7 hacia GitOps. GitHub Actions valida el código, construye y firma imágenes en GHCR y abre un Pull Request en el repositorio GitOps. ArgoCD es el único componente que aplica los manifiestos al clúster; Argo Rollouts promueve la versión con estrategia Canary y revierte automáticamente si el análisis falla.
 
+Toda la plataforma se levanta desde Terraform: GKE, node pool, namespaces, cuotas,
+límites, RBAC, ArgoCD, Argo Rollouts, Kyverno, Sealed Secrets, las políticas y el
+bootstrap de la única aplicación `comicrent-p8`. Terraform no instala el chart de
+ComicRent; crea el `Application` y ArgoCD lo sincroniza desde el repositorio GitOps.
+
 ## Flujo implementado
 
 1. `p8-ci.yml` ejecuta build, pruebas unitarias, integraciones, Helm lint, Terraform validate y Trivy en Pull Requests y `main`.
 2. `p8-release.yml` se activa con tags SemVer `vX.Y.Z`, construye las seis imágenes, genera SBOM, firma con Cosign y abre un Pull Request al repositorio GitOps.
-3. Después del merge del Pull Request GitOps, ArgoCD sincroniza la aplicación `comicrent-p8` desde `main`.
+3. Después del merge del Pull Request GitOps, la única aplicación de ArgoCD, `comicrent-p8`, sincroniza `apps/comicrent` desde `main`.
 4. Argo Rollouts entrega `api-gateway` mediante Canary: 10% → 25% → 50% → 100%. Cada etapa ejecuta el `AnalysisTemplate` `api-gateway-smoke` con k6.
 5. Una versión defectuosa produce un análisis fallido y un rollback automático.
 
@@ -17,7 +22,7 @@ ComicRent evoluciona el CI/CD de P7 hacia GitOps. GitHub Actions valida el códi
 La validación final en GKE se realizó el 14–15 de septiembre de 2026 después de integrar los últimos cambios del repositorio GitOps:
 
 - ArgoCD `comicrent-p8`: `Synced` y `Healthy`.
-- ArgoCD `comicrent-p8-policies`: `Synced` y `Healthy`; las cuatro políticas Kyverno están en `Enforce`.
+- Solo existe la aplicación ArgoCD `comicrent-p8`; las cuatro políticas pertenecen al release Terraform `p8-platform-bootstrap` y están en `Enforce`.
 - Argo Rollout `comicrent-api-gateway-rollout`: `Healthy`, paso actual `10`, revisión actual y estable `696d66b484`.
 - RabbitMQ `comicrent-rabbitmq-0`: `1/1 Running`.
 - `copies-consumer` y `summary-consumer`: `1/1 Running`.
@@ -44,8 +49,24 @@ Los detalles de la comprobación y los comandos reproducibles están en [`eviden
 - Trivy bloquea imágenes con vulnerabilidades CRITICAL.
 - Cada imagen publica su SBOM y se firma con Cosign usando la identidad OIDC de GitHub Actions.
 - Kyverno aplica en `Enforce` las políticas `p8-disallow-latest`, `p8-require-resources`, `p8-require-nonroot` y `p8-verify-cosign`.
-- Terraform administra namespaces, cuotas, límites, RBAC e instala ArgoCD, Argo Rollouts, Kyverno y Sealed Secrets mediante Helm. GitOps administra las políticas Kyverno y los manifiestos de la aplicación para evitar propiedad duplicada sobre esos recursos.
+- Terraform administra GKE, el node pool, namespaces, cuotas, límites, RBAC, los controladores, las políticas Kyverno y el bootstrap de ArgoCD.
+- El repositorio GitOps contiene únicamente el chart y los secretos sellados de la aplicación; no contiene workflows.
 - Los secretos no se guardan en texto plano: GitOps versiona recursos `SealedSecret` con `encryptedData` y ArgoCD aplica los Secrets generados en `sa-p8`.
+
+## Construcción desde cero
+
+Después de autenticar Google Application Default Credentials y ejecutar una vez
+`terraform init`, el despliegue completo se realiza con:
+
+```bash
+cd P8/terraform
+terraform apply
+```
+
+El mismo estado permite ejecutar `terraform destroy` y posteriormente
+`terraform apply`. La clave de recuperación de Sealed Secrets permanece en
+`~/.comicrent/p8-sealed-secrets/`, fuera de Git, para que los `encryptedData` del
+repositorio sigan siendo descifrables después de reconstruir el clúster.
 
 ## Tabla de enlaces de entrega
 
@@ -59,7 +80,7 @@ Los detalles de la comprobación y los comandos reproducibles están en [`eviden
 | Corrección de drift de Argo Rollouts | [PR #7](https://github.com/DavidVelasquez77/Practicas-SA-B-202307705/pull/7) — Service estable con campos dinámicos ignorados de forma declarativa |
 | PR de políticas Cosign y drift ArgoCD | [GitOps PR #11](https://github.com/DavidVelasquez77/Practicas-SA-B-202307705-gitops/pull/11), [PR #15](https://github.com/DavidVelasquez77/Practicas-SA-B-202307705-gitops/pull/15), [PR #16](https://github.com/DavidVelasquez77/Practicas-SA-B-202307705-gitops/pull/16) y [documentación final #17](https://github.com/DavidVelasquez77/Practicas-SA-B-202307705-gitops/pull/17) |
 | Rollback Canary | [PR de prueba #12](https://github.com/DavidVelasquez77/Practicas-SA-B-202307705-gitops/pull/12) y [restauración #13](https://github.com/DavidVelasquez77/Practicas-SA-B-202307705-gitops/pull/13) |
-| ArgoCD y políticas | [`argocd-synced-healthy.txt`](evidence/argocd-synced-healthy.txt) y [`policies-active.txt`](evidence/policies-active.txt) |
+| ArgoCD y políticas Terraform | [`argocd-synced-healthy.txt`](evidence/argocd-synced-healthy.txt) y [`policies-active.txt`](evidence/policies-active.txt) |
 | Rechazo de imagen no firmada | [`kyverno-cosign-rejected.txt`](evidence/kyverno-cosign-rejected.txt) |
 | Imagen firmada de referencia | `ghcr.io/davidvelasquez77/comicrent-api-gateway:v0.8.5` |
 | Terraform plan/apply | [`terraform-validation.txt`](evidence/terraform-validation.txt) — plan sin cambios y apply reproducible (0 agregados, 0 modificados, 0 destruidos) |
@@ -67,7 +88,7 @@ Los detalles de la comprobación y los comandos reproducibles están en [`eviden
 | Informe del incidente | [`docs/incident-report.md`](docs/incident-report.md) |
 | Video de entrega | Pendiente de grabar |
 
-El `README` del repositorio GitOps contiene también la descripción operativa de ArgoCD, Rollouts, políticas y secretos sellados.
+El `README` del repositorio GitOps deja explícito que ese repositorio contiene únicamente la aplicación y no ejecuta pipelines.
 
 ## Incidente controlado
 

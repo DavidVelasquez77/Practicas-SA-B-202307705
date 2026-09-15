@@ -1,0 +1,9 @@
+gitops:
+  repoURL: https://github.com/DavidVelasquez77/Practicas-SA-B-202307705-gitops.git
+  targetRevision: main
+  path: apps/comicrent
+  valuesFile: values-gke.yaml
+
+application:
+  name: comicrent-p8
+  namespace: sa-p8

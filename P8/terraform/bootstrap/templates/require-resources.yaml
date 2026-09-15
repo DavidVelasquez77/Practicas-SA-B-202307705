@@ -2,9 +2,6 @@ apiVersion: kyverno.io/v1
 kind: ClusterPolicy
 metadata:
   name: p8-require-resources
-  annotations:
-    policies.kyverno.io/title: Require CPU and memory limits
-    policies.kyverno.io/category: Reliability
 spec:
   validationFailureAction: Enforce
   background: true
@@ -22,15 +19,15 @@ spec:
             deny:
               conditions:
                 any:
-                  - key: "{{ element.resources.requests.cpu || '' }}"
+                  - key: "{{`{{ element.resources.requests.cpu || '' }}`}}"
                     operator: Equals
-                    value: ''
-                  - key: "{{ element.resources.requests.memory || '' }}"
+                    value: ""
+                  - key: "{{`{{ element.resources.requests.memory || '' }}`}}"
                     operator: Equals
-                    value: ''
-                  - key: "{{ element.resources.limits.cpu || '' }}"
+                    value: ""
+                  - key: "{{`{{ element.resources.limits.cpu || '' }}`}}"
                     operator: Equals
-                    value: ''
-                  - key: "{{ element.resources.limits.memory || '' }}"
+                    value: ""
+                  - key: "{{`{{ element.resources.limits.memory || '' }}`}}"
                     operator: Equals
-                    value: ''
+                    value: ""

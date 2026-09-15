@@ -1,7 +1,28 @@
 apiVersion: argoproj.io/v1alpha1
-kind: Application
+kind: AppProject
 metadata:
   name: comicrent-p8
+  namespace: argocd
+spec:
+  description: ComicRent P8 GitOps project
+  sourceRepos:
+    - {{ .Values.gitops.repoURL }}
+  destinations:
+    - namespace: {{ .Values.application.namespace }}
+      server: https://kubernetes.default.svc
+  clusterResourceWhitelist:
+    - group: argoproj.io
+      kind: Rollout
+    - group: argoproj.io
+      kind: AnalysisTemplate
+  namespaceResourceWhitelist:
+    - group: "*"
+      kind: "*"
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: {{ .Values.application.name }}
   namespace: argocd
   labels:
     app.kubernetes.io/part-of: comicrent
@@ -10,46 +31,45 @@ metadata:
 spec:
   project: comicrent-p8
   source:
-    repoURL: https://github.com/DavidVelasquez77/Practicas-SA-B-202307705-gitops.git
-    targetRevision: main
-    path: apps/comicrent
+    repoURL: {{ .Values.gitops.repoURL }}
+    targetRevision: {{ .Values.gitops.targetRevision }}
+    path: {{ .Values.gitops.path }}
     helm:
       valueFiles:
-        - values-gke.yaml
+        - {{ .Values.gitops.valuesFile }}
   destination:
     server: https://kubernetes.default.svc
-    namespace: sa-p8
+    namespace: {{ .Values.application.namespace }}
   ignoreDifferences:
     - group: argoproj.io
       kind: Rollout
       name: comicrent-api-gateway-rollout
-      namespace: sa-p8
+      namespace: {{ .Values.application.namespace }}
       jsonPointers:
         - /metadata/annotations/rollout.argoproj.io~1revision
     - group: ""
       kind: Secret
       name: comicrent-rabbitmq
-      namespace: sa-p8
+      namespace: {{ .Values.application.namespace }}
       jsonPointers:
         - /data
     - group: apps
       kind: StatefulSet
       name: comicrent-rabbitmq
-      namespace: sa-p8
+      namespace: {{ .Values.application.namespace }}
       jsonPointers:
         - /spec/template/metadata/annotations/checksum~1secret
     - group: ""
       kind: Service
       name: comicrent-api-gateway-canary
-      namespace: sa-p8
+      namespace: {{ .Values.application.namespace }}
       jqPathExpressions:
         - .metadata.annotations."argo-rollouts.argoproj.io/managed-by-rollouts"
         - .spec.selector."rollouts-pod-template-hash"
-    # Argo Rollouts también administra el Service estable durante una promoción.
     - group: ""
       kind: Service
       name: comicrent-p8-api-gateway
-      namespace: sa-p8
+      namespace: {{ .Values.application.namespace }}
       jqPathExpressions:
         - .metadata.annotations."argo-rollouts.argoproj.io/managed-by-rollouts"
         - .spec.selector."rollouts-pod-template-hash"
