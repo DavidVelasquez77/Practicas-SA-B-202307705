@@ -137,8 +137,7 @@ y las puertas Trivy, SBOM, Cosign y Kyverno antes de recibir tráfico completo.
 ![Salida reproducible de validación del terminal](evidence/terminal-validation.png)
 
 Las capturas se complementan con los registros de texto reproducibles en la
-carpeta [`evidence`](evidence/). Las copias de apoyo de la documentación se
-conservan en [`docs/`](docs/), pero este README es el documento principal de
+carpeta [`evidence`](evidence/). Este README concentra toda la documentación de
 entrega.
 
 ## Seguridad
