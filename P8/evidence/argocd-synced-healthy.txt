@@ -1,0 +1,19 @@
+Estado final observado después de la restauración
+
+ArgoCD Application comicrent-p8:
+- namespace: argocd
+- repositorio: https://github.com/DavidVelasquez77/Practicas-SA-B-202307705-gitops.git
+- revisión GitOps final: ba5f8ad (PR #15)
+- recursos reconciliados: Synced
+- salud de aplicación: Healthy
+
+ArgoCD Application comicrent-p8-policies:
+- namespace: argocd
+- revisión: ba5f8ad
+- estado: Synced / Healthy
+
+Argo Rollout comicrent-api-gateway-rollout (sa-p8):
+- phase: Healthy
+- currentStepIndex: 10
+- stableRS: 7fb647ddcc
+- pods gateway: 3/3 Ready con imagen v0.8.4

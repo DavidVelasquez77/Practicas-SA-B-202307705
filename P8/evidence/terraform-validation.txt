@@ -1,0 +1,13 @@
+Validación de infraestructura como código
+
+El job Terraform de p8-release.yml terminó correctamente en GitHub Actions:
+https://github.com/DavidVelasquez77/Practicas-SA-B-202307705/actions/runs/34898901057/job/104159831169
+
+P8/terraform/main.tf declara y valida:
+- namespace argocd y namespace sa-p8
+- ResourceQuota y LimitRange de sa-p8
+- Role y RoleBinding de lectura del Rollout
+- ClusterRole y ClusterRoleBinding de lectura de la Application ArgoCD
+
+Terraform no estaba instalado localmente en la estación durante esta revisión;
+la validación reproducible quedó ejecutada en el job aislado de Actions.
