@@ -171,10 +171,15 @@ jobs:
         run: |
           set -euo pipefail
           helm lint P8/charts/comicrent -f P8/config/values-ci.yaml 2>&1 | tee helm-lint.log
+          helm lint P8/terraform/bootstrap 2>&1 | tee helm-bootstrap-lint.log
           helm template comicrent P8/charts/comicrent --namespace sa-p8 -f P8/config/values-ci.yaml > rendered-p8.yaml
+          helm template p8-platform-bootstrap P8/terraform/bootstrap > rendered-p8-bootstrap.yaml
           test -s rendered-p8.yaml
+          test -s rendered-p8-bootstrap.yaml
           grep -q 'kind: Rollout' rendered-p8.yaml
           grep -q 'kind: AnalysisTemplate' rendered-p8.yaml
+          grep -q 'kind: Application' rendered-p8-bootstrap.yaml
+          test "$(grep -c 'kind: ClusterPolicy' rendered-p8-bootstrap.yaml)" -eq 4
           echo '==================== PASS / HELM ===================='
       - name: Guardar render y logs Helm
         if: always()
@@ -183,7 +188,9 @@ jobs:
           name: p8-helm-validation
           path: |
             helm-lint.log
+            helm-bootstrap-lint.log
             rendered-p8.yaml
+            rendered-p8-bootstrap.yaml
 
   terraform:
     name: TERRAFORM / Format y Validate

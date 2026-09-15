@@ -6,10 +6,15 @@ Esta evidencia no contiene credenciales, kubeconfig ni datos secretos.
 1. Infraestructura administrada con Terraform y Helm
 
 Recursos presentes en el estado de Terraform:
+- google_project_service.container
+- google_container_cluster.comicrent
+- google_container_node_pool.primary
 - helm_release.argocd
 - helm_release.argo_rollouts
 - helm_release.kyverno
 - helm_release.sealed_secrets
+- helm_release.platform_bootstrap
+- kubernetes_secret_v1.sealed_secrets_key
 - namespaces argocd, argo-rollouts, kyverno y sa-p8
 - ResourceQuota, LimitRange y RBAC de sa-p8
 
@@ -17,10 +22,14 @@ Releases observados en el cluster:
 - argocd 10.9.1, revision 2, deployed, namespace argocd
 - argo-rollouts 2.43.1, revision 2, deployed, namespace argo-rollouts
 - kyverno 3.9.1, revision 2, deployed, namespace kyverno
-- sealed-secrets 2.5.19, revision 2, deployed, namespace kube-system
+- sealed-secrets 2.5.19, revision 3, deployed, namespace kube-system
+- p8-platform-bootstrap 0.1.0, revision 1, deployed, namespace argocd
 
 Comando reproducible desde P8/terraform:
-  terraform plan -input=false -var="kubeconfig=$HOME/.kube/config"
+  terraform plan -input=false
+
+Resultado posterior al apply:
+  No changes. Your infrastructure matches the configuration.
 
 2. Estado GitOps
 
@@ -29,8 +38,10 @@ Comando:
     -o custom-columns='NAME:.metadata.name,SYNC:.status.sync.status,HEALTH:.status.health.status,REVISION:.status.sync.revision'
 
 Resultado:
-  comicrent-p8           Synced  Healthy  394de07087105f72f4ae6c573fd9b8c522dfd7de
-  comicrent-p8-policies  Synced  Healthy  394de07087105f72f4ae6c573fd9b8c522dfd7de
+  comicrent-p8  Synced  Healthy  46d61ac1ea00976996716c9995c7956bf5c89fdf
+
+Solo existe esa Application. Las políticas pertenecen al release Terraform/Helm
+p8-platform-bootstrap.
 
 ArgoCD es el componente que aplica los manifiestos de la aplicacion. Los workflows
 de GitHub Actions no almacenan kubeconfig ni ejecutan despliegue directo.
@@ -121,5 +132,5 @@ Con el port-forward activo:
 Abrir:
   http://localhost:8080
 
-Se deben observar las aplicaciones comicrent-p8 y comicrent-p8-policies como
-Synced y Healthy, junto con el arbol de recursos administrado por GitOps.
+Se debe observar la aplicación comicrent-p8 como Synced y Healthy, junto con el
+árbol de recursos de ComicRent administrado por GitOps.

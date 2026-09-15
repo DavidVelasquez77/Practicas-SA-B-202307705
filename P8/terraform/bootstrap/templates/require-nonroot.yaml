@@ -2,9 +2,6 @@ apiVersion: kyverno.io/v1
 kind: ClusterPolicy
 metadata:
   name: p8-require-nonroot
-  annotations:
-    policies.kyverno.io/title: Require non-root containers
-    policies.kyverno.io/category: Pod Security
 spec:
   validationFailureAction: Enforce
   background: true

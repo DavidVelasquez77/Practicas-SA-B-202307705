@@ -1,23 +1,30 @@
-Validación de infraestructura como código
+Validación de Terraform P8
+Fecha: 2026-09-15
 
-El job Terraform de p8-release.yml terminó correctamente en GitHub Actions:
-https://github.com/DavidVelasquez77/Practicas-SA-B-202307705/actions/runs/34898901057/job/104159831169
+terraform validate:
+  Success! The configuration is valid.
 
-P8/terraform/main.tf declara y valida:
-- namespace argocd y namespace sa-p8
-- ResourceQuota y LimitRange de sa-p8
-- Role y RoleBinding de lectura del Rollout
-- ClusterRole y ClusterRoleBinding de lectura de la Application ArgoCD
+helm lint P8/terraform/bootstrap:
+  1 chart(s) linted, 0 chart(s) failed
 
-Validación local reproducible contra el contexto GKE `comicrent-gke-p6`:
-- `terraform fmt -check -recursive`: correcto.
-- `terraform init -backend=false -input=false`: correcto.
-- `terraform validate`: correcto.
-- `terraform plan -var kubeconfig=...`: `No changes. Your infrastructure matches the configuration.`
-- `terraform apply tfplan`: `Apply complete! Resources: 0 added, 0 changed, 0 destroyed.`
+Adopción del clúster existente:
+  Apply complete! Resources: 3 added, 1 changed, 0 destroyed.
 
-El plan limpio confirma que los namespaces, la cuota, el LimitRange y el RBAC
-declarados por Terraform coinciden con el estado aplicado. Las etiquetas y
-anotaciones de rastreo que ArgoCD agrega a estos recursos se ignoran de forma
-explícita en Terraform para evitar deriva de metadatos, sin ignorar la
-configuración de seguridad ni los límites efectivos.
+Estado administrado:
+- google_project_service.container
+- google_container_cluster.comicrent
+- google_container_node_pool.primary
+- helm_release.argocd
+- helm_release.argo_rollouts
+- helm_release.kyverno
+- helm_release.sealed_secrets
+- helm_release.platform_bootstrap
+- kubernetes namespaces, ResourceQuota, LimitRange y RBAC
+- kubernetes_secret_v1.sealed_secrets_key
+
+Plan posterior al apply:
+  No changes. Your infrastructure matches the configuration.
+
+El node pool tiene dos nodos e2-standard-2. La clave de recuperación de Sealed
+Secrets está fuera de Git en ~/.comicrent/p8-sealed-secrets/ y permite reconstruir
+el clúster conservando la capacidad de descifrar los SealedSecret existentes.

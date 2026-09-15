@@ -1,4 +1,11 @@
-# Example only. Do not commit credentials.
-kubeconfig           = "~/.kube/config"
+# Example only. Do not commit credentials or a real *.auto.tfvars file.
+project_id            = "comicrent-p6-2026"
+region                = "us-central1"
+zone                  = "us-central1-a"
+cluster_name          = "comicrent-gke-p6"
+node_count            = 2
+master_authorized_cidr = "203.0.113.10/32"
 application_namespace = "sa-p8"
 analysis_service_account = "p8-analysis"
+sealed_secrets_cert_path = "~/.comicrent/p8-sealed-secrets/tls.crt"
+sealed_secrets_key_path  = "~/.comicrent/p8-sealed-secrets/tls.key"

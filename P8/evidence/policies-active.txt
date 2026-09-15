@@ -1,8 +1,6 @@
-Validación ejecutada en GKE el 2026-09-14/15 (namespace de aplicación: sa-p8)
+Validación ejecutada en GKE el 2026-09-15
 
-ArgoCD Application: comicrent-p8-policies (namespace argocd)
-Estado observado: Synced / Healthy
-Revisión GitOps: 7fbb6d89ff6748e0ae9fa442e039067bbf08091c (PR #17; documentación final posterior a PR #16)
+Propietario: Helm release p8-platform-bootstrap, administrado por Terraform
 
 ClusterPolicies Kyverno:
 - p8-disallow-latest    validationFailureAction=Enforce  Ready=True
@@ -10,7 +8,7 @@ ClusterPolicies Kyverno:
 - p8-require-resources  validationFailureAction=Enforce  Ready=True
 - p8-verify-cosign      validationFailureAction=Enforce  Ready=True
 
-La política Cosign usa identidad keyless de GitHub Actions, emisor
-https://token.actions.githubusercontent.com y Rekor público. Kyverno fija el
-digest verificado en los workloads; ArgoCD ignora únicamente ese campo
-dinámico para evitar drift de reconciliación.
+Las políticas se limitan al namespace sa-p8. La política Cosign usa la identidad
+keyless de GitHub Actions, el emisor https://token.actions.githubusercontent.com
+y Rekor público. mutateDigest=false y verifyDigest=false evitan alterar la etiqueta
+declarada; la verificación criptográfica de la firma sigue siendo obligatoria.
