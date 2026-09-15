@@ -1,0 +1,13 @@
+digraph G {
+  graph [rankdir=LR, bgcolor="white", pad="0.25", nodesep="0.35", ranksep="0.55", fontname="Arial"];
+  node [shape=box, style="rounded,filled", fontname="Arial", fontsize=11, color="#334155", penwidth=1.2, margin="0.16,0.10"];
+  title [label="P8 · Estado live verificado\n15-sep-2026", shape=plain, fontsize=16, fontcolor="#0f172a"];
+  tf [label="Terraform\nplan: No changes", fillcolor="#dcfce7", color="#16a34a"];
+  app [label="ArgoCD comicrent-p8\nargocd · Synced · Healthy", fillcolor="#dcfce7", color="#16a34a"];
+  ro [label="Rollout api-gateway\nHealthy · 3/3 · v0.8.5", fillcolor="#dcfce7", color="#16a34a"];
+  pol [label="Kyverno\n4 políticas · Enforce · Ready=True", fillcolor="#dcfce7", color="#16a34a"];
+  sec [label="Sealed Secrets\n3 recursos Synced\nencryptedData", fillcolor="#dcfce7", color="#16a34a"];
+  nodes [label="GKE\n2 nodos Ready\nnamespace sa-p8", fillcolor="#dbeafe", color="#2563eb"];
+  title -> tf [style=invis];
+  tf -> nodes; app -> ro -> nodes; pol -> nodes; sec -> nodes;
+}

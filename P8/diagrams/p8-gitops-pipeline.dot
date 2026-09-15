@@ -1,0 +1,28 @@
+digraph G {
+  graph [rankdir=LR, bgcolor="white", pad="0.25", nodesep="0.35", ranksep="0.6", fontname="Arial"];
+  node [shape=box, style="rounded,filled", fontname="Arial", fontsize=11, color="#334155", penwidth=1.2, margin="0.16,0.10"];
+  edge [fontname="Arial", fontsize=9, color="#475569", arrowsize=0.7];
+  dev [label="Developer\ncommit / Pull Request", fillcolor="#e2e8f0"];
+  ci [label="P8 CI\nBuild · unit · integration\nHelm lint · Terraform validate\nTrivy", fillcolor="#dcfce7", color="#16a34a"];
+  rel [label="P8 Release\ntag vX.Y.Z\nBuild · SBOM · Cosign", fillcolor="#ffedd5", color="#ea580c"];
+  ghcr [label="GHCR\nversioned images", shape=cylinder, fillcolor="#dbeafe", color="#2563eb"];
+  pr [label="Automatic PR\nGitOps repository", fillcolor="#fef3c7", color="#ca8a04"];
+  argo [label="ArgoCD\ncomicrent-p8\n唯一 componente de aplicación", fillcolor="#ede9fe", color="#7c3aed"];
+  roll [label="Argo Rollouts\nCanary 10% → 25% → 50% → 100%", fillcolor="#e0f2fe", color="#0284c7"];
+  analysis [label="AnalysisTemplate\nJob k6 /health\nerror rate = 0\np95 < 500 ms", fillcolor="#f0fdf4", color="#16a34a"];
+  fail [label="Fallo\nrollback automático", fillcolor="#fee2e2", color="#dc2626"];
+  terraform [label="Terraform apply\nGKE + node pool\nNamespaces · cuotas · límites · RBAC\nArgoCD · Rollouts · Kyverno · Sealed Secrets", fillcolor="#f3e8ff", color="#9333ea"];
+  cluster [label="GKE / sa-p8\nservicios ComicRent", fillcolor="#dbeafe", color="#2563eb"];
+  dev -> ci [label="PR / main"];
+  ci -> rel [label="merge + tag"];
+  rel -> ghcr [label="push"];
+  rel -> pr [label="actualiza tags"];
+  pr -> argo [label="merge PR"];
+  argo -> roll [label="sync"];
+  roll -> analysis [label="cada promoción"];
+  analysis -> roll [label="PASS"];
+  analysis -> fail [label="FAIL"];
+  fail -> roll [label="conserva estable"];
+  roll -> cluster;
+  terraform -> cluster [label="provisiona plataforma"];
+}

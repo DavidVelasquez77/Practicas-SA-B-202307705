@@ -1,0 +1,12 @@
+digraph G {
+  graph [rankdir=LR, bgcolor="white", pad="0.25", nodesep="0.4", ranksep="0.6", fontname="Arial"];
+  node [shape=box, style="rounded,filled", fontname="Arial", fontsize=11, color="#334155", penwidth=1.2, margin="0.16,0.10"];
+  tag [label="Nueva imagen\nversión defectuosa", fillcolor="#fee2e2", color="#dc2626"];
+  canary [label="Canary 10%", fillcolor="#fef3c7", color="#ca8a04"];
+  k6 [label="AnalysisTemplate\nk6 devuelve error\nhttp_req_failed > 0", fillcolor="#fee2e2", color="#dc2626"];
+  abort [label="Argo Rollouts\nAbort / Degraded", fillcolor="#fee2e2", color="#dc2626"];
+  stable [label="Servicio estable\ncontinúa atendiendo usuarios", fillcolor="#dcfce7", color="#16a34a"];
+  restore [label="PR de restauración\nArgoCD sincroniza", fillcolor="#dbeafe", color="#2563eb"];
+  healthy [label="Healthy\nrevisión estable", fillcolor="#dcfce7", color="#16a34a"];
+  tag -> canary -> k6 -> abort -> stable -> restore -> healthy;
+}

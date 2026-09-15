@@ -44,6 +44,14 @@ Los detalles de la comprobación y los comandos reproducibles están en [`eviden
 | Registry | `ghcr.io/davidvelasquez77` |
 | Clúster | `comicrent-gke-p6` / `us-central1-a` |
 
+## Documentación y evidencias visuales
+
+- [Documentación técnica](docs/technical-documentation.md): flujo GitOps, validaciones y decisiones de diseño.
+- [Informe de incidente](docs/incident-report.md): fallo inducido y rollback automático en una página.
+- [Diagrama del flujo](diagrams/p8-gitops-pipeline.png)
+- [Estado live validado](diagrams/p8-live-validation.png)
+- [Flujo de rollback](diagrams/p8-canary-rollback.png)
+
 ## Seguridad
 
 - No hay kubeconfig ni comandos `kubectl apply`, `kubectl set image` o `helm upgrade` en los workflows de P8.
