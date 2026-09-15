@@ -4,7 +4,7 @@ Fecha: 2026-09-15
 ArgoCD Application comicrent-p8:
 - namespace: argocd
 - repositorio: https://github.com/DavidVelasquez77/Practicas-SA-B-202307705-gitops.git
-- revisión GitOps: 004e4baa4d9b04e3eecd4d0e6ef4ae5a925dbc0e (PR #25)
+- revisión GitOps: 4dbdf28f4008950179c1524d7f233918c1f82c48 (limpieza de secretos planos)
 - recursos reconciliados: Synced
 - salud de aplicación: Healthy
 - propietario del recurso Application: Helm release p8-platform-bootstrap

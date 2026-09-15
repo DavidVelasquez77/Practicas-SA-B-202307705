@@ -38,7 +38,7 @@ Comando:
     -o custom-columns='NAME:.metadata.name,SYNC:.status.sync.status,HEALTH:.status.health.status,REVISION:.status.sync.revision'
 
 Resultado:
-  comicrent-p8  Synced  Healthy  004e4baa4d9b04e3eecd4d0e6ef4ae5a925dbc0e
+comicrent-p8  Synced  Healthy  4dbdf28f4008950179c1524d7f233918c1f82c48
 
 Solo existe esa Application. Las políticas pertenecen al release Terraform/Helm
 p8-platform-bootstrap.
