@@ -1,191 +1,252 @@
 # Práctica 8 — GitOps, entrega Canary y seguridad de la cadena de suministro
 
-## Objetivo
-
-ComicRent evoluciona el CI/CD de P7 hacia GitOps. GitHub Actions valida el código, construye y firma imágenes en GHCR y abre un Pull Request en el repositorio GitOps. ArgoCD es el único componente que aplica los manifiestos al clúster; Argo Rollouts promueve la versión con estrategia Canary y revierte automáticamente si el análisis falla.
-
-Toda la plataforma se levanta desde Terraform: GKE, node pool, namespaces, cuotas,
-límites, RBAC, ArgoCD, Argo Rollouts, Kyverno, Sealed Secrets, las políticas y el
-bootstrap de la única aplicación `comicrent-p8`. Terraform no instala el chart de
-ComicRent; crea el `Application` y ArgoCD lo sincroniza desde el repositorio GitOps.
-
-## Flujo implementado
-
-1. `p8-ci.yml` ejecuta build, pruebas unitarias, integraciones, Helm lint, Terraform validate y Trivy en Pull Requests y `main`.
-2. `p8-release.yml` se activa con tags SemVer `vX.Y.Z`, construye las seis imágenes, genera SBOM, firma con Cosign y abre un Pull Request al repositorio GitOps.
-3. Después del merge del Pull Request GitOps, la única aplicación de ArgoCD, `comicrent-p8`, sincroniza `apps/comicrent` desde `main`.
-4. Argo Rollouts entrega `api-gateway` mediante Canary: 10% → 25% → 50% → 100%. Cada etapa ejecuta el `AnalysisTemplate` `api-gateway-smoke` con k6.
-5. Una versión defectuosa produce un análisis fallido y un rollback automático.
-
-## Estado de validación del despliegue
-
-La validación final en GKE se realizó el 14–15 de septiembre de 2026 después de integrar los últimos cambios del repositorio GitOps:
-
-- ArgoCD `comicrent-p8`: `Synced` y `Healthy`.
-- Solo existe la aplicación ArgoCD `comicrent-p8`; las cuatro políticas pertenecen al release Terraform `p8-platform-bootstrap` y están en `Enforce`.
-- Argo Rollout `comicrent-api-gateway-rollout`: `Healthy`, paso actual `10`, revisión actual y estable `696d66b484`.
-- RabbitMQ `comicrent-rabbitmq-0`: `1/1 Running`.
-- `copies-consumer` y `summary-consumer`: `1/1 Running`.
-- CronJobs `comicrent-cron-tick` y `comicrent-cron-summary`: activos, sin ejecuciones pendientes.
-- `helm lint P8/charts/comicrent -f P8/config/values-gke.yaml`: correcto.
-- La validación live se realizó después de reconstruir el clúster desde estado vacío.
-
-Los detalles de la comprobación y los comandos reproducibles están en [`evidence/live-validation-2026-09-15.txt`](evidence/live-validation-2026-09-15.txt). Las evidencias textuales adicionales no contienen credenciales y se pueden revisar directamente desde el repositorio.
-
-## Repositorios y componentes
-
-| Elemento | Valor |
-|---|---|
-| Código | `DavidVelasquez77/Practicas-SA-B-202307705` |
-| GitOps | `https://github.com/DavidVelasquez77/Practicas-SA-B-202307705-gitops` |
-| ArgoCD namespace | `argocd` |
-| ArgoCD Application | `comicrent-p8` en `argocd` |
-| Namespace de aplicación | `sa-p8` |
-| Registry | `ghcr.io/davidvelasquez77` |
-| Clúster | `comicrent-gke-p6` / `us-central1-a` |
-
 ## Documentación técnica
 
-*(Extensión prevista: máximo dos páginas.)*
+### Objetivo
 
-La Práctica 8 evoluciona el CI/CD de la Práctica 7 hacia GitOps. El repositorio de
-código contiene los microservicios, charts, pruebas y workflows. El repositorio
-GitOps independiente contiene el estado declarativo de la aplicación. ArgoCD
-observa ese repositorio y es el único componente que aplica la aplicación al
-clúster.
+ComicRent evoluciona la Práctica 7 a un flujo GitOps reproducible. Terraform crea la plataforma desde cero; el repositorio de código valida y publica imágenes; el repositorio GitOps conserva el estado deseado; ArgoCD es el único componente que aplica cambios de aplicación al clúster.
 
-![Flujo GitOps de ComicRent](diagrams/p8-gitops-pipeline.png)
+### Flujo y puntos de validación
 
-El desarrollador crea un Pull Request o integra cambios en `main`. `p8-ci.yml`
-ejecuta compilación, pruebas unitarias, integración efímera con Docker Compose,
-`helm lint`, render de Helm, `terraform validate` y análisis Trivy. La publicación
-se realiza únicamente mediante un tag SemVer como `v0.8.5`. `p8-release.yml`
-construye las seis imágenes con `Dockerfile.prod`, las publica en GHCR, genera un
-SBOM SPDX, bloquea vulnerabilidades `CRITICAL` con Trivy, firma cada imagen con
-Cosign keyless y verifica la firma. Al terminar, el workflow abre un Pull Request
-que solo modifica los tags de `values-gke.yaml` en el repositorio GitOps.
+Un Pull Request al repositorio de código ejecuta p8-ci.yml, que compila los servicios, ejecuta las pruebas disponibles, valida los charts con helm lint y helm template, verifica Terraform y realiza el análisis de seguridad con Trivy. Si alguna validación falla, el Pull Request no puede fusionarse.
 
-Después de aprobar y fusionar ese Pull Request, ArgoCD sincroniza
-`apps/comicrent` en el namespace `sa-p8`. Los workflows no tienen kubeconfig y no
-ejecutan `kubectl apply`, `kubectl set image` ni `helm upgrade` contra el clúster.
-Terraform instala ArgoCD, Argo Rollouts, Kyverno y Sealed Secrets, crea los
-namespaces, cuotas, límites, roles y bindings RBAC, y registra la única
-`Application` `comicrent-p8` en el namespace `argocd`.
+Al crear un release con versionamiento semántico, por ejemplo v0.8.5, se ejecuta p8-release.yml. Este workflow construye las imágenes, genera el SBOM en formato SPDX, analiza las imágenes con Trivy, bloquea vulnerabilidades críticas, firma las imágenes con Cosign y las publica en GHCR.
 
-Terraform administra el ciclo de vida completo de GKE, el node pool y la
-plataforma. El chart de la aplicación contiene servicios, configuraciones, probes,
-HPA, NetworkPolicies y el Rollout; no duplica recursos que pertenecen a
-Terraform. Kyverno mantiene cuatro políticas en modo `Enforce`: prohíbe `latest`,
-exige límites de CPU y memoria, exige ejecución sin privilegios de root y verifica
-la firma Cosign de las imágenes GHCR. Las credenciales no se guardan en `values`
-ni en un `Secret` plano. GitOps versiona únicamente `SealedSecret` con
-`encryptedData`; la clave privada permanece fuera de Git y Terraform la restaura
-al reconstruir el clúster.
+Después de publicar las imágenes, el workflow genera un Pull Request en el repositorio GitOps para actualizar los tags de las imágenes. El pipeline no contiene credenciales del clúster ni ejecuta kubectl apply, kubectl set image o helm upgrade. Por tanto, el repositorio GitOps conserva el estado deseado de la aplicación.
 
-![Estado live verificado en ArgoCD](evidence/argocd-live.png)
+Cuando se fusiona el cambio en el repositorio GitOps, ArgoCD detecta la nueva revisión y sincroniza los manifiestos de apps/comicrent con el clúster. La aplicación de ArgoCD se llama comicrent-p8 y está registrada en el namespace argocd. ArgoCD es el único componente autorizado para aplicar los manifiestos de la aplicación.
 
-El `api-gateway` se declara como `kind: Rollout` cuando
-`global.progressiveDelivery.apiGateway.enabled` está activo. La estrategia Canary
-usa `10% → 25% → 50% → 100%`. Después de cada uno de los tres primeros porcentajes
-se ejecuta el `AnalysisTemplate` `api-gateway-smoke`, que crea un Job k6 contra el
-Service Canary. La promoción requiere cero solicitudes fallidas
-(`http_req_failed: rate==0`) y un percentil 95 menor de 500 ms
-(`http_req_duration: p(95)<500`). Si el análisis falla, Argo Rollouts aborta la
-revisión nueva y conserva el ReplicaSet estable.
+Durante la sincronización, Kyverno valida los recursos mediante las políticas de admisión: no se permiten imágenes con tag latest, se exigen límites de CPU y memoria, los contenedores deben ejecutarse como usuario no root y las imágenes deben contar con una firma válida de Cosign. Los secretos se almacenan en el repositorio como SealedSecrets cifrados.
 
-![Canary y rollback automático](diagrams/p8-canary-rollback.png)
+El servicio api-gateway se despliega como un recurso Rollout con estrategia Canary: 10 % → 25 % → 50 % → 100 %. En los pasos del 10 %, 25 % y 50 %, Argo Rollouts ejecuta el AnalysisTemplate api-gateway-smoke, que utiliza k6 contra el endpoint /health. La promoción requiere una tasa de errores igual a cero y un percentil 95 menor de 500 ms.
 
-La validación final del 15 de septiembre de 2026 confirmó Terraform sin cambios,
-ArgoCD `Synced/Healthy`, Rollout `Healthy`, cuatro políticas Kyverno activas y
-tres `SealedSecret` sincronizados. La evidencia reproducible está en
-[`live-validation-2026-09-15.txt`](evidence/live-validation-2026-09-15.txt).
+Si el análisis falla, Argo Rollouts marca la promoción como RolloutAborted, detiene el avance y conserva el ReplicaSet estable. Si todas las validaciones son satisfactorias, la promoción finaliza con el 100 % del tráfico en la nueva versión.
 
-## Informe de incidente
+![Flujo GitOps](diagrams/p8-gitops-pipeline.png)
 
-*(Extensión prevista: máximo una página.)*
+### Decisiones de diseño y controles
 
-**Qué falló:** se publicó temporalmente una revisión defectuosa de `api-gateway`.
-Para inducir el fallo, el smoke test consultó `/definitely-not-health` en lugar de
-`/health`; la revisión llegó al primer paso Canary, pero no superó la validación.
+Terraform administra GKE, namespaces, ResourceQuota, LimitRange, RBAC, ArgoCD, Argo Rollouts, Kyverno, Sealed Secrets y el `Application`. El chart Helm conserva los recursos de la aplicación: Rollouts, Services, ConfigMaps, HPA, probes, NetworkPolicies y AnalysisTemplate. Así, `terraform destroy` elimina la plataforma y `terraform apply -auto-approve` la reconstruye sin creación manual.
 
-**Cómo se detectó:** Argo Rollouts ejecutó `api-gateway-smoke`, cuyo Job k6
-reportó el métrico `k6-smoke-health` como `Failed`: `http_req_failed` superó
-`rate==0` con `failureLimit: 0`. El `AnalysisRun`
-`comicrent-api-gateway-rollout-6cf578987c-3-1` inició a las
-`2026-09-15T00:27:57Z` y terminó a las `00:30:06Z`.
+El repositorio GitOps es independiente y no contiene workflows. Sus secretos son `SealedSecret` con `encryptedData`; la clave privada de Sealed Secrets queda fuera de Git y se restaura desde Terraform. Las imágenes usan tags SemVer y nunca `latest`.
 
-**Cómo se contuvo:** Argo Rollouts abortó automáticamente la revisión durante la
-promoción y mantuvo el ReplicaSet estable atendiendo el tráfico. La versión sana
-se restauró mediante la [PR GitOps #13](https://github.com/DavidVelasquez77/Practicas-SA-B-202307705-gitops/pull/13),
-sin aplicar cambios manuales a la aplicación.
+Terraform instala cuatro políticas Kyverno en modo `Enforce`: `p8-disallow-latest`, `p8-require-resources`, `p8-require-nonroot` y `p8-verify-cosign`. Trivy bloquea el PR antes de GitOps; Kyverno vuelve a validar la admisión cuando ArgoCD crea Pods.
 
-**Tiempo de recuperación:** el análisis tardó 129 segundos. Después de fusionar
-la restauración, el Rollout volvió a `Healthy` en el paso 10.
+![ArgoCD Synced/Healthy](evidence/argocd-live.png)
 
-**Control preventivo:** mantener el análisis k6 como condición obligatoria de cada
-promoción, `failureLimit: 0`, pruebas de integración antes de publicar la imagen
-y las puertas Trivy, SBOM, Cosign y Kyverno antes de recibir tráfico completo.
+![Historial de sincronizaciones](evidence/argocd-history-final.png)
 
-![Evidencia del rollback](diagrams/p8-canary-rollback.png)
+La validación del 15 de septiembre de 2026 dejó `comicrent-p8` en `Synced/Healthy`, el Rollout en `10/10` y las políticas activas. Los datos reproducibles están en [`evidence/live-validation-2026-09-15.txt`](evidence/live-validation-2026-09-15.txt).
 
-## Evidencia visual
+## Tecnologías y controles implementados
 
-![CI exitoso](evidence/github-actions-ci.png)
+### Terraform
 
-![Release con SBOM, Trivy y Cosign](evidence/github-actions-release.png)
+Terraform construye la infraestructura necesaria para ejecutar ComicRent en GKE. Desde Terraform se crean el clúster, los namespaces `argocd`, `argo-rollouts`, `kyverno` y `sa-p8`, además de las cuotas, límites de recursos y permisos RBAC.
 
-![Salida reproducible de validación del terminal](evidence/terminal-validation.png)
+Terraform también instala ArgoCD, Argo Rollouts, Kyverno y Sealed Secrets mediante recursos declarativos. Finalmente, aplica el chart de bootstrap que crea el `AppProject` y la aplicación `comicrent-p8` dentro del namespace `argocd`. La aplicación no se despliega manualmente con Helm ni con kubectl.
 
-Las capturas se complementan con los registros de texto reproducibles en la
-carpeta [`evidence`](evidence/). Este README concentra toda la documentación de
-entrega.
+Por esta razón, el entorno puede reconstruirse ejecutando:
 
-## Seguridad
+```bash
+terraform destroy
+terraform apply -auto-approve
+```
+### Helm
+El chart principal de ComicRent contiene un chart por microservicio y valores diferenciados por ambiente. El ambiente utilizado en GKE se define en values-gke.yaml.
+Los charts generan los servicios, ConfigMaps, HPA, probes, NetworkPolicies, ServiceAccounts y recursos de ejecución de las aplicaciones. El api-gateway se genera como kind: Rollout cuando está habilitada la entrega progresiva.
+El pipeline ejecuta helm lint y helm template para verificar que los charts puedan renderizarse correctamente antes de aceptar los cambios.
 
-- No hay kubeconfig ni comandos `kubectl apply`, `kubectl set image` o `helm upgrade` en los workflows de P8.
-- Trivy bloquea imágenes con vulnerabilidades CRITICAL.
-- Cada imagen publica su SBOM y se firma con Cosign usando la identidad OIDC de GitHub Actions.
-- Kyverno aplica en `Enforce` las políticas `p8-disallow-latest`, `p8-require-resources`, `p8-require-nonroot` y `p8-verify-cosign`.
-- Terraform administra GKE, el node pool, namespaces, cuotas, límites, RBAC, los controladores, las políticas Kyverno y el bootstrap de ArgoCD.
-- El repositorio GitOps contiene únicamente el chart y los secretos sellados de la aplicación; no contiene workflows.
-- Los secretos no se guardan en texto plano: GitOps versiona recursos `SealedSecret` con `encryptedData` y ArgoCD aplica los Secrets generados en `sa-p8`.
+### Trivy
+
+Trivy analiza la configuración IaC, los manifiestos y las imágenes de los contenedores. El pipeline se detiene cuando encuentra vulnerabilidades CRITICAL o HIGH en la configuración, y cuando encuentra vulnerabilidades CRITICAL en las imágenes publicadas.
+La evidencia del bloqueo provocado deliberadamente se encuentra en el Pull Request #15 y en el run de GitHub Actions enlazado en la tabla de evidencias.
+
+### Cosign
+Cosign firma las imágenes publicadas en GHCR utilizando identidad OIDC de GitHub Actions. Después de firmar, el mismo pipeline verifica la firma y guarda el resultado como evidencia.
+La firma evita que una imagen diferente o no autorizada sea utilizada durante el despliegue.
+
+### Sealed Secrets
+Los secretos del repositorio GitOps no contienen contraseñas en texto plano. Se almacenan como recursos SealedSecret utilizando el campo encryptedData.
+La clave privada que permite descifrar esos valores permanece fuera del repositorio y es restaurada por Terraform al reconstruir el clúster. ArgoCD sincroniza los SealedSecret y el controlador los convierte en secretos utilizables por los Pods.
+
+### Kyverno
+
+Kyverno aplica las políticas de admisión del clúster en modo Enforce. Terraform instala las siguientes políticas:
+1. Rechazar imágenes con la etiqueta latest.
+2. Exigir solicitudes y límites de CPU y memoria.
+3. Exigir ejecución sin privilegios de root.
+4. Verificar la firma Cosign de las imágenes.
+Si un manifiesto incumple alguna política, Kubernetes rechaza su creación. Esto evita que una configuración insegura llegue al entorno de ejecución.
+
+### ArgoCD
+
+ArgoCD implementa el modelo GitOps. La aplicación comicrent-p8, ubicada en el namespace argocd, observa el repositorio GitOps independiente y compara continuamente el estado deseado con el estado real del clúster.
+Cuando se fusiona un Pull Request del repositorio GitOps, ArgoCD sincroniza automáticamente los cambios. También realiza selfHeal y prune, por lo que corrige desviaciones y elimina recursos que ya no están declarados.
+Los workflows no tienen kubeconfig ni ejecutan comandos de despliegue contra el clúster. Su responsabilidad termina al publicar imágenes y abrir el Pull Request que actualiza los tags del repositorio GitOps.
+
+### Argo Rollouts
+Argo Rollouts controla la entrega progresiva del api-gateway mediante una estrategia Canary. La nueva revisión recibe progresivamente el 10%, 25%, 50% y finalmente el 100% del tráfico.
+Después de cada porcentaje se ejecuta el AnalysisTemplate api-gateway-smoke. Si el análisis falla, el Rollout se aborta y conserva la revisión estable. Si todos los análisis son exitosos, la revisión nueva alcanza el paso final 10/10.
+El fallo Canary registrado en befeba4 demuestra la reversión automática. El commit 6f907d5 restauró la versión sana y ArgoCD volvió a mostrar la aplicación como Synced/Healthy
+
+## Informe de incidente — bloqueo de Trivy en un Pull Request
+
+**Qué ocurrió.** Se creó deliberadamente el archivo [`P8/incident/trivy-critical.yaml`](incident/trivy-critical.yaml) en la rama `incident/p8-trivy-critical`. El manifiesto usa `nginx:latest`, `privileged: true` y no declara límites de recursos. El commit `8067b7a` se publicó en el Pull Request [#15](https://github.com/DavidVelasquez77/Practicas-SA-B-202307705/pull/15) para dejar evidencia permanente del fallo.
+
+**Cómo se detectó.** El run [35046489034](https://github.com/DavidVelasquez77/Practicas-SA-B-202307705/actions/runs/35046489034) ejecutó `SECURITY / Trivy IaC y secretos` y terminó en 8 segundos con `Process completed with exit code 1`. Trivy señaló el manifiesto `incident/trivy-critical.yaml` y sus hallazgos de seguridad; los demás jobs de build, Helm, Terraform e imágenes terminaron correctamente.
+
+**Cómo se contuvo.** La comprobación fallida dejó el PR sin posibilidad de fusión. Como el PR no llegó al repositorio GitOps, ArgoCD no sincronizó ningún cambio y no se creó una nueva revisión en el clúster. La evidencia visible queda en la pestaña Checks del [PR #15](https://github.com/DavidVelasquez77/Practicas-SA-B-202307705/pull/15) y en los logs del [job de Trivy](https://github.com/DavidVelasquez77/Practicas-SA-B-202307705/actions/runs/35046489034/job/104637311969?pr=15).
+
+**Tiempo e impacto.** La puerta de seguridad detectó y rechazó el cambio en 8 segundos. El impacto en usuarios fue cero: la versión estable de ComicRent nunca se modificó.
+
+**Control preventivo.** Se mantiene `exit-code: 1` para severidades `CRITICAL,HIGH`, branch protection para exigir las comprobaciones y la validación posterior de Cosign/Kyverno. El archivo de prueba permanece en la rama y el PR abierto como evidencia del incidente; no debe fusionarse.
+
+Como evidencia adicional de la entrega progresiva, el commit GitOps `befeba4` provocó un `AnalysisRun Failed` (`checks 0%`, `http_req_failed 100%`) y Argo Rollouts abortó el Canary. El commit `6f907d5` restauró la versión sana; ArgoCD volvió a `Synced/Healthy` y el Rollout a `10/10`. El registro está en [`evidence/canary-incident-2026-09-15.txt`](evidence/canary-incident-2026-09-15.txt).
+
+![alt text](image.png)
+![ArgoCD durante el Canary abortado](evidence/argocd-incident-degraded.png)
+
+## Evidencias de seguridad y entrega
+
+- CI correcto: [`evidence/github-actions-ci.png`](evidence/github-actions-ci.png).
+- Release con SBOM, Trivy y Cosign: [`evidence/github-actions-release.png`](evidence/github-actions-release.png).
+- Reporte de cadena de suministro: [`evidence/supply-chain.txt`](evidence/supply-chain.txt).
+- Políticas activas: [`evidence/policies-active.txt`](evidence/policies-active.txt).
+- Rechazo por firma Kyverno: [`evidence/kyverno-cosign-rejected.txt`](evidence/kyverno-cosign-rejected.txt).
+- Incidente Trivy: [PR #15](https://github.com/DavidVelasquez77/Practicas-SA-B-202307705/pull/15), [run fallido](https://github.com/DavidVelasquez77/Practicas-SA-B-202307705/actions/runs/35046489034), [job con logs](https://github.com/DavidVelasquez77/Practicas-SA-B-202307705/actions/runs/35046489034/job/104637311969?pr=15) y [`evidence/trivy-incident-2026-09-15.txt`](evidence/trivy-incident-2026-09-15.txt).
+
+
+
+
+## capturas
+
+
+### 1. Terraform
+
+```bash
+terraform validate
+```
+
+![`terminal-terraform-validate.png`](evidence/terminal-terraform-validate.png).
+```bash
+terraform plan
+```
+
+![`terminal-terraform-plan.png`](evidence/terminal-terraform-plan.png).
+
+```bash
+terraform apply -auto-approve
+```
+![`terminal-terraform-apply`](evidence/terminal-terraform-apply.png).
+
+
+### 2. Releases Helm y políticas Kyverno
+
+Desde cualquier carpeta con `kubectl` configurado:
+
+```bash
+helm list -A
+```
+![`terminal-helm-platform`](evidence/terminal-helm-platform.png).
+
+
+
+```bash
+kubectl get clusterpolicies
+```
+![`terminal-kyverno-policies`](evidence/terminal-kyverno-policies.png).
+
+
+### 3. ArgoCD y Rollout
+
+```bash
+kubectl -n argocd get applications -o custom-columns="NAME:.metadata.name,SYNC:.status.sync.status,HEALTH:.status.health.status,REVISION:.status.sync.revision"
+```
+![`terminal-argocd-status`](evidence/terminal-argocd-status.png).
+
+![`evidence/argocd-live.png`](evidence/argocd-live.png).
+
+```bash
+kubectl get rollout comicrent-api-gateway-rollout -n sa-p8 -o custom-columns="NAME:.metadata.name,PHASE:.status.phase,STEP:.status.currentStepIndex,REPLICAS:.status.replicas,AVAILABLE:.status.availableReplicas"
+```
+
+La salida permite comprobar la fase del Rollout, el paso de promoción y las réplicas disponibles. La evidencia visual final se encuentra en [`argocd-details-final.png`](evidence/argocd-details-final.png).
+
+### 4. Secretos sellados e imágenes versionadas
+
+```bash
+kubectl -n sa-p8 get sealedsecret
+```
+![`terminal-sealed-secrets`](evidence/terminal-sealed-secrets.png).
+
+
+```bash
+kubectl get pods -n sa-p8 -o custom-columns="NAME:.metadata.name,IMAGE:.spec.containers[0].image,STATUS:.status.phase"
+```
+![`terminal-image-tags`](evidence/terminal-image-tags.png).
+
+
+### 5. Análisis del Canary
+
+La prueba de carga independiente quedó anulada por indicación del auxiliar. k6 se conserva como validación interna del `AnalysisTemplate` durante la promoción Canary.
+
+Para revisar los análisis registrados:
+
+```bash
+kubectl -n sa-p8 get analysisruns
+kubectl -n sa-p8 describe analysisrun <nombre-del-analysisrun>
+```
+
+Durante una promoción correcta, los umbrales son `http_req_failed: rate==0` y `p(95)<500ms`. En el incidente inducido se observa el resultado fallido en [`canary-incident-2026-09-15.txt`](evidence/canary-incident-2026-09-15.txt) y el resumen persistente está en [`k6-summary.json`](evidence/k6-summary.json).
+### 6. Capturas desde GitHub
+
+- CI correcto:!
+![`github-actions-ci`](evidence/github-actions-ci.png).
+
+
+- Release:
+ ![`github-actions-release`](evidence/github-actions-release.png).
 
 ## Construcción desde cero
 
-Después de autenticar Google Application Default Credentials y ejecutar una vez
-`terraform init`, el despliegue completo se realiza con:
+Después de autenticar Google Application Default Credentials:
 
-```bash
-cd P8/terraform
-terraform apply
+```powershell
+cd C:\Users\Vela\Desktop\SA\LAB\PRACTICAS\P8\terraform
+terraform init
+terraform apply -auto-approve
 ```
 
-El mismo estado permite ejecutar `terraform destroy` y posteriormente
-`terraform apply`. La clave de recuperación de Sealed Secrets permanece en
-`~/.comicrent/p8-sealed-secrets/`, fuera de Git, para que los `encryptedData` del
-repositorio sigan siendo descifrables después de reconstruir el clúster.
+Para comprobar reproducibilidad se puede ejecutar `terraform destroy` y después el mismo `terraform apply -auto-approve`. No se crea la aplicación manualmente: Terraform instala ArgoCD y declara el `Application`; ArgoCD aplica el repositorio GitOps.
 
-## Tabla de enlaces de entrega
+## Tabla de enlaces
 
-| Evidencia | Enlace |
+| Ítem | Enlace o dato requerido |
 |---|---|
-| Repositorio de código | [Practicas-SA-B-202307705](https://github.com/DavidVelasquez77/Practicas-SA-B-202307705) |
-| Repositorio GitOps | [Practicas-SA-B-202307705-gitops](https://github.com/DavidVelasquez77/Practicas-SA-B-202307705-gitops) |
-| CI exitoso | [Actions run 35005762218](https://github.com/DavidVelasquez77/Practicas-SA-B-202307705/actions/runs/35005762218) |
-| Gate Trivy de imágenes en Pull Request | [PR #6](https://github.com/DavidVelasquez77/Practicas-SA-B-202307705/pull/6) — 16/16 comprobaciones correctas; el job usa `exit-code: 1` ante CVE `CRITICAL` |
-| Release, SBOM, Trivy y Cosign | [Actions run 34937258452](https://github.com/DavidVelasquez77/Practicas-SA-B-202307705/actions/runs/34937258452) — release `v0.8.5` |
-| Corrección de drift de Argo Rollouts | [PR #7](https://github.com/DavidVelasquez77/Practicas-SA-B-202307705/pull/7) — Service estable con campos dinámicos ignorados de forma declarativa |
-| PR de políticas Cosign y drift ArgoCD | [GitOps PR #11](https://github.com/DavidVelasquez77/Practicas-SA-B-202307705-gitops/pull/11), [PR #15](https://github.com/DavidVelasquez77/Practicas-SA-B-202307705-gitops/pull/15), [PR #16](https://github.com/DavidVelasquez77/Practicas-SA-B-202307705-gitops/pull/16) y [documentación final #17](https://github.com/DavidVelasquez77/Practicas-SA-B-202307705-gitops/pull/17) |
-| Rollback Canary | [PR de prueba #12](https://github.com/DavidVelasquez77/Practicas-SA-B-202307705-gitops/pull/12) y [restauración #13](https://github.com/DavidVelasquez77/Practicas-SA-B-202307705-gitops/pull/13) |
-| ArgoCD y políticas Terraform | [`live-validation-2026-09-15.txt`](evidence/live-validation-2026-09-15.txt) y [`policies-active.txt`](evidence/policies-active.txt) |
-| Rechazo de imagen no firmada | [`kyverno-cosign-rejected.txt`](evidence/kyverno-cosign-rejected.txt) |
-| Imagen firmada de referencia | `ghcr.io/davidvelasquez77/comicrent-api-gateway:v0.8.5` |
-| Terraform plan/apply | [`terraform-validation.txt`](evidence/terraform-validation.txt) — reconstrucción desde estado vacío (19 agregados) y plan posterior sin cambios |
-| k6 y umbrales | [`k6-summary.json`](evidence/k6-summary.json) |
-| Informe del incidente | [Sección de incidente](#informe-de-incidente) |
-| Captura de ArgoCD | [`argocd-live.png`](evidence/argocd-live.png) |
-| Capturas de GitHub Actions | [`github-actions-ci.png`](evidence/github-actions-ci.png) y [`github-actions-release.png`](evidence/github-actions-release.png) |
-| Captura de validación de terminal | [`terminal-validation.png`](evidence/terminal-validation.png) |
-| Video de entrega | Pendiente de grabar |
+| Repositorio GitOps | [Repositorio GitOps](https://github.com/DavidVelasquez77/Practicas-SA-B-202307705-gitops) |
+| Aplicación en ArgoCD | `comicrent-p8` — namespace `argocd` |
+| Ejecución exitosa del pipeline | [GitHub Actions run 35036158704](https://github.com/DavidVelasquez77/Practicas-SA-B-202307705/actions/runs/35036158704) |
+| Reversión automática | [Evidencia pública del AnalysisRun y RolloutAborted](https://github.com/DavidVelasquez77/Practicas-SA-B-202307705/blob/main/P8/evidence/canary-rollback.md) |
+| Despliegue rechazado por políticas de seguridad | [Evidencia directa del rechazo de Kyverno](https://github.com/DavidVelasquez77/Practicas-SA-B-202307705/blob/main/P8/evidence/kyverno-cosign-rejected.txt) |
+| Bloqueo por vulnerabilidad crítica | [PR #15 bloqueado por Trivy](https://github.com/DavidVelasquez77/Practicas-SA-B-202307705/pull/15) |
+| Imagen firmada | `ghcr.io/davidvelasquez77/comicrent-api-gateway:v0.8.5` |
+| Reporte de prueba de carga | Actividad anulada por indicación del auxiliar. La evidencia k6 utilizada por el Canary está en [k6-summary.json](https://github.com/DavidVelasquez77/Practicas-SA-B-202307705/blob/main/P8/evidence/k6-summary.json) |
+| Video demostrativo | [VIDEO](https://drive.google.com/drive/folders/1NNW1jA8_96pVT-5LVOULQtkVdL1ywZbk?usp=sharing) |
 
-El `README` del repositorio GitOps deja explícito que ese repositorio contiene únicamente la aplicación y no ejecuta pipelines.
+
+### Video demostrativo
+
+- **00:00–00:30:** Presentación del proyecto y objetivo del flujo GitOps.
+- **00:30–01:10:** Repositorio de código y workflows de GitHub Actions.
+- **01:10–01:40:** Ejecución exitosa del pipeline.
+- **01:40–02:10:** Imagen en GHCR, SBOM, Trivy y firma con Cosign.
+- **02:10–02:45:** Repositorio GitOps, charts Helm y SealedSecrets.
+- **02:45–03:25:** ArgoCD `comicrent-p8` en estado `Healthy` y `Synced`.
+- **03:25–04:10:** Argo Rollouts y promoción Canary `10 % → 25 % → 50 % → 100 %`.
+- **04:10–05:15:** Fallo inducido, `AnalysisRun` fallido y `RolloutAborted`.
+- **05:15–05:50:** Restauración de la versión estable y recuperación del estado saludable.
+- **05:50–06:20:** Rechazo de recursos mediante políticas de Kyverno.
+- **06:20–06:50:** Pull Request bloqueado por vulnerabilidad crítica detectada por Trivy.
+- **06:50–07:20:** Evidencia de Terraform y cierre del flujo completo.
+

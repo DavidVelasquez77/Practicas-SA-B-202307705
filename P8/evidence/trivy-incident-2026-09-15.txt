@@ -1,0 +1,23 @@
+Incidente Trivy — 15 de septiembre de 2026
+
+Repositorio: https://github.com/DavidVelasquez77/Practicas-SA-B-202307705
+Rama: incident/p8-trivy-critical
+Commit: 8067b7a test(p8): introduce blocked Trivy incident
+Pull Request: https://github.com/DavidVelasquez77/Practicas-SA-B-202307705/pull/15
+Run: https://github.com/DavidVelasquez77/Practicas-SA-B-202307705/actions/runs/35046489034
+Job: https://github.com/DavidVelasquez77/Practicas-SA-B-202307705/actions/runs/35046489034/job/104637311969?pr=15
+
+Manifiesto intencionalmente defectuoso: P8/incident/trivy-critical.yaml
+Hallazgos locales reproducibles con `trivy config --severity CRITICAL,HIGH --exit-code 1 P8/incident`:
+- KSV-0014: el contenedor no declara readOnlyRootFilesystem.
+- KSV-0017: `securityContext.privileged: true`.
+- KSV-0118: falta un contexto de seguridad no root.
+
+Salida observada en GitHub Actions:
+- Job: SECURITY / Trivy IaC y secretos
+- Estado: failed
+- Duración: 8s
+- Mensaje: Error: Process completed with exit code 1.
+- Referencia en el log: incident/trivy-critical.yaml:15-20; image nginx:latest; privileged: true.
+
+Contención: el PR queda bloqueado, no se fusiona y no se genera ningún cambio en el repositorio GitOps ni en ArgoCD. Impacto de usuario: cero.
