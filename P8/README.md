@@ -61,10 +61,12 @@ El pipeline ejecuta helm lint y helm template para verificar que los charts pued
 
 Trivy analiza la configuración IaC, los manifiestos y las imágenes de los contenedores. El pipeline se detiene cuando encuentra vulnerabilidades CRITICAL o HIGH en la configuración, y cuando encuentra vulnerabilidades CRITICAL en las imágenes publicadas.
 La evidencia del bloqueo provocado deliberadamente se encuentra en el Pull Request #15 y en el run de GitHub Actions enlazado en la tabla de evidencias.
+El reporte reproducible de la imagen entregada está en [`trivy-api-gateway-v0.8.5.json`](evidence/trivy-api-gateway-v0.8.5.json).
 
 ### Cosign
 Cosign firma las imágenes publicadas en GHCR utilizando identidad OIDC de GitHub Actions. Después de firmar, el mismo pipeline verifica la firma y guarda el resultado como evidencia.
 La firma evita que una imagen diferente o no autorizada sea utilizada durante el despliegue.
+La salida pública de verificación para `ghcr.io/davidvelasquez77/comicrent-api-gateway:v0.8.5` está en [`cosign-verify-api-gateway-v0.8.5.txt`](evidence/cosign-verify-api-gateway-v0.8.5.txt) y el SBOM SPDX correspondiente en [`sbom-api-gateway-v0.8.5.spdx.json`](evidence/sbom-api-gateway-v0.8.5.spdx.json).
 
 ### Sealed Secrets
 Los secretos del repositorio GitOps no contienen contraseñas en texto plano. Se almacenan como recursos SealedSecret utilizando el campo encryptedData.
@@ -87,30 +89,32 @@ Los workflows no tienen kubeconfig ni ejecutan comandos de despliegue contra el 
 
 ### Argo Rollouts
 Argo Rollouts controla la entrega progresiva del api-gateway mediante una estrategia Canary. La nueva revisión recibe progresivamente el 10%, 25%, 50% y finalmente el 100% del tráfico.
-Después de cada porcentaje se ejecuta el AnalysisTemplate api-gateway-smoke. Si el análisis falla, el Rollout se aborta y conserva la revisión estable. Si todos los análisis son exitosos, la revisión nueva alcanza el paso final 10/10.
-El fallo Canary registrado en befeba4 demuestra la reversión automática. El commit 6f907d5 restauró la versión sana y ArgoCD volvió a mostrar la aplicación como Synced/Healthy
+Después de los pasos del 10%, 25% y 50% se ejecuta el AnalysisTemplate api-gateway-smoke. Si el análisis falla, el Rollout se aborta y conserva la revisión estable. Si los tres análisis son exitosos, la revisión nueva alcanza el 100% del tráfico y el paso final 10/10.
+El fallo Canary registrado en befeba4 demuestra la reversión automática. El commit 6f907d5 restauró la fuente de verdad y ArgoCD volvió a mostrar la aplicación como Synced/Healthy.
 
-## Informe de incidente — bloqueo de Trivy en un Pull Request
+## Informe de incidente — fallo inducido del Canary
 
-**Qué ocurrió.** Se creó deliberadamente el archivo [`P8/incident/trivy-critical.yaml`](incident/trivy-critical.yaml) en la rama `incident/p8-trivy-critical`. El manifiesto usa `nginx:latest`, `privileged: true` y no declara límites de recursos. El commit `8067b7a` se publicó en el Pull Request [#15](https://github.com/DavidVelasquez77/Practicas-SA-B-202307705/pull/15) para dejar evidencia permanente del fallo.
+**Qué falló.** El commit GitOps [`befeba4`](https://github.com/DavidVelasquez77/Practicas-SA-B-202307705-gitops/commit/befeba4e04c0f41ef71af7cce5edeafefe87475d) publicó deliberadamente la revisión `incident-canary-fail-20260915` del `api-gateway` y configuró el análisis para consultar `/definitely-not-health` en lugar de `/health`. ArgoCD sincronizó la revisión porque el repositorio GitOps continuó siendo la fuente única de verdad.
 
-**Cómo se detectó.** El run [35046489034](https://github.com/DavidVelasquez77/Practicas-SA-B-202307705/actions/runs/35046489034) ejecutó `SECURITY / Trivy IaC y secretos` y terminó en 8 segundos con `Process completed with exit code 1`. Trivy señaló el manifiesto `incident/trivy-critical.yaml` y sus hallazgos de seguridad; los demás jobs de build, Helm, Terraform e imágenes terminaron correctamente.
+**Cómo se detectó.** Argo Rollouts ejecutó el `AnalysisTemplate` `api-gateway-smoke`. El `AnalysisRun` `comicrent-api-gateway-rollout-6ffc9b9789-2-1` realizó diez solicitudes con k6: `checks` fue 0% y `http_req_failed` alcanzó 100%, superando el umbral permitido `rate==0`. Con `failureLimit: 0`, la métrica se declaró `Failed` y el Rollout quedó `Degraded` con el mensaje `RolloutAborted`.
 
-**Cómo se contuvo.** La comprobación fallida dejó el PR sin posibilidad de fusión. Como el PR no llegó al repositorio GitOps, ArgoCD no sincronizó ningún cambio y no se creó una nueva revisión en el clúster. La evidencia visible queda en la pestaña Checks del [PR #15](https://github.com/DavidVelasquez77/Practicas-SA-B-202307705/pull/15) y en los logs del [job de Trivy](https://github.com/DavidVelasquez77/Practicas-SA-B-202307705/actions/runs/35046489034/job/104637311969?pr=15).
+**Cómo se contuvo.** Argo Rollouts abortó automáticamente la promoción en la etapa inicial del 10%. El ReplicaSet defectuoso `6ffc9b9789` no avanzó a los siguientes porcentajes y el ReplicaSet estable `696d66b484` siguió atendiendo al menos el 90% del tráfico. ArgoCD mostró `Synced/Degraded` durante el incidente porque Git declaraba la revisión defectuosa, pero no realizó la reversión: la contención fue responsabilidad de Argo Rollouts.
 
-**Tiempo e impacto.** La puerta de seguridad detectó y rechazó el cambio en 8 segundos. El impacto en usuarios fue cero: la versión estable de ComicRent nunca se modificó.
+**Tiempo de recuperación.** El análisis detectó el fallo en 12 segundos, entre `00:44:21Z` y `00:44:33Z`. La recuperación operativa fue de 0 minutos porque la versión estable nunca dejó de atender tráfico. El commit [`6f907d5`](https://github.com/DavidVelasquez77/Practicas-SA-B-202307705-gitops/commit/6f907d53ed859f58fc8286d53a588ced62f5b448) restauró Git 6 minutos y 30 segundos después del commit defectuoso; ArgoCD terminó de sincronizar a las `18:50:26`, por lo que el retorno completo a `Synced/Healthy` tomó 8 minutos y 28 segundos.
 
-**Control preventivo.** Se mantiene `exit-code: 1` para severidades `CRITICAL,HIGH`, branch protection para exigir las comprobaciones y la validación posterior de Cosign/Kyverno. El archivo de prueba permanece en la rama y el PR abierto como evidencia del incidente; no debe fusionarse.
+**Cómo prevenirlo.** Se debe agregar al Pull Request GitOps una validación previa que renderice el `AnalysisTemplate` y ejecute el mismo script de humo contra un entorno efímero, verificando que `BASE_URL` termine en `/health`. Este control habría rechazado el endpoint inválido antes de que ArgoCD sincronizara el Canary; el análisis de Argo Rollouts permanece como la última barrera automática.
 
-Como evidencia adicional de la entrega progresiva, el commit GitOps `befeba4` provocó un `AnalysisRun Failed` (`checks 0%`, `http_req_failed 100%`) y Argo Rollouts abortó el Canary. El commit `6f907d5` restauró la versión sana; ArgoCD volvió a `Synced/Healthy` y el Rollout a `10/10`. El registro está en [`evidence/canary-incident-2026-09-15.txt`](evidence/canary-incident-2026-09-15.txt).
+La evidencia completa se encuentra en el [registro del AnalysisRun](evidence/canary-incident-2026-09-15.txt) y en el [informe público del Rollout](evidence/canary-rollback.md).
 
-![alt text](image.png)
 ![ArgoCD durante el Canary abortado](evidence/argocd-incident-degraded.png)
 
 ## Evidencias de seguridad y entrega
 
 - CI correcto: [`evidence/github-actions-ci.png`](evidence/github-actions-ci.png).
-- Release con SBOM, Trivy y Cosign: [`evidence/github-actions-release.png`](evidence/github-actions-release.png).
+- Release `v0.8.5` con SBOM, Trivy y Cosign: [run 34937258452](https://github.com/DavidVelasquez77/Practicas-SA-B-202307705/actions/runs/34937258452) y [`evidence/github-actions-release.png`](evidence/github-actions-release.png).
+- SBOM SPDX: [`evidence/sbom-api-gateway-v0.8.5.spdx.json`](evidence/sbom-api-gateway-v0.8.5.spdx.json).
+- Reporte Trivy de la imagen: [`evidence/trivy-api-gateway-v0.8.5.json`](evidence/trivy-api-gateway-v0.8.5.json).
+- Verificación real de firma Cosign: [`evidence/cosign-verify-api-gateway-v0.8.5.txt`](evidence/cosign-verify-api-gateway-v0.8.5.txt).
 - Reporte de cadena de suministro: [`evidence/supply-chain.txt`](evidence/supply-chain.txt).
 - Políticas activas: [`evidence/policies-active.txt`](evidence/policies-active.txt).
 - Rechazo por firma Kyverno: [`evidence/kyverno-cosign-rejected.txt`](evidence/kyverno-cosign-rejected.txt).
@@ -227,7 +231,7 @@ Para comprobar reproducibilidad se puede ejecutar `terraform destroy` y después
 | Repositorio GitOps | [Repositorio GitOps](https://github.com/DavidVelasquez77/Practicas-SA-B-202307705-gitops) |
 | Aplicación en ArgoCD | `comicrent-p8` — namespace `argocd` |
 | Ejecución exitosa del pipeline | [GitHub Actions run 35036158704](https://github.com/DavidVelasquez77/Practicas-SA-B-202307705/actions/runs/35036158704) |
-| Reversión automática | [Evidencia pública del AnalysisRun y RolloutAborted](https://github.com/DavidVelasquez77/Practicas-SA-B-202307705/blob/main/P8/evidence/canary-rollback.md) |
+| Reversión automática | [AnalysisRun fallido y métricas k6](https://github.com/DavidVelasquez77/Practicas-SA-B-202307705/blob/main/P8/evidence/canary-incident-2026-09-15.txt) · [RolloutAborted, ReplicaSet estable y recuperación](https://github.com/DavidVelasquez77/Practicas-SA-B-202307705/blob/main/P8/evidence/canary-rollback.md) |
 | Despliegue rechazado por políticas de seguridad | [Evidencia directa del rechazo de Kyverno](https://github.com/DavidVelasquez77/Practicas-SA-B-202307705/blob/main/P8/evidence/kyverno-cosign-rejected.txt) |
 | Bloqueo por vulnerabilidad crítica | [PR #15 bloqueado por Trivy](https://github.com/DavidVelasquez77/Practicas-SA-B-202307705/pull/15) |
 | Imagen firmada | `ghcr.io/davidvelasquez77/comicrent-api-gateway:v0.8.5` |

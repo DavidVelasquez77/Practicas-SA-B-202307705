@@ -53,7 +53,9 @@ Stable pod hash: 696d66b484
 
 ## Resultado e impacto
 
-La validación fallida ocurrió antes de completar el primer porcentaje del Canary. La versión estable no fue reemplazada y no hubo interrupción para los usuarios. La reversión automática fue ejecutada por **Argo Rollouts**; ArgoCD se encargó de sincronizar tanto el cambio defectuoso como la restauración declarada en Git.
+La validación fallida ocurrió en la etapa inicial del 10% del Canary. La revisión defectuosa no avanzó al 25%, 50% ni 100%; el ReplicaSet estable continuó atendiendo al menos el 90% del tráfico. La reversión automática fue ejecutada por **Argo Rollouts**; ArgoCD se encargó de sincronizar tanto el cambio defectuoso como la restauración declarada en Git.
+
+El `AnalysisRun` falló en 12 segundos, entre `2026-09-16T00:44:21Z` y `00:44:33Z`. La recuperación operativa fue de 0 minutos porque la versión estable nunca dejó de estar disponible. El commit de restauración se publicó 6 minutos y 30 segundos después del commit defectuoso y ArgoCD terminó de sincronizar a las `18:50:26`; el retorno completo a `Synced/Healthy` tomó 8 minutos y 28 segundos.
 
 ## Evidencia reproducible
 

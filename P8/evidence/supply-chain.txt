@@ -1,7 +1,7 @@
 Cadena de suministro
 
 Workflow de release exitoso:
-https://github.com/DavidVelasquez77/Practicas-SA-B-202307705/actions/runs/34898901057
+https://github.com/DavidVelasquez77/Practicas-SA-B-202307705/actions/runs/34937258452
 
 El job publish de p8-release.yml construye las seis imágenes GHCR, genera SBOM,
 ejecuta Trivy con bloqueo de CRITICAL, firma con Cosign keyless y verifica la
@@ -9,6 +9,11 @@ firma antes de crear el PR GitOps.
 
 Imagen de referencia comprobada:
 ghcr.io/davidvelasquez77/comicrent-api-gateway:v0.8.5
+
+Evidencia pública reproducible:
+- sbom-api-gateway-v0.8.5.spdx.json
+- trivy-api-gateway-v0.8.5.json
+- cosign-verify-api-gateway-v0.8.5.txt
 
 La admisión del clúster queda reforzada por p8-verify-cosign (Kyverno,
 Enforce), que comprueba issuer de GitHub Actions, subject del workflow
