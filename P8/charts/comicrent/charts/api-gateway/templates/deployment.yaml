@@ -33,9 +33,11 @@ spec:
         - analysis:
             templates:
               - templateName: api-gateway-smoke
-        - pause:
-            duration: 30s
         - setWeight: 100
+        # Verificación final con todo el tráfico antes de cerrar la promoción.
+        - analysis:
+            templates:
+              - templateName: api-gateway-smoke
   {{- else }}
   {{- if not .Values.autoscaling.enabled }}
   replicas: {{ .Values.replicaCount }}

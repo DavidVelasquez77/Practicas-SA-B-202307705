@@ -3,6 +3,10 @@ namespace: sa-p5
 global:
   environment: base
   namespace: sa-p5
+  # Defaults used by standalone `helm lint`; environment files may enable it.
+  progressiveDelivery:
+    apiGateway:
+      enabled: false
 
   security:
     allowInsecureImages: true

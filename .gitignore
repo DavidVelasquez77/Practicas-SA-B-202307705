@@ -6,7 +6,11 @@
 # Credenciales temporales generadas por Google GitHub Actions.
 gha-creds-*.json
 *.sh
-
+GUIA_CALIFICACION.md
+# Salidas locales del verificador de la Practica 8.
+/P8/p8.conf
+/P8/reporte_p8_*.txt
+/P8/resultados_p8.csv
 # Artefacto local usado para inicializar el repositorio GitOps.
 /P8/work/
 # Enunciado local adjunto; la entrega usa P8/README.md.

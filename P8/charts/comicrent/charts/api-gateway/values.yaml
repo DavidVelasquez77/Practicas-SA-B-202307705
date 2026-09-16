@@ -1,5 +1,12 @@
 replicaCount: 1
 
+# Defaults required when this subchart is linted directly.
+global:
+  namespace: sa-p5
+  progressiveDelivery:
+    apiGateway:
+      enabled: false
+
 deploymentRevision: "v3"
 
 
