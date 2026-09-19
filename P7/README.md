@@ -131,15 +131,15 @@ El valor `must-set-release-tag` es un guardia intencional; CD lo reemplaza por e
 
 | Grupo | Casos | Herramienta |
 | --- | ---: | --- |
-| api-gateway | 2 | Jest |
-| auth-service | 2 | Node test runner |
-| comics-service | 2 | Jest |
-| rentals-service | 2 | `unittest` |
-| copies-service | 2 | `unittest` |
+| api-gateway | 15 | Jest |
+| auth-service | 9 | Node test runner |
+| comics-service | 5 | Jest |
+| rentals-service | 4 | `unittest` |
+| copies-service | 6 | `unittest` |
 | CronJob de P5 | 1 | `unittest` |
-| Integración | 3 | Docker Compose, PostgreSQL y RabbitMQ |
+| Integración | 5 | Docker Compose, PostgreSQL y RabbitMQ |
 
-Total: 11 unitarias y 3 integraciones. La proporción es 78.6% / 21.4%; no se implementan pruebas UI porque ComicRent no tiene interfaz gráfica.
+Total: 40 unitarias y 6 integraciones. La proporción es 70% / 20; no se implementan pruebas UI porque ComicRent no tiene interfaz gráfica.
 
 ## 7. GHCR y versionamiento
 
