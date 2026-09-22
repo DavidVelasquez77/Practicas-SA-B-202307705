@@ -7,3 +7,13 @@ gitops:
 application:
   name: comicrent-p8
   namespace: sa-p8
+
+p9:
+  enabled: true
+  gitops:
+    repoURL: https://github.com/DavidVelasquez77/Practicas-SA-B-202307705-gitops.git
+    targetRevision: p9-continuidad-operativa
+    path: apps/p9
+  application:
+    name: comicrent-p9
+    namespace: sa-p9

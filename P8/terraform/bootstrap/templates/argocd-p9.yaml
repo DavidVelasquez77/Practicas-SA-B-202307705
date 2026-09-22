@@ -1,0 +1,48 @@
+{{- if .Values.p9.enabled }}
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: comicrent-p9
+  namespace: argocd
+spec:
+  description: ComicRent P9 disaster recovery GitOps project
+  sourceRepos:
+    - {{ .Values.p9.gitops.repoURL }}
+  destinations:
+    - namespace: argocd
+      server: https://kubernetes.default.svc
+    - namespace: {{ .Values.p9.application.namespace }}
+      server: https://kubernetes.default.svc
+  clusterResourceWhitelist:
+    - group: argoproj.io
+      kind: Rollout
+    - group: argoproj.io
+      kind: AnalysisTemplate
+  namespaceResourceWhitelist:
+    - group: "*"
+      kind: "*"
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: {{ .Values.p9.application.name }}
+  namespace: argocd
+  labels:
+    app.kubernetes.io/part-of: comicrent-p9
+spec:
+  project: comicrent-p9
+  source:
+    repoURL: {{ .Values.p9.gitops.repoURL }}
+    targetRevision: {{ .Values.p9.gitops.targetRevision }}
+    path: {{ .Values.p9.gitops.path }}
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: {{ .Values.p9.application.namespace }}
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=false
+      - ServerSideApply=true
+{{- end }}

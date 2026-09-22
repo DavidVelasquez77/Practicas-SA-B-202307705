@@ -21,4 +21,6 @@ GUIA_CALIFICACION.md
 **/terraform.tfstate
 **/terraform.tfstate.*
 **/tfplan
+**/plan-p9.log
+**/tfplan-p9
 **/*.auto.tfvars

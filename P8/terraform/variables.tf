@@ -27,7 +27,7 @@ variable "node_pool_name" {
 variable "node_count" {
   description = "Nodos necesarios para ejecutar la plataforma y ComicRent durante la demostración."
   type        = number
-  default     = 2
+  default     = 3
 }
 
 variable "machine_type" {
