@@ -6,7 +6,7 @@ Esta entrega evoluciona la plataforma de la Práctica 8 sin cambiar su repositor
 
 - **Bootstrap reproducible:** `P9/terraform/seed` conserva el backend, el bucket de Velero y su IAM; `P9/terraform/app` crea únicamente GKE, el node pool, ArgoCD y la Application raíz `comicrent-p9`. Desde esa Application, ArgoCD crea namespaces, cuotas, límites, RBAC, Velero, Argo Rollouts, Kyverno, Sealed Secrets y las aplicaciones desde GitOps.
 - **Estado remoto:** `seed` y `app` usan el backend GCS `comicrent-p9-tf-2026-202307705` con prefijos independientes (`p9/seed` y `p9/app`), versionado y locking por generación del backend.
-- **GitOps acumulativo:** el repositorio GitOps mantiene `apps/p9/application.yaml` y la aplicación hija `comicrent-p9-workloads`, que apunta a `apps/comicrent` en la rama `p9-continuidad-operativa`.
+- **GitOps acumulativo:** el repositorio GitOps mantiene `apps/p9` como app-of-apps. Sus Applications hijas instalan gobernanza, Velero, Sealed Secrets, Kyverno, Argo Rollouts y después `comicrent-p8-workloads`/`comicrent-p9-workloads`.
 - **Datos persistentes:** PostgreSQL y RabbitMQ usan StatefulSet y PVC (`standard-rwo`) en `sa-p9`. La clave TLS de Sealed Secrets se conserva fuera de Git y se inyecta mediante Terraform durante cada reconstrucción.
 - **Backups externos:** ArgoCD instala Velero mediante un Application GitOps. Velero usa Workload Identity, el bucket `comicrent-p9-velero-2026-202307705`, Kopia/FSB para volúmenes, versionado y una Schedule cada seis horas (`comicrent-p9-daily`).
 - **Resiliencia:** PDB, réplicas, anti-affinity y probes se aplican a los servicios. El gateway conserva servicio durante el drenaje de un nodo.
@@ -32,7 +32,7 @@ flowchart LR
 | Repositorio de código | [Practicas-SA-B-202307705](https://github.com/DavidVelasquez77/Practicas-SA-B-202307705/tree/p9-continuidad-operativa) |
 | Repositorio GitOps | [Practicas-SA-B-202307705-gitops](https://github.com/DavidVelasquez77/Practicas-SA-B-202307705-gitops/tree/p9-continuidad-operativa) |
 | Bootstrap único | [`P9/scripts/bootstrap.ps1`](scripts/bootstrap.ps1) — ejecutar `pwsh -File P9/scripts/bootstrap.ps1 -Apply` desde la raíz del repositorio |
-| Aplicación raíz en ArgoCD | `comicrent-p9` en namespace `argocd`; aplicación hija `comicrent-p9-workloads` |
+| Aplicación raíz en ArgoCD | `comicrent-p9` en namespace `argocd`; Applications hijas de plataforma y cargas P8/P9 |
 | Estado Synced/Healthy | [`evidence/p9-bootstrap.txt`](evidence/p9-bootstrap.txt) |
 | Backend remoto y locking | `gs://comicrent-p9-tf-2026-202307705` con prefijos `p9/seed` y `p9/app`; configuración en [`terraform/seed/main.tf`](terraform/seed/main.tf) y [`terraform/app/main.tf`](terraform/app/main.tf) |
 | Backup externo | [`evidence/p9-backup-restore.txt`](evidence/p9-backup-restore.txt) — `p9-functional-rebuild-v2`, Completed, 0 errores, 0 warnings |
