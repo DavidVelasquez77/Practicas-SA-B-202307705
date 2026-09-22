@@ -1,0 +1,62 @@
+P9 backup y restauración comprobada
+Fecha de captura: 2026-09-22T01:05:08.0171901-06:00
+
+Comando de backup:
+velero backup create p9-functional-rebuild-v2 --include-namespaces=sa-p9 --include-cluster-resources=true --default-volumes-to-fs-backup --wait
+
+NAME                       STATUS      ERRORS   WARNINGS   CREATED                         EXPIRES   STORAGE LOCATION   SELECTOR
+p9-functional-rebuild-v2   Completed   0        0          2026-09-22 00:59:15 -0600 CST   6d        default            <none>
+
+
+> Phase:  Completed
+
+> Namespaces:
+>   Included:  sa-p9
+    Excluded:  <none>
+>   Included:        *
+    Excluded:        <none>
+> Storage Location:  default
+
+>       sa-p9/comicrent-postgresql-0: data, dshm, empty-dir
+>       sa-p9/comicrent-rabbitmq-0: data, empty-dir
+
+
+
+
+Comando de recuperación estática:
+pwsh -File P9/scripts/restore-data.ps1 -BackupName p9-functional-rebuild-v2 -RestoreName p9-evidence-restore-v2 -RecoveryNamespace sa-p9-evidence-v2
+
+NAME                     BACKUP                     STATUS      STARTED                         COMPLETED                       ERRORS   WARNINGS   CREATED                         SELECTOR
+p9-evidence-restore-v2   p9-functional-rebuild-v2   Completed   2026-09-22 01:00:03 -0600 CST   2026-09-22 01:01:14 -0600 CST   0        0          2026-09-22 01:00:03 -0600 CST   app.kubernetes.io/name=postgresql
+
+
+> Phase:                       Completed
+> Total items to be restored:  13
+> Items restored:              13
+
+> Started:    2026-09-22 01:00:03 -0600 CST
+> Completed:  2026-09-22 01:01:14 -0600 CST
+
+> Backup:  p9-functional-rebuild-v2
+
+> Namespace mappings:  sa-p9=sa-p9-evidence-v2
+
+> Label selector:  app.kubernetes.io/name=postgresql
+
+> Restore PVs:  true
+
+>   Completed:
+>     sa-p9-evidence-v2/comicrent-postgresql-0: data, dshm, empty-dir
+
+
+
+PodVolumeRestore:
+NAME                           PHASE       BYTES-DONE   TOTAL-BYTES
+p9-evidence-restore-v2-8r6rb   Completed   1079552      1079552
+p9-evidence-restore-v2-gbbz8   Completed   113369312    113369312
+p9-evidence-restore-v2-gsvzt   Completed   32856        32856
+
+Dato verificado en la base restaurada (auth_db.p9_recovery_probe):
+Defaulted container "postgresql" out of: postgresql, restore-wait (init)
+1|P9-REAL-DATA-20260922-RERUN|2026-09-22 06:58:07.237577+00
+

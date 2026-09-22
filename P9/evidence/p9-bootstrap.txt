@@ -1,0 +1,48 @@
+P9 bootstrap y estado operativo
+Fecha de captura: 2026-09-22T01:10:06.1929307-06:00
+
+Cluster GKE:
+createTime: '2026-09-22T05:22:51+00:00'
+currentMasterVersion: 1.35.8-gke.1036000
+endpoint: 34.60.82.141
+name: comicrent-gke-p6
+status: RUNNING
+
+Aplicaciones GitOps:
+NAME                     SYNC STATUS   HEALTH STATUS   REVISION                                   PROJECT
+comicrent-p8             Synced        Healthy         eebaf5b0fcdbccc4dab458ae3eefc1b821153a47   comicrent-p8
+comicrent-p9             Synced        Healthy         11fbe0f102daa6d6ef40f54f5bd585a8e71a6999   comicrent-p9
+comicrent-p9-workloads   Synced        Healthy         11fbe0f102daa6d6ef40f54f5bd585a8e71a6999   comicrent-p9
+
+Nodos:
+NAME                                              STATUS   ROLES    AGE   VERSION               INTERNAL-IP   EXTERNAL-IP     OS-IMAGE                             KERNEL-VERSION   CONTAINER-RUNTIME
+gke-comicrent-gke-p6-default-pool-400040d8-cs3p   Ready    <none>   94m   v1.35.8-gke.1036000   10.128.0.30   34.71.250.153   Container-Optimized OS from Google   6.12.94+         containerd://2.2.7
+gke-comicrent-gke-p6-default-pool-400040d8-k79h   Ready    <none>   94m   v1.35.8-gke.1036000   10.128.0.28   34.61.255.238   Container-Optimized OS from Google   6.12.94+         containerd://2.2.7
+gke-comicrent-gke-p6-default-pool-400040d8-l6sz   Ready    <none>   94m   v1.35.8-gke.1036000   10.128.0.29   34.61.142.87    Container-Optimized OS from Google   6.12.94+         containerd://2.2.7
+
+PVC P9:
+NAME                          STATUS   VOLUME                                     CAPACITY   ACCESS MODES   STORAGECLASS   VOLUMEATTRIBUTESCLASS   AGE
+data-comicrent-postgresql-0   Bound    pvc-584d545b-a758-4198-a032-46868c3bf8c1   2Gi        RWO            standard-rwo   <unset>                 53m
+data-comicrent-rabbitmq-0     Bound    pvc-3711f651-047a-483e-8e6c-6d21d5dc4958   1Gi        RWO            standard-rwo   <unset>                 90m
+
+PDB P9:
+NAME                                     MIN AVAILABLE   MAX UNAVAILABLE   ALLOWED DISRUPTIONS   AGE
+comicrent-p9-workloads-api-gateway       1               N/A               0                     90m
+comicrent-p9-workloads-auth-service      1               N/A               1                     90m
+comicrent-p9-workloads-comics-service    1               N/A               1                     90m
+comicrent-p9-workloads-copies-service    1               N/A               1                     90m
+comicrent-p9-workloads-rentals-service   1               N/A               1                     90m
+comicrent-postgresql                     N/A             1                 1                     90m
+comicrent-rabbitmq                       N/A             1                 1                     90m
+
+Rollout principal:
+NAME                            DESIRED   CURRENT   UP-TO-DATE   AVAILABLE   AGE
+comicrent-api-gateway-rollout   3         3         3            3           90m
+
+Velero:
+NAME                                      PHASE       LAST VALIDATED   AGE   DEFAULT
+backupstoragelocation.velero.io/default   Available   28s              95m   true
+
+NAME                                    STATUS    SCHEDULE      LASTBACKUP   AGE   PAUSED
+schedule.velero.io/comicrent-p9-daily   Enabled   0 */6 * * *   69m          95m
+

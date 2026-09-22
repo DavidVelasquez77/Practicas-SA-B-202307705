@@ -503,12 +503,12 @@ resource "helm_release" "velero" {
     }]
     configuration = {
       backupStorageLocation = [{
-        name           = "default"
-        provider       = "gcp"
-        bucket         = google_storage_bucket.velero.name
-        default        = true
-        accessMode     = "ReadWrite"
-        config = { serviceAccount = google_service_account.velero.email }
+        name       = "default"
+        provider   = "gcp"
+        bucket     = google_storage_bucket.velero.name
+        default    = true
+        accessMode = "ReadWrite"
+        config     = { serviceAccount = google_service_account.velero.email }
       }]
       defaultBackupStorageLocation = "default"
       defaultBackupTTL             = "168h"
