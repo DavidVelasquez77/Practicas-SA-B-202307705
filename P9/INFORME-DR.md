@@ -6,8 +6,8 @@ Se eliminó de forma controlada el clúster GKE `comicrent-gke-p6` para simular 
 
 ## Recuperación ejecutada
 
-1. `P9/scripts/bootstrap.ps1 -Apply` inicializó el backend remoto de Terraform, recreó GKE y el node pool, instaló los controladores y creó la Application raíz `comicrent-p9`.
-2. ArgoCD reconcilió `comicrent-p9-workloads` desde la rama `p9-continuidad-operativa`. Las aplicaciones P8 y P9 terminaron `Synced/Healthy`; los PVC de PostgreSQL y RabbitMQ quedaron `Bound`.
+1. `P9/scripts/bootstrap.ps1 -Apply` inicializa el estado persistente `seed`, recrea GKE y el node pool en `app`, instala ArgoCD y crea la Application raíz `comicrent-p9`.
+2. El app-of-apps de ArgoCD instaló Velero, Kyverno, Argo Rollouts, Sealed Secrets, gobernanza y luego reconcilió `comicrent-p9-workloads` desde la rama `p9-continuidad-operativa`. Las aplicaciones P8 y P9 terminaron `Synced/Healthy`; los PVC de PostgreSQL y RabbitMQ quedaron `Bound`.
 3. `P9/scripts/restore-data.ps1` creó un namespace de recuperación, copió el secreto de PostgreSQL sin propietario de Sealed Secrets y ejecutó un restore estático con namespace mapping. Los tres `PodVolumeRestore` terminaron `Completed` y el PVC de PostgreSQL restauró 113,369,312 bytes.
 4. La consulta a `auth_db.p9_recovery_probe` devolvió `1|P9-REAL-DATA-20260922-RERUN`, demostrando que se recuperó contenido persistente y no sólo un pod vacío.
 

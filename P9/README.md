@@ -4,11 +4,11 @@ Esta entrega evoluciona la plataforma de la Práctica 8 sin cambiar su repositor
 
 ## Alcance implementado
 
-- **Bootstrap reproducible:** Terraform crea GKE, el node pool, namespaces, cuotas, límites, RBAC, ArgoCD, Argo Rollouts, Kyverno, Sealed Secrets y Velero. El chart `P8/terraform/bootstrap` instala sólo la Application raíz `comicrent-p9`; ArgoCD aplica las cargas desde el repositorio GitOps.
-- **Estado remoto:** Terraform usa el backend GCS `comicrent-p9-tf-2026-202307705` con versionado del bucket y locking por generación del backend.
+- **Bootstrap reproducible:** `P9/terraform/seed` conserva el backend, el bucket de Velero y su IAM; `P9/terraform/app` crea únicamente GKE, el node pool, ArgoCD y la Application raíz `comicrent-p9`. Desde esa Application, ArgoCD crea namespaces, cuotas, límites, RBAC, Velero, Argo Rollouts, Kyverno, Sealed Secrets y las aplicaciones desde GitOps.
+- **Estado remoto:** `seed` y `app` usan el backend GCS `comicrent-p9-tf-2026-202307705` con prefijos independientes (`p9/seed` y `p9/app`), versionado y locking por generación del backend.
 - **GitOps acumulativo:** el repositorio GitOps mantiene `apps/p9/application.yaml` y la aplicación hija `comicrent-p9-workloads`, que apunta a `apps/comicrent` en la rama `p9-continuidad-operativa`.
 - **Datos persistentes:** PostgreSQL y RabbitMQ usan StatefulSet y PVC (`standard-rwo`) en `sa-p9`. La clave TLS de Sealed Secrets se conserva fuera de Git y se inyecta mediante Terraform durante cada reconstrucción.
-- **Backups externos:** Velero usa Workload Identity, el bucket `comicrent-p9-velero-2026-202307705`, Kopia/FSB para volúmenes, versionado y una Schedule cada seis horas (`comicrent-p9-daily`).
+- **Backups externos:** ArgoCD instala Velero mediante un Application GitOps. Velero usa Workload Identity, el bucket `comicrent-p9-velero-2026-202307705`, Kopia/FSB para volúmenes, versionado y una Schedule cada seis horas (`comicrent-p9-daily`).
 - **Resiliencia:** PDB, réplicas, anti-affinity y probes se aplican a los servicios. El gateway conserva servicio durante el drenaje de un nodo.
 - **Despliegue seguro:** se mantienen Argo Rollouts Canary `10% → 25% → 50% → 100%`, AnalysisTemplate, Kyverno, Trivy, SBOM, Cosign y Sealed Secrets de P8.
 
@@ -34,7 +34,7 @@ flowchart LR
 | Bootstrap único | [`P9/scripts/bootstrap.ps1`](scripts/bootstrap.ps1) — ejecutar `pwsh -File P9/scripts/bootstrap.ps1 -Apply` desde la raíz del repositorio |
 | Aplicación raíz en ArgoCD | `comicrent-p9` en namespace `argocd`; aplicación hija `comicrent-p9-workloads` |
 | Estado Synced/Healthy | [`evidence/p9-bootstrap.txt`](evidence/p9-bootstrap.txt) |
-| Backend remoto y locking | `gs://comicrent-p9-tf-2026-202307705/comicrent-platform` en [`P8/terraform/main.tf`](../P8/terraform/main.tf) |
+| Backend remoto y locking | `gs://comicrent-p9-tf-2026-202307705` con prefijos `p9/seed` y `p9/app`; configuración en [`terraform/seed/main.tf`](terraform/seed/main.tf) y [`terraform/app/main.tf`](terraform/app/main.tf) |
 | Backup externo | [`evidence/p9-backup-restore.txt`](evidence/p9-backup-restore.txt) — `p9-functional-rebuild-v2`, Completed, 0 errores, 0 warnings |
 | Restauración de datos | [`evidence/p9-backup-restore.txt`](evidence/p9-backup-restore.txt) — `p9-evidence-restore-v2`, PVC PostgreSQL y marcador `P9-REAL-DATA-20260922-RERUN` recuperados |
 | Prueba de reconstrucción | [`evidence/p9-bootstrap.txt`](evidence/p9-bootstrap.txt) — GKE RUNNING, tres nodos Ready y aplicaciones reconciliadas |
@@ -47,13 +47,13 @@ flowchart LR
 
 ### 1. Bootstrap
 
-Desde la raíz del repositorio de código y con `P8/terraform/local.auto.tfvars` configurado:
+Desde la raíz del repositorio de código y con `P9/terraform/app/local.auto.tfvars` configurado (el bootstrap adopta el archivo de P8 si existe):
 
 ```powershell
 pwsh -ExecutionPolicy Bypass -File P9/scripts/bootstrap.ps1 -Apply
 ```
 
-El script detecta si el clúster no existe, inicializa el backend remoto, valida Terraform, elimina del estado únicamente recursos Kubernetes/Helm obsoletos y ejecuta el único `terraform apply`. No instala aplicaciones de negocio con Terraform: instala la plataforma y crea la Application raíz; ArgoCD hace el resto.
+El script inicializa y aplica primero `seed` y después `app`. `app` instala únicamente ArgoCD y crea la Application raíz; ArgoCD hace el resto mediante el app-of-apps. No hay un paso manual intermedio.
 
 ### 2. Verificación
 
@@ -96,8 +96,8 @@ El script cordona y drena un nodo, verifica el PDB y las réplicas del gateway, 
 
 ## Decisiones de diseño
 
-1. Terraform es responsable de la infraestructura y de los controladores; ArgoCD es el único componente que aplica los manifiestos de aplicación.
-2. El bucket de Terraform y el bucket de Velero están fuera del clúster; la pérdida de GKE no elimina el estado ni los backups.
+1. `seed` es persistente y nunca se destruye durante una reconstrucción. `app` crea el clúster, el node pool, ArgoCD y la Application raíz; ArgoCD es el único componente que aplica los manifiestos y charts restantes.
+2. Los dos estados remotos, el bucket de Terraform y el bucket de Velero están fuera del clúster; la pérdida de GKE no elimina el estado ni los backups.
 3. La clave de Sealed Secrets se conserva en una ruta local protegida y se carga como recurso Terraform. Por eso los secretos cifrados de Git siguen descifrables después de reconstruir el clúster.
 4. PostgreSQL conserva un PVC y una política PDB apropiada; RabbitMQ conserva su PVC y su secreto cifrado. Los servicios stateless tienen réplicas, anti-affinity y probes.
 5. El backup de volúmenes usa FSB/Kopia con `EnableCSI`; no se depende de snapshots zonales que desaparecerían con el clúster.

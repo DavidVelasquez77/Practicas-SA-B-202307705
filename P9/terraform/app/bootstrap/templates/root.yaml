@@ -1,0 +1,46 @@
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: comicrent-p9
+  namespace: argocd
+spec:
+  description: ComicRent P9 app-of-apps
+  sourceRepos:
+    - {{ .Values.gitops.repoURL }}
+    - https://argoproj.github.io/argo-helm
+    - https://vmware-tanzu.github.io/helm-charts
+    - https://kyverno.github.io/kyverno
+    - https://charts.bitnami.com/bitnami
+  destinations:
+    - namespace: "*"
+      server: https://kubernetes.default.svc
+  clusterResourceWhitelist:
+    - group: "*"
+      kind: "*"
+  namespaceResourceWhitelist:
+    - group: "*"
+      kind: "*"
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: comicrent-p9
+  namespace: argocd
+spec:
+  project: comicrent-p9
+  source:
+    repoURL: {{ .Values.gitops.repoURL }}
+    targetRevision: {{ .Values.gitops.targetRevision }}
+    path: {{ .Values.gitops.path }}
+    directory:
+      recurse: true
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: argocd
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - ServerSideApply=true
+      - CreateNamespace=true

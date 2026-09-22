@@ -1,0 +1,8 @@
+gitops:
+  repoURL: https://github.com/DavidVelasquez77/Practicas-SA-B-202307705-gitops.git
+  targetRevision: p9-continuidad-operativa
+  path: apps/p9
+seed:
+  project: comicrent-p6-2026
+  veleroBucket: comicrent-p9-velero-2026-202307705
+  veleroServiceAccount: velero-p9@comicrent-p6-2026.iam.gserviceaccount.com

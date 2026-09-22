@@ -8,54 +8,48 @@ param(
 
 $ErrorActionPreference = "Stop"
 $root = (Resolve-Path (Join-Path $PSScriptRoot "../..")).Path
-$tfDir = Join-Path $root "P8/terraform"
+$seedDir = Join-Path $root "P9/terraform/seed"
+$appDir = Join-Path $root "P9/terraform/app"
 
-function Invoke-Terraform([string[]]$Arguments) {
-  Push-Location $tfDir
+function Invoke-Terraform([string]$Directory, [string[]]$Arguments) {
+  Push-Location $Directory
   try { & terraform @Arguments }
   finally { Pop-Location }
+  if ($LASTEXITCODE -ne 0) { throw "Terraform falló en ${Directory}: $($Arguments -join ' ')" }
 }
 
 function Invoke-Step([string]$Label, [scriptblock]$Command) {
-  Write-Host "`n[$Label]" -ForegroundColor Cyan
+  Write-Host "
+[$Label]" -ForegroundColor Cyan
   & $Command
   if ($LASTEXITCODE -ne 0) { throw "Paso fallido: $Label (exit $LASTEXITCODE)" }
 }
 
 Invoke-Step "Cuenta y proyecto" { gcloud config set project $ProjectId }
+Invoke-Step "Seed: inicializar backend remoto" { Invoke-Terraform $seedDir @("init", "-input=false", "-reconfigure") }
 
-# Si el clúster desapareció, los recursos Kubernetes/Helm del estado remoto ya
-# no pueden refrescarse. Se retiran sólo esas entradas; Terraform conserva el
-# estado de GKE, GCS y las cuentas IAM y las vuelve a aplicar después del clúster.
-$clusterExists = $true
-gcloud container clusters describe $ClusterName --zone $Zone --project $ProjectId --format='value(name)' | Out-Null
-if ($LASTEXITCODE -ne 0) { $clusterExists = $false }
-if (-not $clusterExists) {
-  Write-Host "Clúster ausente: limpiando del estado sólo recursos Kubernetes/Helm para reconstrucción." -ForegroundColor Yellow
-} else {
-  Invoke-Step "Credenciales de GKE" { gcloud container clusters get-credentials $ClusterName --zone $Zone --project $ProjectId }
+$seedResources = Invoke-Terraform $seedDir @("state", "list")
+if ($seedResources -notcontains "google_storage_bucket.terraform_state") {
+  Invoke-Terraform $seedDir @("import", "google_storage_bucket.terraform_state", "comicrent-p9-tf-2026-202307705")
 }
-
-Invoke-Step "Backend remoto y proveedores" { Invoke-Terraform @("init","-input=false","-reconfigure") }
-Invoke-Step "Validación Terraform" { Invoke-Terraform @("validate") }
-
-if (-not $clusterExists) {
-  $addresses = Invoke-Terraform @("state","list") | Where-Object { $_ -match '^(kubernetes_|helm_release\.)' }
-  if ($addresses) { Invoke-Terraform (@("state","rm") + $addresses) }
+if ($seedResources -notcontains "google_storage_bucket.velero") {
+  Invoke-Terraform $seedDir @("import", "google_storage_bucket.velero", "comicrent-p9-velero-2026-202307705")
 }
+Invoke-Step "Seed: validar" { Invoke-Terraform $seedDir @("validate") }
+Invoke-Step "Seed: aplicar recursos persistentes" { Invoke-Terraform $seedDir @("apply", "-input=false", "-auto-approve") }
 
+Invoke-Step "App: inicializar backend remoto" { Invoke-Terraform $appDir @("init", "-input=false", "-reconfigure") }
+Invoke-Step "App: validar" { Invoke-Terraform $appDir @("validate") }
 if (-not $Apply) {
-  Write-Host "Modo de verificación: use -Apply para ejecutar el único bootstrap." -ForegroundColor Yellow
-  Invoke-Terraform @("plan","-input=false")
+  Write-Host "Modo de verificación: use -Apply para crear GKE y ArgoCD." -ForegroundColor Yellow
+  Invoke-Terraform $appDir @("plan", "-input=false")
   exit 0
 }
-
-Invoke-Step "Bootstrap Terraform + ArgoCD + Velero" { Invoke-Terraform @("apply","-input=false","-auto-approve") }
-Invoke-Step "Contexto Kubernetes" { kubectl config use-context ("gke_{0}_{1}_{2}" -f $ProjectId,$Zone,$ClusterName) }
-
-Write-Host "Esperando ArgoCD y la aplicación raíz comicrent-p9..." -ForegroundColor Cyan
+Invoke-Step "App: GKE + node pool + ArgoCD + Application raíz" { Invoke-Terraform $appDir @("apply", "-input=false", "-auto-approve") }
+Invoke-Step "Contexto Kubernetes" { gcloud container clusters get-credentials $ClusterName --zone $Zone --project $ProjectId }
+Write-Host "Esperando la Application raíz comicrent-p9 y la reconciliación GitOps..." -ForegroundColor Cyan
 kubectl wait --for=condition=Available deployment/argocd-server -n argocd --timeout=10m
-$deadline = (Get-Date).AddMinutes(15)
+$deadline = (Get-Date).AddMinutes(20)
 do {
   $app = kubectl get application comicrent-p9 -n argocd -o json 2>$null | ConvertFrom-Json
   if ($app.status.sync.status -eq "Synced" -and $app.status.health.status -eq "Healthy") { break }
@@ -63,7 +57,6 @@ do {
 } while ((Get-Date) -lt $deadline)
 if ($null -eq $app -or $app.status.sync.status -ne "Synced" -or $app.status.health.status -ne "Healthy") {
   kubectl get applications -n argocd -o wide
-  throw "La aplicación raíz comicrent-p9 no llegó a Synced/Healthy dentro del tiempo límite."
+  throw "La Application raíz comicrent-p9 no llegó a Synced/Healthy dentro del tiempo límite."
 }
-
-Write-Host "Bootstrap completo: Terraform remoto, ArgoCD app-of-apps y cargas P9 activos." -ForegroundColor Green
+Write-Host "Bootstrap completo: seed persistente, GKE, ArgoCD y app-of-apps activos." -ForegroundColor Green
