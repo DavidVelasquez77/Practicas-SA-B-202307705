@@ -54,6 +54,20 @@ Invoke-Velero @(
   "--wait"
 )
 
+# La restauración aislada no pertenece a la aplicación GitOps de producción.
+# Velero conserva las anotaciones de tracking del backup; quitarlas evita que
+# ArgoCD intente reconciliar estos objetos temporales dentro de sa-p9.
+$restoreResources = & kubectl get pods,services,statefulsets,controllerrevisions,configmaps,secrets,serviceaccounts,persistentvolumeclaims,poddisruptionbudgets -n $RecoveryNamespace -o name 2>$null
+if ($LASTEXITCODE -eq 0) {
+  foreach ($resource in $restoreResources) {
+    $metadata = & kubectl get $resource -n $RecoveryNamespace -o json 2>$null | ConvertFrom-Json
+    if ($LASTEXITCODE -eq 0 -and $metadata.metadata.annotations.'argocd.argoproj.io/tracking-id') {
+      & kubectl annotate $resource -n $RecoveryNamespace 'argocd.argoproj.io/tracking-id-' --overwrite
+      if ($LASTEXITCODE -ne 0) { throw "No se pudo desvincular de ArgoCD el recurso temporal $resource." }
+    }
+  }
+}
+
 Invoke-Kubectl @("wait", "--for=condition=Ready", "pod/comicrent-postgresql-0", "-n", $RecoveryNamespace, "--timeout=10m")
 Write-Host "`nEstado del restore y volúmenes:" -ForegroundColor Green
 & $Velero restore get $RestoreName
