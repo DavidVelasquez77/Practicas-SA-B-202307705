@@ -50,9 +50,34 @@ Invoke-Velero @(
   "--include-cluster-resources=true",
   "--selector=app.kubernetes.io/name=postgresql",
   "--exclude-resources=statefulsets",
-  "--restore-volumes=true",
-  "--wait"
+  "--restore-volumes=true"
 )
+
+# Do not use Velero CLI --wait here: it waits indefinitely when a pod-volume
+# restore is blocked (for example, by an init-container security context).
+# Poll the Restore CR with a bounded timeout so the operator can troubleshoot.
+$restoreDeadline = (Get-Date).AddMinutes(20)
+$lastRestorePhase = $null
+do {
+  $restoreJson = & kubectl get restore $RestoreName -n velero -o json
+  if ($LASTEXITCODE -ne 0) { throw "No se pudo leer el estado del restore $RestoreName." }
+  $restoreObject = $restoreJson | ConvertFrom-Json
+  $restorePhase = $restoreObject.status.phase
+  if ($restorePhase -ne $lastRestorePhase) {
+    Write-Host "Estado Velero: $restorePhase" -ForegroundColor DarkCyan
+    $lastRestorePhase = $restorePhase
+  }
+  if ($restorePhase -in @("Completed", "Failed", "PartiallyFailed")) { break }
+  if ((Get-Date) -ge $restoreDeadline) {
+    throw "Timeout: el restore $RestoreName no terminó en 20 minutos. Consulte 'velero restore describe $RestoreName --details' y los PodVolumeRestore."
+  }
+  Start-Sleep -Seconds 10
+} while ($true)
+
+if ($restorePhase -ne "Completed") {
+  & $Velero restore describe $RestoreName --details
+  throw "Velero terminó el restore $RestoreName con estado $restorePhase."
+}
 
 # La restauración aislada no pertenece a la aplicación GitOps de producción.
 # Velero conserva las anotaciones de tracking del backup; quitarlas evita que
