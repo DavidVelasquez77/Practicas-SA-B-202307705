@@ -103,7 +103,16 @@ Write-Check "PVC persistentes Bound" {
 Write-Check "PDB configurados" {
   $pdbs = Get-KubectlJson @("get", "pdb", "-n", $Namespace, "-o", "json")
   if ($pdbs.items.Count -eq 0) { throw "No hay PodDisruptionBudgets." }
-  "$($pdbs.items.Count) PDB"
+  $gatewayPdb = $pdbs.items | Where-Object { $_.metadata.name -like "*api-gateway" } | Select-Object -First 1
+  if ($null -eq $gatewayPdb) { throw "No existe el PDB del api-gateway." }
+  $rollout = Get-KubectlJson @("get", "rollout", "comicrent-api-gateway-rollout", "-n", $Namespace, "-o", "json")
+  $expected = [int]$gatewayPdb.status.expectedPods
+  $healthy = [int]$gatewayPdb.status.currentHealthy
+  $desired = [int]$gatewayPdb.status.desiredHealthy
+  $replicas = [int]$rollout.spec.replicas
+  if ($expected -lt $replicas) { throw "El PDB del gateway selecciona $expected pods; se esperaban al menos $replicas." }
+  if ($healthy -lt $desired) { throw "El PDB del gateway solo ve $healthy pods sanos; requiere $desired." }
+  "$($pdbs.items.Count) PDB; gateway $healthy/$expected protegidos, $($gatewayPdb.status.disruptionsAllowed) interrupciones permitidas"
 }
 
 Write-Check "Rollout Canary Healthy al 100%" {

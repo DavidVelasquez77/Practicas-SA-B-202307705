@@ -190,6 +190,15 @@ do {
     if ($null -eq $rollout -or $rollout.status.phase -ne "Healthy") { $allReady = $false }
   }
   if ($allReady) {
+    $gatewayPdb = & kubectl get pdb -n sa-p9 -o json 2>$null | ConvertFrom-Json
+    $gatewayPdb = $gatewayPdb.items | Where-Object { $_.metadata.name -like "*api-gateway" } | Select-Object -First 1
+    if ($null -eq $gatewayPdb -or
+        [int]$gatewayPdb.status.expectedPods -lt [int]$rollout.spec.replicas -or
+        [int]$gatewayPdb.status.currentHealthy -lt [int]$gatewayPdb.status.desiredHealthy) {
+      $allReady = $false
+    }
+  }
+  if ($allReady) {
     $sealedSecrets = & kubectl get sealedsecrets -n sa-p9 -o json 2>$null | ConvertFrom-Json
     if ($null -eq $sealedSecrets -or $sealedSecrets.items.Count -lt 3) { $allReady = $false }
     foreach ($sealedSecret in $sealedSecrets.items) {
