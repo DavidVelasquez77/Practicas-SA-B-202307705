@@ -1,24 +1,30 @@
-# Informe de recuperación ante desastre — P9
+# Informe de la prueba de DR — Práctica 9
 
-## Escenario
+## 1. Objetivos declarados
 
-Se eliminó de forma controlada el clúster GKE `comicrent-gke-p6` para simular la pérdida total de la plataforma. El repositorio de código y el repositorio GitOps permanecieron intactos. Antes de la prueba se creó el backup Velero `p9-functional-rebuild-v2` en el bucket externo `comicrent-p9-velero-2026-202307705`; el backup terminó con cero errores y cero advertencias e incluyó los volúmenes de PostgreSQL y RabbitMQ.
+Se fijó un **RTO máximo de 2 horas**, como objetivo de laboratorio para reconstruir la plataforma y devolver el servicio con el dato de prueba recuperado. Se fijó un **RPO máximo de 6 horas**, alineado con la frecuencia del schedule de Velero, que crea respaldos cada seis horas. Ambos objetivos se definieron antes de evaluar el simulacro.
 
-## Recuperación ejecutada
+## 2. Escenario ejecutado
 
-1. `P9/scripts/bootstrap.ps1 -Apply` inicializa el estado persistente `seed`, recrea GKE y el node pool en `app`, instala ArgoCD y crea la Application raíz `comicrent-p9`.
-2. El app-of-apps de ArgoCD instaló Velero, Kyverno, Argo Rollouts, Sealed Secrets, gobernanza y luego reconcilió `comicrent-p9-workloads` desde la rama `p9-continuidad-operativa`. Las aplicaciones P8 y P9 terminaron `Synced/Healthy`; los PVC de PostgreSQL y RabbitMQ quedaron `Bound`.
-3. `P9/scripts/restore-data.ps1` creó un namespace de recuperación, copió el secreto de PostgreSQL sin propietario de Sealed Secrets y ejecutó un restore estático con namespace mapping. Los tres `PodVolumeRestore` terminaron `Completed` y el PVC de PostgreSQL restauró 113,369,312 bytes.
-4. La consulta a `auth_db.p9_recovery_probe` devolvió `1|P9-REAL-DATA-20260922-RERUN`, demostrando que se recuperó contenido persistente y no sólo un pod vacío.
+Se validaron antes del cronómetro un backup Velero `Completed` sin errores ni advertencias, las versiones de la llave TLS en Secret Manager, el acceso al estado remoto y la salud inicial. El wrapper `P9/scripts/rebuild-dr.ps1` destruyó el estado Terraform `app` (GKE, node pool y bootstrap de ArgoCD); preservó `seed`, el backend remoto, el bucket externo de Velero y Secret Manager. Luego ejecutó `bootstrap.ps1`, esperó la reconciliación GitOps, restauró PostgreSQL desde el backup en un namespace aislado y promovió a `auth_db` activa únicamente el marcador validado. No se reemplazó la base activa completa.
 
-## Resultado y objetivos
+## 3. Tiempos medidos
 
-El clúster reconstruido quedó con tres nodos Ready, ArgoCD y Velero operativos, la Schedule `comicrent-p9-daily` habilitada cada seis horas y el gateway accesible. El objetivo de RTO es de dos horas para volver a tener la plataforma reconciliada; el RPO es de seis horas por la frecuencia de la Schedule, reducido en la prueba mediante el backup manual previo al incidente. La evidencia completa está en [`evidence/p9-bootstrap.txt`](evidence/p9-bootstrap.txt) y [`evidence/p9-backup-restore.txt`](evidence/p9-backup-restore.txt).
+| Medición | Objetivo | Resultado | Evaluación |
+|---|---:|---:|---|
+| RTO, desde el inicio del destroy hasta el servicio y marcador recuperados | 02:00:00 | **00:31:48.361** | Cumplido; margen aproximado 01:28:11 |
+| RPO, edad del backup al inicio del destroy | 06:00:00 | **00:03:00.542** | Cumplido |
 
-## Prueba de continuidad
+El RTO comenzó `2026-09-24T00:00:51.5416209Z` y terminó `2026-09-24T00:32:39.9023391Z`. El backup `p9-final-dr-20260923-175716` se completó a `2026-09-23T23:57:51Z`, con cero errores y advertencias. El RTO incluye destroy, bootstrap, reconciliación y verificación de la plataforma, restore de Velero y lectura del marcador en la base activa; excluye el preflight y la creación del backup. La transcripción completa es [p9-reconstruction-20260923-175941.txt](evidence/p9-reconstruction-20260923-175941.txt).
 
-Se drenó un nodo que alojaba una réplica del gateway. El PDB, las tres réplicas, la anti-affinity y las probes permitieron evacuar el pod y reprogramarlo en otro nodo; el endpoint `/health` respondió HTTP 200 antes y después. La salida está en [`evidence/p9-node-drain.txt`](evidence/p9-node-drain.txt).
+## 4. Pérdida medida
 
-## Causa y controles
+En el simulacro completo se recuperó la fila escrita antes del backup: `1|P9-BEFORE-BACKUP-20260923-170945`. Un ensayo separado escribió una segunda fila después del backup, eliminó ambas filas de la tabla de prueba y restauró el volumen. Regresó la fila anterior al backup; la posterior no, como corresponde al punto respaldado. En ese ensayo, el backup terminó `2026-09-23T03:58:42Z`, la pérdida se simuló a `2026-09-23T04:06:42.9834611Z` y el RPO fue **00:08:00.983**. Este dato pertenece al ensayo separado; el RPO del simulacro completo es 3 minutos. La prueba verifica una fila de recuperación deliberada, no todos los datos funcionales de ComicRent.
 
-El impacto potencial era la pérdida simultánea del plano de control y de los volúmenes. Se mitigó separando el estado y los backups del clúster, usando Workload Identity en lugar de claves estáticas, conservando la clave de Sealed Secrets y declarando la plataforma con Terraform y ArgoCD. El procedimiento queda automatizado y repetible en los scripts de `P9/scripts`.
+## 5. Puntos únicos de fallo detectados
+
+Una ejecución anterior quedó bloqueada por finalizers de Applications hijas de ArgoCD/Kyverno mientras se destruía el propio clúster. Se actualizó el wrapper para retirar primero el finalizer de la raíz, eliminarla y después retirar automáticamente los finalizers hijos; el simulacro final concluyó sin intervención manual. La recuperación también depende de que el operador tenga identidad y permisos GCP para el estado remoto, GKE, el bucket de Velero y Secret Manager. La pérdida simultánea de esos recursos persistentes o de sus permisos impediría reconstruir.
+
+## 6. Brecha y plan
+
+El simulacro final cumplió ambos objetivos. El ensayo separado de pérdida de datos midió un RPO de 8 minutos, también dentro de la meta de 6 horas. Se conservarán `seed`, los backups externos y las versiones de la llave; se mantendrán restringidos los permisos sobre Secret Manager y el estado remoto, y se repetirá la medición cuando cambien el bootstrap o el calendario de respaldos. La prueba no demuestra recuperación integral de todas las tablas de negocio ni disponibilidad durante la destrucción del clúster; esas capacidades requieren pruebas y objetivos de negocio específicos.

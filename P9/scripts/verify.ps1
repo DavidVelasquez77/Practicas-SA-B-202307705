@@ -133,6 +133,15 @@ Write-Check "SealedSecrets sincronizados" {
   "$($items.items.Count) secretos"
 }
 
+Write-Check "Llave persistente de Sealed Secrets en Secret Manager" {
+  foreach ($secret in @("comicrent-p9-sealed-secrets-tls-crt", "comicrent-p9-sealed-secrets-tls-key")) {
+    $versions = & gcloud secrets versions list $secret --project comicrent-p6-2026 --format=json 2>$null | ConvertFrom-Json
+    if ($LASTEXITCODE -ne 0) { throw "No se pudo consultar Secret Manager para $secret." }
+    if (-not @($versions | Where-Object { $_.state -eq "ENABLED" }).Count) { throw "$secret no tiene versiones habilitadas." }
+  }
+  "2 secretos con versiones habilitadas; sus valores no se muestran"
+}
+
 Write-Check "Politicas Kyverno Ready" {
   $items = Get-KubectlJson @("get", "clusterpolicies", "-o", "json")
   $policies = @($items.items | Where-Object { $_.metadata.name -like "comicrent-*" })
@@ -176,7 +185,10 @@ foreach ($tier in @("seed", "app")) {
           & terraform plan -input=false -detailed-exitcode -no-color "-var=master_authorized_cidr=$cidr"
         }
         else {
-          & terraform plan -input=false -detailed-exitcode -no-color
+          $account = (& gcloud config get account).Trim()
+          if ($LASTEXITCODE -ne 0 -or [string]::IsNullOrWhiteSpace($account)) { throw "No hay una cuenta gcloud activa para verificar el acceso de Secret Manager." }
+          $member = if ($account.EndsWith(".gserviceaccount.com")) { "serviceAccount:$account" } else { "user:$account" }
+          & terraform plan -input=false -detailed-exitcode -no-color "-var=secret_accessor_member=$member"
         }
         $code = $LASTEXITCODE
         if ($code -eq 1) { throw "terraform plan fallo." }

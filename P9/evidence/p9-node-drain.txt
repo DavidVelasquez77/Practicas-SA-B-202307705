@@ -1,25 +1,12 @@
 P9 prueba de tolerancia a fallo: drain de nodo
-Fecha de captura: 2026-09-22T01:05:47.7150919-06:00
+==============================================
 
-Comando ejecutado:
-pwsh -File P9/scripts/drain-node.ps1 -Namespace sa-p9 -HealthUrl http://34.55.84.119:3000/health
+El PDB del api-gateway informó EXPECTED=3, HEALTHY=3, DESIRED=1,
+ALLOWED=2 antes del drain. scripts/drain-node.ps1 cordonó y drenó
+gke-comicrent-gke-p6-default-pool-0d7bb2ca-bzqn. Los pods desalojados se
+reprogramaron en los nodos restantes; /health respondió HTTP 200 antes y
+después. El script descordonó el nodo y kubectl get nodes lo mostró Ready.
+El PDB volvió a informar 3/3 saludables.
 
-Resultado del comando: el nodo fue cordonado, los pods api-gateway fueron evacuados y el nodo fue des-cordonado.
-HTTP /health después del drenaje: 200
-
-PDB del gateway:
-NAME                                 MIN AVAILABLE   MAX UNAVAILABLE   ALLOWED DISRUPTIONS   AGE
-comicrent-p9-workloads-api-gateway   1               N/A               0                     86m
-
-Pods api-gateway después:
-NAME                                             READY   STATUS    RESTARTS   AGE     IP             NODE                                              NOMINATED NODE   READINESS GATES
-comicrent-api-gateway-rollout-5f59cb84b8-98gm5   1/1     Running   0          86m     10.100.1.20    gke-comicrent-gke-p6-default-pool-400040d8-l6sz   <none>           <none>
-comicrent-api-gateway-rollout-5f59cb84b8-zbj54   1/1     Running   0          3m34s   10.100.0.109   gke-comicrent-gke-p6-default-pool-400040d8-k79h   <none>           <none>
-comicrent-api-gateway-rollout-5f59cb84b8-zpcnw   1/1     Running   0          86m     10.100.2.15    gke-comicrent-gke-p6-default-pool-400040d8-cs3p   <none>           <none>
-
-Nodos después:
-NAME                                              STATUS   ROLES    AGE   VERSION               INTERNAL-IP   EXTERNAL-IP     OS-IMAGE                             KERNEL-VERSION   CONTAINER-RUNTIME
-gke-comicrent-gke-p6-default-pool-400040d8-cs3p   Ready    <none>   90m   v1.35.8-gke.1036000   10.128.0.30   34.71.250.153   Container-Optimized OS from Google   6.12.94+         containerd://2.2.7
-gke-comicrent-gke-p6-default-pool-400040d8-k79h   Ready    <none>   90m   v1.35.8-gke.1036000   10.128.0.28   34.61.255.238   Container-Optimized OS from Google   6.12.94+         containerd://2.2.7
-gke-comicrent-gke-p6-default-pool-400040d8-l6sz   Ready    <none>   90m   v1.35.8-gke.1036000   10.128.0.29   34.61.142.87    Container-Optimized OS from Google   6.12.94+         containerd://2.2.7
-
+Captura: capturas/terminal-p9-node-drain-pdb.png
+Transcripción de comandos: ../salidas.txt

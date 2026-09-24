@@ -1,0 +1,198 @@
+PS C:\Users\Vela\Desktop\SA\LAB\PRACTICAS> kubectl config current-context
+$root = kubectl get application comicrent-p9 -n argocd -o json | ConvertFrom-Json
+"Raíz: $($root.metadata.name) / namespace $($root.metadata.namespace)"
+"Repositorio: $($root.spec.source.repoURL)"
+"Ruta GitOps: $($root.spec.source.path)"
+"Estado: $($root.status.sync.status) / $($root.status.health.status)"
+"Applications hijas: $(($root.status.resources | Where-Object { $_.kind -eq 'Application' } | ForEach-Object { $_.name }) -join ', ')"
+kubectl get applications -n argocd -o wide
+gke_comicrent-p6-2026_us-central1-a_comicrent-gke-p6
+Raíz: comicrent-p9 / namespace argocd
+Repositorio: https://github.com/DavidVelasquez77/Practicas-SA-B-202307705-gitops.git
+Ruta GitOps: apps/p9
+Estado: Synced / Healthy
+Applications hijas: argo-rollouts, cluster-governance, comicrent-p9-workloads, kyverno, kyverno-policies, sealed-secrets, velero
+NAME                     SYNC STATUS   HEALTH STATUS   REVISION                                   PROJECT
+argo-rollouts            Synced        Healthy         2.43.1                                     comicrent-p9
+cluster-governance       Synced        Healthy         7f2b3f1c492768258fd74644321417b6c9b8cecc   comicrent-p9
+comicrent-p9             Synced        Healthy         7f2b3f1c492768258fd74644321417b6c9b8cecc   comicrent-p9
+comicrent-p9-workloads   Synced        Healthy         7f2b3f1c492768258fd74644321417b6c9b8cecc   comicrent-p9
+kyverno                  Synced        Healthy         3.9.1                                      comicrent-p9
+kyverno-policies         Synced        Healthy         7f2b3f1c492768258fd74644321417b6c9b8cecc   comicrent-p9
+sealed-secrets           Synced        Healthy         2.5.19                                     comicrent-p9
+velero                   Synced        Healthy         8.0.0                                      comicrent-p9
+
+
+
+PS C:\Users\Vela\Desktop\SA\LAB\PRACTICAS> terraform -chdir=P9/terraform/seed state list
+terraform -chdir=P9/terraform/app state list
+google_service_account.velero
+google_service_account_iam_member.velero_token_creator
+google_service_account_iam_member.velero_workload_identity
+google_storage_bucket.terraform_state
+google_storage_bucket.velero
+google_storage_bucket_iam_member.velero
+data.google_client_config.current
+data.terraform_remote_state.seed
+google_container_cluster.comicrent
+google_container_node_pool.primary
+google_project_service.container
+helm_release.argocd
+helm_release.argocd_root
+kubernetes_namespace_v1.argocd
+kubernetes_secret_v1.sealed_secrets_key
+
+PS C:\Users\Vela\Desktop\SA\LAB\PRACTICAS> kubectl get schedule comicrent-p9-daily -n velero -o custom-columns=NAME:.metadata.name,CRON:.spec.schedule,PAUSED:.spec.paused,TTL:.spec.template.ttl,INCLUDED-NAMESPACES:.spec.template.includedNamespaces
+kubectl get backupstoragelocation default -n velero -o custom-columns=NAME:.metadata.name,PHASE:.status.phase,BUCKET:.spec.objectStorage.bucket
+kubectl get backups -n velero --sort-by=.metadata.creationTimestamp
+NAME                 CRON          PAUSED   TTL    INCLUDED-NAMESPACES
+comicrent-p9-daily   0 */6 * * *   <none>   168h   [sa-p9 argocd argo-rollouts kube-system]
+NAME      PHASE       BUCKET
+default   Available   comicrent-p9-velero-2026-202307705
+NAME                                AGE
+p9-postgres-data2                   7h26m
+comicrent-p9-daily-20260922060001   7h26m
+p9-before-disaster                  7h26m
+p9-cluster-destroy-drill-20260922   7h26m
+p9-functional-rebuild-v2            7h26m
+p9-functional-rebuild               7h26m
+p9-post-rebuild                     7h26m
+p9-postgres-data                    7h26m
+comicrent-p9-daily-20260923000013   3h49m
+
+PS C:\Users\Vela\Desktop\SA\LAB\PRACTICAS> kubectl get secret sealed-secrets-key-p8 -n kube-system -o custom-columns=NAME:.metadata.name,TYPE:.type,CREATED:.metadata.creationTimestamp
+kubectl get sealedsecrets -n sa-p9 -o custom-columns=NAME:.metadata.name,SYNCED:.status.conditions[0].status
+kubectl get secrets comicrent-auth-secret comicrent-postgresql-secret comicrent-rabbitmq-secret -n sa-p9 -o custom-columns=NAME:.metadata.name,TYPE:.type
+NAME                    TYPE                CREATED
+sealed-secrets-key-p8   kubernetes.io/tls   2026-09-22T20:21:22Z
+NAME                          SYNCED
+comicrent-auth-secret         True
+comicrent-postgresql-secret   True
+comicrent-rabbitmq-secret     True
+NAME                          TYPE
+comicrent-auth-secret         Opaque
+comicrent-postgresql-secret   Opaque
+comicrent-rabbitmq-secret     Opaque
+
+
+PS C:\Users\Vela\Desktop\SA\LAB\PRACTICAS> $completionRaw = kubectl get backup $backup -n velero -o jsonpath='{.status.completionTimestamp}'
+$backupCompleted = [DateTimeOffset]::Parse($completionRaw, [Globalization.CultureInfo]::InvariantCulture)
+"Backup $backup : $($backupObject.status.phase), completado UTC $($backupCompleted.ToString('o'))"
+kubectl get backup $backup -n velero -o custom-columns=NAME:.metadata.name,PHASE:.status.phase,ERRORS:.status.errors,WARNINGS:.status.warnings
+Backup p9-data-proof-20260922-215517 : Completed, completado UTC 2026-09-23T03:58:42.0000000+00:00
+NAME                            PHASE       ERRORS   WARNINGS
+p9-data-proof-20260922-215517   Completed   <none>   <none>
+
+
+PS C:\Users\Vela\Desktop\SA\LAB\PRACTICAS> $postBackupMarker = "P9-AFTER-BACKUP-$run"
+$sql = "INSERT INTO p9_recovery_probe(id, marker) VALUES (2, '$postBackupMarker') ON CONFLICT (id) DO UPDATE SET marker=EXCLUDED.marker, created_at=now();"
+kubectl exec -n sa-p9 comicrent-postgresql-0 -- env "PGPASSWORD=$pgPassword" psql -U comicrent_user -d auth_db -v ON_ERROR_STOP=1 -c $sql
+$sql = 'DELETE FROM p9_recovery_probe;'
+kubectl exec -n sa-p9 comicrent-postgresql-0 -- env "PGPASSWORD=$pgPassword" psql -U comicrent_user -d auth_db -v ON_ERROR_STOP=1 -c $sql
+$lossTime = [DateTimeOffset]::UtcNow
+$rpo = $lossTime - $backupCompleted
+"Filas en origen tras la pérdida simulada:"
+kubectl exec -n sa-p9 comicrent-postgresql-0 -- env "PGPASSWORD=$pgPassword" psql -U comicrent_user -d auth_db -Atc 'SELECT count(*) FROM p9_recovery_probe;'
+"Pérdida simulada UTC: $($lossTime.ToString('o'))"
+"Último backup completado UTC: $($backupCompleted.ToString('o'))"
+"RPO medido (edad del último backup al incidente): $($rpo.ToString('c'))"
+INSERT 0 1
+DELETE 2
+Filas en origen tras la pérdida simulada:
+0
+Pérdida simulada UTC: 2026-09-23T04:06:42.9834611+00:00
+Último backup completado UTC: 2026-09-23T03:58:42.0000000+00:00
+RPO medido (edad del último backup al incidente): 00:08:00.9834611
+
+
+PS C:\Users\Vela\Desktop\SA\LAB\PRACTICAS>
+PS C:\Users\Vela\Desktop\SA\LAB\PRACTICAS> $restore = 'p9-data-restore-20260922-235616'
+$recoveryNamespace = 'sa-p9-proof-20260922-235616'
+$startedRaw = kubectl get restore $restore -n velero -o jsonpath='{.status.startTimestamp}'
+$completedRaw = kubectl get restore $restore -n velero -o jsonpath='{.status.completionTimestamp}'
+$startedAt = [DateTimeOffset]::Parse($startedRaw, [Globalization.CultureInfo]::InvariantCulture)
+$completedAt = [DateTimeOffset]::Parse($completedRaw, [Globalization.CultureInfo]::InvariantCulture)
+$lossTime = [DateTimeOffset]::Parse('2026-09-23T04:06:42.9834611+00:00', [Globalization.CultureInfo]::InvariantCulture)
+
+"Estado Velero: $(kubectl get restore $restore -n velero -o jsonpath='{.status.phase}')"
+"Tiempo del restore Velero: $(($completedAt - $startedAt).ToString('c'))"
+"RTO desde la pérdida simulada: $(($completedAt - $lossTime).ToString('c'))"
+
+$encoded = kubectl -n $recoveryNamespace get secret comicrent-postgresql-secret -o jsonpath='{.data.password}'
+$recoveredPassword = [Text.Encoding]::UTF8.GetString([Convert]::FromBase64String($encoded))
+kubectl exec -n $recoveryNamespace comicrent-postgresql-0 -- env "PGPASSWORD=$recoveredPassword" psql -U comicrent_user -d auth_db -Atc 'SELECT id || ''|'' || marker FROM p9_recovery_probe ORDER BY id;'
+kubectl get podvolumerestores -n velero -l "velero.io/restore-name=$restore" -o custom-columns=NAME:.metadata.name,PHASE:.status.phase,BYTES:.status.progress.bytesDone,TOTAL:.status.progress.totalBytes
+Estado Velero: Completed
+Tiempo del restore Velero: 00:00:50
+RTO desde la pérdida simulada: 02:18:18.0165389
+Defaulted container "postgresql" out of: postgresql, restore-wait (init)
+1|P9-BEFORE-BACKUP-20260922-215517
+NAME                                    PHASE       BYTES       TOTAL
+p9-data-restore-20260922-235616-g86zm   Completed   1079552     1079552
+p9-data-restore-20260922-235616-ksgrl   Completed   114401008   114401008
+p9-data-restore-20260922-235616-s9d5c   Completed   32856       32856
+PS C:\Users\Vela\Desktop\SA\LAB\PRACTICAS> pwsh -NoProfile -ExecutionPolicy Bypass -File P9/scripts/seed-recovery-data.ps1 -Marker $marker
+CREATE TABLE
+INSERT 0 1
+Dato sembrado:
+1|P9-BEFORE-BACKUP-20260922-215517
+PS C:\Users\Vela\Desktop\SA\LAB\PRACTICAS> kubectl get pdb comicrent-p9-workloads-api-gateway -n sa-p9 -o custom-columns=NAME:.metadata.name,EXPECTED:.status.expectedPods,HEALTHY:.status.currentHealthy,DESIRED:.status.desiredHealthy,ALLOWED:.status.disruptionsAllowed
+NAME                                 EXPECTED   HEALTHY   DESIRED   ALLOWED
+comicrent-p9-workloads-api-gateway   3          3         1         2
+PS C:\Users\Vela\Desktop\SA\LAB\PRACTICAS> pwsh -NoProfile -ExecutionPolicy Bypass -File P9/scripts/drain-node.ps1 -Namespace sa-p9
+Health antes del drenaje: 200
+Drenando gke-comicrent-gke-p6-default-pool-0d7bb2ca-bzqn; el PDB y las réplicas del gateway deben conservar el servicio.
+node/gke-comicrent-gke-p6-default-pool-0d7bb2ca-bzqn cordoned
+node/gke-comicrent-gke-p6-default-pool-0d7bb2ca-bzqn already cordoned
+evicting pod sa-p9/comicrent-api-gateway-rollout-5f59cb84b8-w75gx
+evicting pod sa-p9/comicrent-api-gateway-rollout-5f59cb84b8-9pkh8
+pod/comicrent-api-gateway-rollout-5f59cb84b8-w75gx evicted
+pod/comicrent-api-gateway-rollout-5f59cb84b8-9pkh8 evicted
+node/gke-comicrent-gke-p6-default-pool-0d7bb2ca-bzqn drained
+NAME                                                      READY   STATUS      RESTARTS      AGE     IP            NODE                                              NOMINATED NODE   READINESS GATES
+comicrent-api-gateway-rollout-5f59cb84b8-bgqnz            1/1     Running     0             32s     10.68.1.73    gke-comicrent-gke-p6-default-pool-0d7bb2ca-rgf6   <none>           <none>
+comicrent-api-gateway-rollout-5f59cb84b8-hwxhz            1/1     Running     0             9h      10.68.2.30    gke-comicrent-gke-p6-default-pool-0d7bb2ca-tr32   <none>           <none>
+comicrent-api-gateway-rollout-5f59cb84b8-mdvx8            1/1     Running     0             32s     10.68.2.100   gke-comicrent-gke-p6-default-pool-0d7bb2ca-tr32   <none>           <none>
+comicrent-cron-summary-29835740-9znwd                     0/1     Completed   0             20m     10.68.1.68    gke-comicrent-gke-p6-default-pool-0d7bb2ca-rgf6   <none>           <none>
+comicrent-cron-summary-29835750-9wqqx                     0/1     Completed   0             10m     10.68.1.70    gke-comicrent-gke-p6-default-pool-0d7bb2ca-rgf6   <none>           <none>
+comicrent-cron-summary-29835760-pddp4                     0/1     Completed   0             38s     10.68.1.72    gke-comicrent-gke-p6-default-pool-0d7bb2ca-rgf6   <none>           <none>
+comicrent-cron-tick-29835144-d6pxh                        0/1     Error       0             10h     10.68.0.17    gke-comicrent-gke-p6-default-pool-0d7bb2ca-bzqn   <none>           <none>
+comicrent-cron-tick-29835144-ffs9k                        0/1     Error       0             10h     10.68.0.16    gke-comicrent-gke-p6-default-pool-0d7bb2ca-bzqn   <none>           <none>
+comicrent-cron-tick-29835144-lc66g                        0/1     Error       0             10h     10.68.0.18    gke-comicrent-gke-p6-default-pool-0d7bb2ca-bzqn   <none>           <none>
+comicrent-cron-tick-29835146-28bvn                        0/1     Error       0             10h     10.68.0.22    gke-comicrent-gke-p6-default-pool-0d7bb2ca-bzqn   <none>           <none>
+comicrent-cron-tick-29835146-5bxv5                        0/1     Error       0             10h     10.68.0.20    gke-comicrent-gke-p6-default-pool-0d7bb2ca-bzqn   <none>           <none>
+comicrent-cron-tick-29835146-5g4nk                        0/1     Error       0             10h     10.68.0.19    gke-comicrent-gke-p6-default-pool-0d7bb2ca-bzqn   <none>           <none>
+comicrent-cron-tick-29835148-fw24f                        0/1     Error       0             10h     10.68.0.23    gke-comicrent-gke-p6-default-pool-0d7bb2ca-bzqn   <none>           <none>
+comicrent-cron-tick-29835148-l4xrf                        0/1     Error       0             10h     10.68.0.25    gke-comicrent-gke-p6-default-pool-0d7bb2ca-bzqn   <none>           <none>
+comicrent-cron-tick-29835148-nxs2m                        0/1     Error       0             10h     10.68.0.24    gke-comicrent-gke-p6-default-pool-0d7bb2ca-bzqn   <none>           <none>
+comicrent-cron-tick-29835756-5xmfw                        0/1     Completed   0             4m38s   10.68.2.97    gke-comicrent-gke-p6-default-pool-0d7bb2ca-tr32   <none>           <none>
+comicrent-cron-tick-29835758-987lx                        0/1     Completed   0             2m38s   10.68.2.98    gke-comicrent-gke-p6-default-pool-0d7bb2ca-tr32   <none>           <none>
+comicrent-cron-tick-29835760-v6qd2                        0/1     Completed   0             38s     10.68.2.99    gke-comicrent-gke-p6-default-pool-0d7bb2ca-tr32   <none>           <none>
+comicrent-p9-workloads-auth-service-b8db9798d-45l2q       1/1     Running     0             10h     10.68.2.24    gke-comicrent-gke-p6-default-pool-0d7bb2ca-tr32   <none>           <none>
+comicrent-p9-workloads-auth-service-b8db9798d-92xcg       1/1     Running     0             10h     10.68.1.22    gke-comicrent-gke-p6-default-pool-0d7bb2ca-rgf6   <none>           <none>
+comicrent-p9-workloads-comics-service-58f9fdc76b-r7ql4    1/1     Running     0             10h     10.68.2.25    gke-comicrent-gke-p6-default-pool-0d7bb2ca-tr32   <none>           <none>
+comicrent-p9-workloads-comics-service-58f9fdc76b-tkqcb    1/1     Running     0             10h     10.68.0.30    gke-comicrent-gke-p6-default-pool-0d7bb2ca-bzqn   <none>           <none>
+comicrent-p9-workloads-copies-consumer-6f57689d74-gsbml   1/1     Running     6 (10h ago)   10h     10.68.1.14    gke-comicrent-gke-p6-default-pool-0d7bb2ca-rgf6   <none>           <none>
+comicrent-p9-workloads-copies-consumer-6f57689d74-vvwrh   1/1     Running     6 (10h ago)   10h     10.68.0.13    gke-comicrent-gke-p6-default-pool-0d7bb2ca-bzqn   <none>           <none>
+comicrent-p9-workloads-copies-service-859f8f9cb8-ck9b7    1/1     Running     6 (10h ago)   10h     10.68.2.15    gke-comicrent-gke-p6-default-pool-0d7bb2ca-tr32   <none>           <none>
+comicrent-p9-workloads-copies-service-859f8f9cb8-w629z    1/1     Running     6 (10h ago)   10h     10.68.1.15    gke-comicrent-gke-p6-default-pool-0d7bb2ca-rgf6   <none>           <none>
+comicrent-p9-workloads-rentals-service-75d6c775-hf48n     1/1     Running     6 (10h ago)   10h     10.68.2.18    gke-comicrent-gke-p6-default-pool-0d7bb2ca-tr32   <none>           <none>
+comicrent-p9-workloads-rentals-service-75d6c775-twkvb     1/1     Running     6 (10h ago)   10h     10.68.0.14    gke-comicrent-gke-p6-default-pool-0d7bb2ca-bzqn   <none>           <none>
+comicrent-postgresql-0                                    1/1     Running     0             10h     10.68.0.27    gke-comicrent-gke-p6-default-pool-0d7bb2ca-bzqn   <none>           <none>
+comicrent-rabbitmq-0                                      1/1     Running     0             50m     10.68.1.64    gke-comicrent-gke-p6-default-pool-0d7bb2ca-rgf6   <none>           <none>
+comicrent-summary-consumer-75b8d978db-96ffh               1/1     Running     6 (10h ago)   10h     10.68.0.11    gke-comicrent-gke-p6-default-pool-0d7bb2ca-bzqn   <none>           <none>
+node/gke-comicrent-gke-p6-default-pool-0d7bb2ca-bzqn uncordoned
+Health después del drenaje: 200
+PS C:\Users\Vela\Desktop\SA\LAB\PRACTICAS> kubectl get nodes
+kubectl get pods -n sa-p9 -l app.kubernetes.io/name=api-gateway -o wide
+kubectl get pdb comicrent-p9-workloads-api-gateway -n sa-p9 -o custom-columns=EXPECTED:.status.expectedPods,HEALTHY:.status.currentHealthy,DESIRED:.status.desiredHealthy,ALLOWED:.status.disruptionsAllowed
+NAME                                              STATUS   ROLES    AGE   VERSION
+gke-comicrent-gke-p6-default-pool-0d7bb2ca-bzqn   Ready    <none>   10h   v1.35.8-gke.1036000
+gke-comicrent-gke-p6-default-pool-0d7bb2ca-rgf6   Ready    <none>   10h   v1.35.8-gke.1036000
+gke-comicrent-gke-p6-default-pool-0d7bb2ca-tr32   Ready    <none>   10h   v1.35.8-gke.1036000
+NAME                                             READY   STATUS    RESTARTS   AGE   IP            NODE                                              NOMINATED NODE   READINESS GATES
+comicrent-api-gateway-rollout-5f59cb84b8-bgqnz   1/1     Running   0          75s   10.68.1.73    gke-comicrent-gke-p6-default-pool-0d7bb2ca-rgf6   <none>           <none>
+comicrent-api-gateway-rollout-5f59cb84b8-hwxhz   1/1     Running   0          9h    10.68.2.30    gke-comicrent-gke-p6-default-pool-0d7bb2ca-tr32   <none>           <none>
+comicrent-api-gateway-rollout-5f59cb84b8-mdvx8   1/1     Running   0          75s   10.68.2.100   gke-comicrent-gke-p6-default-pool-0d7bb2ca-tr32   <none>           <none>
+EXPECTED   HEALTHY   DESIRED   ALLOWED
+3          3         1         2

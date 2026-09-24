@@ -1,9 +1,4 @@
 terraform {
-  backend "gcs" {
-    bucket = "comicrent-p9-tf-2026-202307705"
-    prefix = "comicrent-platform"
-  }
-
   required_version = ">= 1.6.0"
   required_providers {
     kubernetes = {
@@ -152,17 +147,6 @@ resource "kubernetes_namespace_v1" "application" {
   }
 }
 
-resource "kubernetes_namespace_v1" "application_p9" {
-  metadata {
-    name   = "sa-p9"
-    labels = { "app.kubernetes.io/part-of" = "comicrent-p9" }
-  }
-
-  lifecycle {
-    ignore_changes = [metadata[0].labels, metadata[0].annotations]
-  }
-}
-
 resource "kubernetes_namespace_v1" "argo_rollouts" {
   metadata {
     name   = "argo-rollouts"
@@ -293,21 +277,6 @@ resource "helm_release" "platform_bootstrap" {
   take_ownership             = true
   timeout                    = 600
 
-  values = [yamlencode({
-    p9 = {
-      enabled = true
-      gitops = {
-        repoURL        = "https://github.com/DavidVelasquez77/Practicas-SA-B-202307705-gitops.git"
-        targetRevision = "p9-continuidad-operativa"
-        path           = "apps/p9"
-      }
-      application = {
-        name      = "comicrent-p9"
-        namespace = "sa-p9"
-      }
-    }
-  })]
-
   depends_on = [
     helm_release.argocd,
     helm_release.argo_rollouts,
@@ -315,9 +284,6 @@ resource "helm_release" "platform_bootstrap" {
     helm_release.sealed_secrets,
     kubernetes_resource_quota_v1.application,
     kubernetes_limit_range_v1.application,
-    kubernetes_namespace_v1.application_p9,
-    kubernetes_resource_quota_v1.application_p9,
-    kubernetes_limit_range_v1.application_p9,
   ]
 }
 
@@ -378,173 +344,6 @@ resource "kubernetes_limit_range_v1" "application" {
   }
 }
 
-resource "kubernetes_resource_quota_v1" "application_p9" {
-  metadata {
-    name      = "comicrent-p9-quota"
-    namespace = kubernetes_namespace_v1.application_p9.metadata[0].name
-  }
-  spec {
-    hard = {
-      "requests.cpu"     = "4"
-      "requests.memory"  = "6Gi"
-      "limits.cpu"       = "8"
-      "limits.memory"    = "12Gi"
-      pods               = "30"
-      "requests.storage" = "10Gi"
-    }
-  }
-  lifecycle {
-    ignore_changes = [metadata[0].labels, metadata[0].annotations]
-  }
-}
-
-resource "kubernetes_limit_range_v1" "application_p9" {
-  metadata {
-    name      = "comicrent-p9-limits"
-    namespace = kubernetes_namespace_v1.application_p9.metadata[0].name
-  }
-  spec {
-    limit {
-      type            = "Container"
-      default         = { cpu = "500m", memory = "512Mi" }
-      default_request = { cpu = "50m", memory = "64Mi" }
-      min             = { cpu = "10m", memory = "32Mi" }
-      max             = { cpu = "1", memory = "1Gi" }
-    }
-  }
-  lifecycle {
-    ignore_changes = [metadata[0].labels, metadata[0].annotations]
-  }
-}
-
-# P9: backups are stored outside the cluster and accessed with Workload Identity.
-resource "google_storage_bucket" "velero" {
-  name                        = "comicrent-p9-velero-2026-202307705"
-  project                     = var.project_id
-  location                    = "US-CENTRAL1"
-  uniform_bucket_level_access = true
-  force_destroy               = false
-
-  versioning { enabled = true }
-
-  lifecycle_rule {
-    condition { age = 30 }
-    action { type = "Delete" }
-  }
-}
-
-resource "google_service_account" "velero" {
-  account_id   = "velero-p9"
-  display_name = "Velero P9 backup access"
-  project      = var.project_id
-}
-
-resource "google_storage_bucket_iam_member" "velero" {
-  bucket = google_storage_bucket.velero.name
-  role   = "roles/storage.objectAdmin"
-  member = "serviceAccount:${google_service_account.velero.email}"
-}
-
-resource "google_service_account_iam_member" "velero_workload_identity" {
-  service_account_id = google_service_account.velero.name
-  role               = "roles/iam.workloadIdentityUser"
-  member             = "serviceAccount:${var.project_id}.svc.id.goog[velero/velero]"
-}
-
-resource "google_service_account_iam_member" "velero_token_creator" {
-  service_account_id = google_service_account.velero.name
-  role               = "roles/iam.serviceAccountTokenCreator"
-  member             = "serviceAccount:${google_service_account.velero.email}"
-}
-
-resource "kubernetes_namespace_v1" "velero" {
-  metadata {
-    name = "velero"
-    labels = {
-      "pod-security.kubernetes.io/enforce" = "privileged"
-      "pod-security.kubernetes.io/audit"   = "privileged"
-      "pod-security.kubernetes.io/warn"    = "privileged"
-    }
-  }
-}
-
-resource "kubernetes_service_account_v1" "velero" {
-  metadata {
-    name      = "velero"
-    namespace = kubernetes_namespace_v1.velero.metadata[0].name
-    annotations = {
-      "iam.gke.io/gcp-service-account" = google_service_account.velero.email
-    }
-  }
-  depends_on = [google_service_account_iam_member.velero_workload_identity]
-}
-
-resource "helm_release" "velero" {
-  name       = "velero"
-  namespace  = kubernetes_namespace_v1.velero.metadata[0].name
-  repository = "https://vmware-tanzu.github.io/helm-charts"
-  chart      = "velero"
-  version    = "8.0.0"
-  atomic     = true
-  timeout    = 900
-
-  values = [yamlencode({
-    serviceAccount = {
-      server = {
-        create = false
-        name   = kubernetes_service_account_v1.velero.metadata[0].name
-      }
-    }
-    credentials = { useSecret = false }
-    initContainers = [{
-      name         = "velero-plugin-for-gcp"
-      image        = "velero/velero-plugin-for-gcp:v1.10.0"
-      volumeMounts = [{ mountPath = "/target", name = "plugins" }]
-    }]
-    configuration = {
-      backupStorageLocation = [{
-        name       = "default"
-        provider   = "gcp"
-        bucket     = google_storage_bucket.velero.name
-        default    = true
-        accessMode = "ReadWrite"
-        config     = { serviceAccount = google_service_account.velero.email }
-      }]
-      defaultBackupStorageLocation = "default"
-      defaultBackupTTL             = "168h"
-      features                     = "EnableCSI"
-    }
-    snapshotsEnabled         = false
-    deployNodeAgent          = true
-    defaultVolumesToFsBackup = true
-    upgradeCRDs              = false
-    extraObjects = [{
-      apiVersion = "velero.io/v1"
-      kind       = "Schedule"
-      metadata = {
-        name      = "comicrent-p9-daily"
-        namespace = "velero"
-      }
-      spec = {
-        schedule = "0 */6 * * *"
-        template = {
-          ttl                      = "168h"
-          includedNamespaces       = ["sa-p8", "sa-p9", "argocd", "argo-rollouts", "kube-system"]
-          includeClusterResources  = true
-          defaultVolumesToFsBackup = true
-          storageLocation          = "default"
-        }
-      }
-    }]
-  })]
-
-  depends_on = [
-    kubernetes_service_account_v1.velero,
-    google_storage_bucket_iam_member.velero,
-    google_service_account_iam_member.velero_token_creator,
-  ]
-}
-
 resource "kubernetes_role_v1" "rollout_reader" {
   metadata {
     name      = "rollout-reader"
@@ -600,5 +399,3 @@ resource "kubernetes_cluster_role_binding_v1" "argocd_application_reader" {
     namespace = kubernetes_namespace_v1.argocd.metadata[0].name
   }
 }
-
-

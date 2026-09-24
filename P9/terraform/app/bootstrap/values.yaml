@@ -1,6 +1,6 @@
 gitops:
   repoURL: https://github.com/DavidVelasquez77/Practicas-SA-B-202307705-gitops.git
-  targetRevision: p9-continuidad-operativa
+  targetRevision: main
   path: apps/p9
 seed:
   project: comicrent-p6-2026

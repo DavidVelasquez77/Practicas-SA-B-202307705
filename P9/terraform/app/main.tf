@@ -26,6 +26,15 @@ data "terraform_remote_state" "seed" {
   }
 }
 
+# La llave vive en Secret Manager (estado seed); Terraform app no depende de
+# que el operador tenga una copia local en el equipo que ejecuta el bootstrap.
+data "google_secret_manager_secret_version" "sealed_secrets_cert" {
+  secret = data.terraform_remote_state.seed.outputs.sealed_secrets_cert_secret
+}
+data "google_secret_manager_secret_version" "sealed_secrets_key" {
+  secret = data.terraform_remote_state.seed.outputs.sealed_secrets_key_secret
+}
+
 resource "google_project_service" "container" {
   project            = var.project_id
   service            = "container.googleapis.com"
@@ -99,7 +108,8 @@ resource "kubernetes_namespace_v1" "argocd" {
   depends_on = [google_container_node_pool.primary]
 }
 
-# La clave persistente se suministra desde una ruta protegida fuera de Git.
+# La fuente persistente es Secret Manager. El recurso Kubernetes Secret conserva
+# su contenido sensible en el estado remoto GCS de app, que debe tener IAM limitado.
 resource "kubernetes_secret_v1" "sealed_secrets_key" {
   metadata {
     name      = "sealed-secrets-key-p8"
@@ -108,8 +118,8 @@ resource "kubernetes_secret_v1" "sealed_secrets_key" {
   }
   type = "kubernetes.io/tls"
   data = {
-    "tls.crt" = file(pathexpand(var.sealed_secrets_cert_path))
-    "tls.key" = file(pathexpand(var.sealed_secrets_key_path))
+    "tls.crt" = data.google_secret_manager_secret_version.sealed_secrets_cert.secret_data
+    "tls.key" = data.google_secret_manager_secret_version.sealed_secrets_key.secret_data
   }
   depends_on = [google_container_node_pool.primary]
 }

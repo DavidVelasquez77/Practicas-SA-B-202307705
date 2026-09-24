@@ -1,0 +1,43 @@
+**********************
+Inicio de transcripción de PowerShell
+Hora de inicio: 20260923171138
+Nombre de usuario: Daito\Vela
+Usuario de RunAs: Daito\Vela
+Nombre de configuración:
+Máquina: DAITO (Microsoft Windows NT 10.0.26200.0)
+Aplicación host: C:\Program Files\PowerShell\7\pwsh.dll -NoProfile -ExecutionPolicy Bypass -File P9/scripts/rebuild-dr.ps1 -MasterAuthorizedCidr 200.119.176.251/32 -BackupName p9-dr-20260923-170945 -DestroyApp
+Id. de proceso: 17964
+PSVersion: 7.6.6
+PSEdition: Core
+GitCommitId: 7.6.6
+OS: Microsoft Windows 10.0.26200
+Platform: Win32NT
+PSCompatibleVersions: 1.0, 2.0, 3.0, 4.0, 5.0, 5.1, 6.0, 7.0
+PSRemotingProtocolVersion: 2.4
+SerializationVersion: 1.1.0.1
+WSManStackVersion: 3.0
+**********************
+Inicio RTO UTC: 2026-09-23T23:11:38.4371154+00:00
+Backup validado: p9-dr-20260923-170945; destino de restauración: sa-p9-dr-20260923-171129
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Dato recuperado y validado: 1|P9-BEFORE-BACKUP-20260923-170945
+Fin RTO UTC: 2026-09-23T23:45:39.5781529+00:00
+RTO medido (destroy, bootstrap y recuperación del marcador): 00:34:01.1410375
+Backup: p9-dr-20260923-170945; Restore: p9-dr-restore-20260923-171129; Namespace de validación: sa-p9-dr-20260923-171129
+**********************
+Fin de transcripción de PowerShell
+Hora de finalización: 20260923174539
+**********************

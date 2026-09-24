@@ -45,20 +45,11 @@ variable "state_bucket" {
   type    = string
   default = "comicrent-p9-tf-2026-202307705"
 }
-variable "sealed_secrets_cert_path" {
-  type    = string
-  default = "~/.comicrent/p8-sealed-secrets/tls.crt"
-}
-variable "sealed_secrets_key_path" {
-  type      = string
-  sensitive = true
-  default   = "~/.comicrent/p8-sealed-secrets/tls.key"
-}
 variable "gitops_repo" {
   type    = string
   default = "https://github.com/DavidVelasquez77/Practicas-SA-B-202307705-gitops.git"
 }
 variable "gitops_revision" {
   type    = string
-  default = "p9-continuidad-operativa"
+  default = "main"
 }

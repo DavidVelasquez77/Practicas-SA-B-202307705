@@ -22,3 +22,7 @@ variable "backup_retention_days" {
   type    = number
   default = 30
 }
+variable "secret_accessor_member" {
+  description = "Principal autorizado para recuperar la llave de Sealed Secrets durante una reconstrucción (por ejemplo user:operador@dominio)."
+  type        = string
+}

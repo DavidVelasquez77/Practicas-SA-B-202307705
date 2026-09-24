@@ -3,6 +3,8 @@ param(
   [string]$ProjectId = "comicrent-p6-2026",
   [string]$ClusterName = "comicrent-gke-p6",
   [string]$Zone = "us-central1-a",
+  [string]$SealedSecretsCertPath = (Join-Path $HOME ".comicrent/p8-sealed-secrets/tls.crt"),
+  [string]$SealedSecretsKeyPath = (Join-Path $HOME ".comicrent/p8-sealed-secrets/tls.key"),
   [Parameter(Mandatory = $true)]
   [ValidatePattern('^(?!0\.0\.0\.0/0$)(\d{1,3}\.){3}\d{1,3}/\d{1,2}$')]
   [string]$MasterAuthorizedCidr,
@@ -40,6 +42,25 @@ function Get-TerraformState([string]$Directory) {
 function Invoke-Step([string]$Label, [scriptblock]$Command) {
   Write-Host "`n[$Label]" -ForegroundColor Cyan
   & $Command
+}
+
+function Ensure-SecretManagerVersion([string]$SecretName, [string]$SourcePath) {
+  $versions = @()
+  $listed = $false
+  for ($attempt = 1; $attempt -le 12; $attempt++) {
+    $versions = @(& gcloud secrets versions list $SecretName --project $ProjectId --format="value(name)" 2>$null)
+    if ($LASTEXITCODE -eq 0) { $listed = $true; break }
+    Start-Sleep -Seconds 5
+  }
+  if (-not $listed) { throw "No se pudieron listar las versiones de Secret Manager para $SecretName; revise la propagación de IAM y el acceso del operador." }
+  if (@($versions).Count -gt 0) { return }
+
+  if (-not (Test-Path -LiteralPath $SourcePath -PathType Leaf)) {
+    throw "Secret Manager aún no tiene una versión de $SecretName y falta el archivo inicial protegido: $SourcePath"
+  }
+  Write-Host "Cargando la versión inicial de $SecretName desde el archivo protegido local (el contenido no se muestra)." -ForegroundColor Yellow
+  & gcloud secrets versions add $SecretName --project $ProjectId --data-file=$SourcePath
+  if ($LASTEXITCODE -ne 0) { throw "No se pudo cargar la versión inicial de $SecretName." }
 }
 
 function Import-ExistingClusterIfNeeded {
@@ -92,7 +113,13 @@ if ([string]::IsNullOrWhiteSpace($MasterAuthorizedCidr)) {
   throw "Indique -MasterAuthorizedCidr con la IP pública autorizada en formato CIDR (por ejemplo, 203.0.113.10/32)."
 }
 
-Invoke-Step "Cuenta y proyecto" { & gcloud config set project $ProjectId; if ($LASTEXITCODE -ne 0) { throw "No se pudo seleccionar el proyecto GCP." } }
+Invoke-Step "Cuenta y proyecto" {
+  & gcloud config set project $ProjectId
+  if ($LASTEXITCODE -ne 0) { throw "No se pudo seleccionar el proyecto GCP." }
+  $script:gcloudAccount = (& gcloud config get account).Trim()
+  if ($LASTEXITCODE -ne 0 -or [string]::IsNullOrWhiteSpace($script:gcloudAccount)) { throw "No hay una cuenta gcloud activa para autorizar la llave de recuperación." }
+  $script:secretAccessorMember = if ($script:gcloudAccount.EndsWith(".gserviceaccount.com")) { "serviceAccount:$script:gcloudAccount" } else { "user:$script:gcloudAccount" }
+}
 Invoke-Step "Seed: inicializar backend remoto" { Invoke-Terraform $seedDir @("init", "-input=false", "-reconfigure") }
 
 $seedResources = Get-TerraformState $seedDir
@@ -105,7 +132,13 @@ if ($seedResources -notcontains "google_storage_bucket.velero") {
 
 Invoke-Step "Seed: validar" { Invoke-Terraform $seedDir @("validate") }
 if ($Apply) {
-  Invoke-Step "Seed: aplicar recursos persistentes" { Invoke-Terraform $seedDir @("apply", "-input=false", "-auto-approve") }
+  Invoke-Step "Seed: aplicar recursos persistentes y custodia de secretos" {
+    Invoke-Terraform $seedDir @("apply", "-input=false", "-auto-approve", "-var=secret_accessor_member=$secretAccessorMember")
+  }
+  Invoke-Step "Secret Manager: asegurar versiones de la llave Sealed Secrets" {
+    Ensure-SecretManagerVersion "comicrent-p9-sealed-secrets-tls-crt" $SealedSecretsCertPath
+    Ensure-SecretManagerVersion "comicrent-p9-sealed-secrets-tls-key" $SealedSecretsKeyPath
+  }
 }
 else {
   Invoke-Step "Seed: revisar plan sin aplicar" { Invoke-Terraform $seedDir @("plan", "-input=false") }

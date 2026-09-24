@@ -1,0 +1,56 @@
+Simulacro completo de reconstrucción — P9
+=========================================
+
+Ejecución final: P9/scripts/rebuild-dr.ps1
+Transcripción completa: p9-reconstruction-20260923-175941.txt
+Backup validado: p9-final-dr-20260923-175716
+Restore: p9-dr-restore-20260923-175941
+Namespace aislado: sa-p9-dr-20260923-175941
+Marcador recuperado: P9-BEFORE-BACKUP-20260923-170945
+
+Alcance
+-------
+Terraform destruyó y reconstruyó los recursos de P9/terraform/app: clúster GKE,
+node pool y bootstrap ArgoCD. El estado remoto, Terraform seed, bucket de estado,
+bucket externo de Velero y secretos versionados en Secret Manager persistieron.
+ArgoCD reconcilió las aplicaciones desde GitOps. Velero restauró PostgreSQL en
+un namespace aislado; el marcador se validó allí y se promovió a la tabla de
+prueba de auth_db activa.
+
+Marcas y resultado
+------------------
+Backup Completed: 2026-09-23T23:57:51Z (0 errores, 0 advertencias)
+Inicio RTO / destroy: 2026-09-24T00:00:51.5416209Z
+Fin RTO: 2026-09-24T00:32:39.9023391Z
+RTO medido: 00:31:48.3607182 (objetivo: 02:00:00; cumplido)
+RPO al inicio del destroy: 00:03:00.5416209 (objetivo: 06:00:00; cumplido)
+
+Validación final: 3/3 nodos Ready; siete Applications principales Synced/Healthy;
+6 Deployments y 2 StatefulSets disponibles; 2 PVC Bound; siete PDB; Rollout
+Canary Healthy al 100%; tres SealedSecrets sincronizados; llave en Secret
+Manager disponible; cuatro políticas Kyverno Ready; Velero Available y Schedule
+Enabled; /health HTTP 200; marcador recuperado leído en la base activa. Restore
+Completed sin errores ni advertencias; los PodVolumeRestore terminaron.
+
+Finalizers de ArgoCD
+--------------------
+La primera ejecución había requerido retirar manualmente finalizers de Kyverno.
+La versión final del wrapper elimina primero la Application raíz, retira los
+finalizers de las hijas y después destruye el resto de app. En este simulacro,
+ArgoCD y su namespace terminaron sin parche manual; Terraform siguió con GKE.
+Terraform imprimió las advertencias esperadas por usar -target y Helm conservó
+tres CRD de ArgoCD; no bloquearon la reconstrucción. La transcripción conserva
+esas salidas.
+
+Alcance de los datos
+--------------------
+Se recuperó y comprobó la fila de prueba que se había escrito antes del backup.
+La evidencia demuestra la ruta de recuperación de PostgreSQL, no la restauración
+de todos los registros o tablas de negocio.
+
+Ensayo controlado separado
+--------------------------
+Backup p9-data-proof-20260922-215517 completado a 2026-09-23T03:58:42Z;
+pérdida simulada a 2026-09-23T04:06:42.9834611Z; RPO 00:08:00.9834611.
+La fila posterior al backup no se recuperó, como corresponde al punto de
+recuperación. Este resultado es independiente del RPO del simulacro final.

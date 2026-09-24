@@ -1,114 +1,64 @@
-# Práctica 9 — Continuidad operativa de ComicRent
+# Práctica 9 — Continuidad operativa y recuperación ante desastres
 
-Esta entrega evoluciona la plataforma de la Práctica 8 sin cambiar su repositorio GitOps ni su flujo de despliegue progresivo. La reconstrucción completa se realiza con Terraform y, después del bootstrap, ArgoCD vuelve a crear las aplicaciones desde Git. Los datos persistentes se respaldan fuera del clúster con Velero sobre Google Cloud Storage.
+Esta práctica evoluciona la plataforma de la P8 en el mismo repositorio y conserva el repositorio GitOps existente. Se probó la reconstrucción del clúster desde Terraform, la reconciliación de la plataforma mediante ArgoCD y la recuperación de un dato persistente desde un backup Velero. La evidencia y los límites medidos se registran aquí y en INFORME-DR.md.
 
-## Alcance implementado
+## Flujo de bootstrap y recuperación
 
-- **Bootstrap reproducible:** `P9/terraform/seed` conserva el backend, el bucket de Velero y su IAM; `P9/terraform/app` crea únicamente GKE, el node pool, ArgoCD y la Application raíz `comicrent-p9`. Desde esa Application, ArgoCD crea namespaces, cuotas, límites, RBAC, Velero, Argo Rollouts, Kyverno, Sealed Secrets y las aplicaciones desde GitOps.
-- **Estado remoto:** `seed` y `app` usan el backend GCS `comicrent-p9-tf-2026-202307705` con prefijos independientes (`p9/seed` y `p9/app`), versionado y locking por generación del backend.
-- **GitOps acumulativo:** el repositorio GitOps mantiene `apps/p9` como app-of-apps. Sus Applications hijas instalan gobernanza, Velero, Sealed Secrets, Kyverno, Argo Rollouts y después `comicrent-p8-workloads`/`comicrent-p9-workloads`.
-- **Datos persistentes:** PostgreSQL y RabbitMQ usan StatefulSet y PVC (`standard-rwo`) en `sa-p9`. La clave TLS de Sealed Secrets se conserva fuera de Git y se inyecta mediante Terraform durante cada reconstrucción.
-- **Backups externos:** ArgoCD instala Velero mediante un Application GitOps. Velero usa Workload Identity, el bucket `comicrent-p9-velero-2026-202307705`, Kopia/FSB para volúmenes, versionado y una Schedule cada seis horas (`comicrent-p9-daily`).
-- **Resiliencia:** PDB, réplicas, anti-affinity y probes se aplican a los servicios. El gateway conserva servicio durante el drenaje de un nodo.
-- **Despliegue seguro:** se mantienen Argo Rollouts Canary `10% → 25% → 50% → 100%`, AnalysisTemplate, Kyverno, Trivy, SBOM, Cosign y Sealed Secrets de P8.
+Antes del bootstrap, el operador necesita acceso autenticado a GCP y la IP pública autorizada. La llave TLS persistente de Sealed Secrets queda en Google Secret Manager, fuera del clúster; durante la primera inicialización, el bootstrap carga allí la llave desde archivos protegidos locales si todavía no existe una versión. En reconstrucciones posteriores, Terraform la recupera desde Secret Manager. El bootstrap ejecuta Terraform seed y app; ArgoCD instala después el resto desde GitOps. En el simulacro DR, `rebuild-dr.ps1` orquesta la destrucción, el bootstrap y la restauración de PostgreSQL en un namespace aislado; valida el marcador antes de promoverlo a la base activa.
 
-## Flujo de reconstrucción
+[![Diagrama del bootstrap y la reconstrucción ante desastre de ComicRent P9](evidence/Diagrama/DIAGRAMA-RebuildDR-comicrent-p9.png)](evidence/Diagrama/DIAGRAMA-RebuildDR-comicrent-p9.png)
 
-```mermaid
-flowchart LR
-  TF[Terraform\nbackend GCS] --> GKE[GKE + namespaces + RBAC]
-  TF --> TOOLS[ArgoCD · Rollouts · Kyverno\nSealed Secrets · Velero]
-  GIT[GitOps\napps/p9 + charts] --> ROOT[ArgoCD\ncomicrent-p9]
-  ROOT --> CHILD[comicrent-p9-workloads]
-  CHILD --> ROLLOUT[Rollout Canary\n10/25/50/100%]
-  VEL[Velero + GCS\nbackup cada 6 h] --> DATA[PVC PostgreSQL/RabbitMQ]
-  DATA --> RESTORE[Restore estático\nnamespace de recuperación]
-```
+Terraform seed conserva el bucket de estado, el bucket de Velero y las versiones de la llave en Secret Manager. Terraform app administra GKE, el node pool, ArgoCD, la llave TLS recuperada desde Secret Manager y la aplicación raíz comicrent-p9. El recurso Kubernetes Secret también queda guardado en el estado remoto `p9/app`; restringe el acceso IAM a operadores autorizados. ArgoCD crea las aplicaciones restantes desde apps/p9; los workflows de CI no despliegan al clúster. La recuperación de datos es una operación posterior del runbook y no reemplaza el volumen activo.
 
-## Tabla obligatoria 4.1 — Evidencia P9
+## Tabla obligatoria 4.1
 
-| Ítem | Enlace o dato |
+| Ítem | Enlace o dato requerido |
 |---|---|
-| Repositorio de código | [Practicas-SA-B-202307705](https://github.com/DavidVelasquez77/Practicas-SA-B-202307705/tree/p9-continuidad-operativa) |
-| Repositorio GitOps | [Practicas-SA-B-202307705-gitops](https://github.com/DavidVelasquez77/Practicas-SA-B-202307705-gitops/tree/p9-continuidad-operativa) |
-| Bootstrap único | [`P9/scripts/bootstrap.ps1`](scripts/bootstrap.ps1) — ejecutar `pwsh -File P9/scripts/bootstrap.ps1 -Apply` desde la raíz del repositorio |
-| Aplicación raíz en ArgoCD | `comicrent-p9` en namespace `argocd`; Applications hijas de plataforma y cargas P8/P9 |
-| Estado Synced/Healthy | [`evidence/p9-bootstrap.txt`](evidence/p9-bootstrap.txt) |
-| Backend remoto y locking | `gs://comicrent-p9-tf-2026-202307705` con prefijos `p9/seed` y `p9/app`; configuración en [`terraform/seed/main.tf`](terraform/seed/main.tf) y [`terraform/app/main.tf`](terraform/app/main.tf) |
-| Backup externo | [`evidence/p9-backup-restore.txt`](evidence/p9-backup-restore.txt) — `p9-functional-rebuild-v2`, Completed, 0 errores, 0 warnings |
-| Restauración de datos | [`evidence/p9-backup-restore.txt`](evidence/p9-backup-restore.txt) — `p9-evidence-restore-v2`, PVC PostgreSQL y marcador `P9-REAL-DATA-20260922-RERUN` recuperados |
-| Prueba de reconstrucción | [`evidence/p9-bootstrap.txt`](evidence/p9-bootstrap.txt) — GKE RUNNING, tres nodos Ready y aplicaciones reconciliadas |
-| Prueba de fallo de nodo | [`evidence/p9-node-drain.txt`](evidence/p9-node-drain.txt) — drain, PDB, réplicas Ready y HTTP 200 antes/después |
-| Schedule de backup | `comicrent-p9-daily`, `0 */6 * * *`, almacenamiento `default` Available |
-| RTO/RPO | RTO objetivo: ≤ 2 h para reconstruir plataforma y reconciliar aplicaciones. RPO objetivo: ≤ 6 h por la Schedule; se ejecutó además un backup manual antes de la prueba. |
-| Video demostrativo | Agregar URL directa al archivo de video y minutaje cuando se publique. |
+| Repositorio GitOps | [Practicas-SA-B-202307705-gitops](https://github.com/DavidVelasquez77/Practicas-SA-B-202307705-gitops) |
+| Aplicación raíz en ArgoCD | comicrent-p9, namespace argocd; evidencia en [app-of-apps](evidence/capturas/terminal-p9-app-of-apps.png) |
+| Punto de entrada del bootstrap | [P9/scripts/bootstrap.ps1](scripts/bootstrap.ps1); desde la raíz: pwsh -NoProfile -ExecutionPolicy Bypass -File P9/scripts/bootstrap.ps1 -MasterAuthorizedCidr "$cidr" -Apply |
+| Backend remoto de Terraform | GCS gs://comicrent-p9-tf-2026-202307705; prefijos p9/seed y p9/app; [configuración](terraform/seed/main.tf) y [estado](evidence/capturas/terminal-p9-terraform-remote-state.png) |
+| Schedule de Velero | comicrent-p9-daily, 0 */6 * * *, retención 168 h; destino gs://comicrent-p9-velero-2026-202307705; [evidencia](evidence/capturas/terminal-p9-velero-schedule.png) |
+| Custodia de llave Sealed Secrets | Google Secret Manager; dos secretos con versión `ENABLED`, acceso IAM acotado y comprobación del bootstrap en [evidence/p9-secret-custody.txt](evidence/p9-secret-custody.txt) |
+| Reconstrucción cronometrada | [Transcripción autoritativa del simulacro final con RTO exacto](evidence/p9-reconstruction-20260923-175941.txt), [resumen](evidence/p9-reconstruction.txt); las [capturas de destroy](evidence/capturas/terminal-p9-app-destroyed.png) y [verificación](evidence/capturas/terminal-p9-rto-measured.png) son de apoyo y corresponden a una ejecución anterior. |
+| Restauración de datos | [Resumen de backup/restores](evidence/p9-backup-restore.txt), [restore en PVC aislado](evidence/capturas/terminal-p9-restore-data-verified.png) y marcador recuperado en base activa descrito en [la transcripción DR](evidence/p9-reconstruction-20260923-175941.txt) |
+| Prueba de pérdida de nodo | [Salida](evidence/p9-node-drain.txt) y [captura del drain](evidence/capturas/terminal-p9-node-drain-pdb.png) |
+| RTO y RPO | Objetivos: RTO 2 h, RPO 6 h. Simulacro completo más reciente: RTO **00:31:48.361** y RPO **00:03:00.542**, ambos dentro del objetivo. Ensayo previo de pérdida controlada: RPO **00:08:00.983**. Véase [INFORME-DR.md](INFORME-DR.md) para marcas UTC, método y limitaciones. |
+| Video demostrativo | [Carpeta pública de Drive](https://drive.google.com/drive/folders/1BHltEYPaxrY5N5DHOxgjQ9M68JNSRkEb?usp=sharing). Minutaje planificado para un video de aproximadamente 6 min: 00:00 arquitectura y alcance; 00:45 Terraform `seed`/`app` y reconstrucción; 01:40 ArgoCD app-of-apps y estado de las aplicaciones; 02:30 schedule y backup de Velero en GCS; 03:20 pérdida controlada y restauración del marcador; 04:35 drenaje del nodo, PDB y HTTP 200; 05:25 resultados RTO/RPO y límites observados. Ajustar al minutaje real y sustituir por el enlace directo al archivo al subir el video. |
 
-## Ejecución
+## Implementación y decisiones
 
-### 1. Bootstrap
+- **Estado e infraestructura:** P9/terraform/seed usa el backend GCS remoto con locking y prefijo p9/seed; conserva los buckets con prevent_destroy. P9/terraform/app usa p9/app; destruye y reconstruye GKE, el node pool y el bootstrap mínimo de ArgoCD sin destruir seed.
+- **GitOps:** Terraform instala ArgoCD y crea comicrent-p9. La raíz apunta al repositorio GitOps, ruta apps/p9, y ArgoCD reconcilia las Applications hijas. Velero, Kyverno, Sealed Secrets, Argo Rollouts y las cargas se declaran en GitOps. Se conserva el flujo P8 de Trivy, SBOM, Cosign, políticas de admisión y promoción Canary.
+- **Respaldos:** Velero programa respaldos cada seis horas, conserva cada backup siete días, incluye volúmenes persistentes mediante FSB/Kopia y escribe en el bucket GCS externo. Workload Identity otorga acceso al bucket.
+- **Datos verificables:** un ensayo controlado anterior creó el marcador `P9-BEFORE-BACKUP-20260922-215517`, completó un backup, insertó una segunda fila, borró ambas filas de la tabla de prueba y restauró el backup; solo volvió la fila previa. En la reconstrucción completa más reciente, Velero restauró el marcador `P9-BEFORE-BACKUP-20260923-170945` desde `p9-final-dr-20260923-175716` en un namespace aislado, y el runbook lo promovió a la tabla de prueba de `auth_db` activa. Esto prueba la ruta de recuperación del dato de validación, no la restauración integral de cada registro de negocio.
+- **Secretos:** los SealedSecrets quedaron sincronizados después de reconstruir. Terraform seed crea dos secretos persistentes de Google Secret Manager y limita `Secret Accessor`/`Secret Version Adder` al principal que ejecuta el bootstrap. En la primera configuración, si no hay versiones, el script carga la llave desde archivos protegidos locales; después, Terraform la recupera de Secret Manager. Un operador sustituto necesita permisos GCP para ejecutar Terraform y leer esos secretos. La llave no se copia al repositorio.
+- **Resiliencia:** los PDB, réplicas, anti-afinidad y probes permiten drenar un nodo y conservar HTTP 200 en /health.
+- **RTO/RPO:** el simulacro completo final midió RTO de `00:31:48.361` y RPO de `00:03:00.542`, dentro de las metas de 2 h y 6 h. El wrapper actualizado eliminó ArgoCD y sus finalizers sin intervención manual; la reconstrucción, restore y promoción del marcador terminaron correctamente. El ensayo anterior de pérdida controlada midió RPO de `00:08:00.983`; ambos resultados se mantienen separados en el informe.
 
-Desde la raíz del repositorio de código y con `P9/terraform/app/local.auto.tfvars` configurado (el bootstrap adopta el archivo de P8 si existe):
+## Bootstrap y comprobación
 
-```powershell
-pwsh -ExecutionPolicy Bypass -File P9/scripts/bootstrap.ps1 -Apply
-```
+Desde C:\Users\Vela\Desktop\SA\LAB\PRACTICAS, con GCP autenticado. Solo la primera carga a Secret Manager requiere los archivos originales en la ruta protegida local; las reconstrucciones posteriores usan las versiones persistidas:
 
-El script inicializa y aplica primero `seed` y después `app`. `app` instala únicamente ArgoCD y crea la Application raíz; ArgoCD hace el resto mediante el app-of-apps. No hay un paso manual intermedio.
+~~~powershell
+$publicIp = (Invoke-RestMethod 'https://api.ipify.org').Trim()
+$cidr = "$publicIp/32"
+pwsh -NoProfile -ExecutionPolicy Bypass -File P9/scripts/bootstrap.ps1 -MasterAuthorizedCidr $cidr -Apply
+pwsh -NoProfile -ExecutionPolicy Bypass -File P9/scripts/verify.ps1
+~~~
 
-### 2. Verificación
+Para comprobar recursos GitOps, storage y persistencia sin modificar el clúster:
 
-```powershell
-pwsh -ExecutionPolicy Bypass -File P9/scripts/verify.ps1
+~~~powershell
 kubectl get applications -n argocd -o wide
 kubectl get pods,pvc,pdb -n sa-p9
 kubectl get backupstoragelocation,schedule -n velero
-```
+~~~
 
-Se espera `Synced/Healthy` para ambas Applications, pods Ready, PVC Bound, PDB activos, BSL `Available` y Schedule `Enabled`.
+Una ejecución verificada del bootstrap quedó con 3/3 nodos Ready, siete Applications principales Synced/Healthy, dos PVC Bound, el Rollout Canary Healthy al 100%, tres SealedSecrets sincronizados, cuatro políticas Kyverno Ready, Velero Available y /health en HTTP 200. La salida está en [salidas.txt](salidas.txt); la captura es de apoyo de una ejecución anterior. Para el simulacro final, usa la [transcripción completa](evidence/p9-reconstruction-20260923-175941.txt).
 
-### 3. Backup y restauración
+## Restauración controlada de PostgreSQL
 
-```powershell
-pwsh -ExecutionPolicy Bypass -File P9/scripts/backup.ps1 -Name p9-manual
-pwsh -ExecutionPolicy Bypass -File P9/scripts/restore-data.ps1 `
-  -BackupName p9-manual `
-  -RestoreName p9-static-restore `
-  -RecoveryNamespace sa-p9-recovery
-```
+El runbook [scripts/restore-data.ps1](scripts/restore-data.ps1) restaura el volumen de PostgreSQL a un namespace aislado, espera a que el PVC y el pod estén listos, y consulta auth_db.p9_recovery_probe. Esta separación permite validar los datos antes de promoverlos. En el simulacro documentado se promovió únicamente la fila de prueba a la base activa; no se sobrescribió el volumen PostgreSQL completo en producción.
 
-La restauración usa un namespace estático y excluye el StatefulSet para que Velero complete primero el `PodVolumeRestore` del PVC. El script copia el secreto generado por Sealed Secrets sin `ownerReferences`, espera PostgreSQL y consulta `auth_db.p9_recovery_probe`. En una recuperación real, los recursos restaurados se revisan y luego se promueven mediante GitOps; no se hace `kubectl apply` desde CI.
-
-Para producir el dato de prueba antes del backup:
-
-```powershell
-pwsh -ExecutionPolicy Bypass -File P9/scripts/seed-recovery-data.ps1 -Marker P9-REAL-DATA-YYYYMMDD
-```
-
-### 4. Tolerancia a fallo
-
-```powershell
-pwsh -ExecutionPolicy Bypass -File P9/scripts/drain-node.ps1 `
-  -Namespace sa-p9 `
-  -HealthUrl http://<EXTERNAL-IP>:3000/health
-```
-
-El script cordona y drena un nodo, verifica el PDB y las réplicas del gateway, des-cordona el nodo y comprueba nuevamente HTTP 200.
-
-## Decisiones de diseño
-
-1. `seed` es persistente y nunca se destruye durante una reconstrucción. `app` crea el clúster, el node pool, ArgoCD y la Application raíz; ArgoCD es el único componente que aplica los manifiestos y charts restantes.
-2. Los dos estados remotos, el bucket de Terraform y el bucket de Velero están fuera del clúster; la pérdida de GKE no elimina el estado ni los backups.
-3. La clave de Sealed Secrets se conserva en una ruta local protegida y se carga como recurso Terraform. Por eso los secretos cifrados de Git siguen descifrables después de reconstruir el clúster.
-4. PostgreSQL conserva un PVC y una política PDB apropiada; RabbitMQ conserva su PVC y su secreto cifrado. Los servicios stateless tienen réplicas, anti-affinity y probes.
-5. El backup de volúmenes usa FSB/Kopia con `EnableCSI`; no se depende de snapshots zonales que desaparecerían con el clúster.
-6. La estrategia Canary y sus análisis de P8 permanecen intactos. Una versión defectuosa se aborta antes de 100% y conserva el ReplicaSet estable.
-
-## Archivos de evidencia
-
-- [`evidence/p9-bootstrap.txt`](evidence/p9-bootstrap.txt)
-- [`evidence/p9-backup-restore.txt`](evidence/p9-backup-restore.txt)
-- [`evidence/p9-node-drain.txt`](evidence/p9-node-drain.txt)
-- [`scripts/bootstrap.ps1`](scripts/bootstrap.ps1)
-- [`scripts/backup.ps1`](scripts/backup.ps1)
-- [`scripts/restore-data.ps1`](scripts/restore-data.ps1)
-- [`scripts/drain-node.ps1`](scripts/drain-node.ps1)
+Sigue el [runbook de recuperación](RUNBOOK-DR.md) para reconstruir y restaurar datos. Consulta [GUIA_EVIDENCIAS.md](GUIA_EVIDENCIAS.md) para el índice de capturas y salidas, e [INFORME-DR.md](INFORME-DR.md) para los seis campos requeridos por la plantilla 4.2.

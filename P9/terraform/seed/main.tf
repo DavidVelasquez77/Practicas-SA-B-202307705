@@ -15,6 +15,12 @@ provider "google" {
   zone    = var.zone
 }
 
+resource "google_project_service" "secret_manager" {
+  project            = var.project_id
+  service            = "secretmanager.googleapis.com"
+  disable_on_destroy = false
+}
+
 # Este bucket y su estado se conservan durante cada reconstrucción de app.
 # En el primer uso se importa el bucket existente con `terraform import`.
 resource "google_storage_bucket" "terraform_state" {
@@ -64,4 +70,54 @@ resource "google_service_account_iam_member" "velero_token_creator" {
   service_account_id = google_service_account.velero.name
   role               = "roles/iam.serviceAccountTokenCreator"
   member             = "serviceAccount:${google_service_account.velero.email}"
+}
+
+# Secret Manager conserva la llave fuera del clúster y del estado de Terraform.
+# Los bytes se cargan como versiones con gcloud; Terraform administra metadatos e IAM.
+resource "google_secret_manager_secret" "sealed_secrets_cert" {
+  project   = var.project_id
+  secret_id = "comicrent-p9-sealed-secrets-tls-crt"
+  replication {
+    auto {}
+  }
+  lifecycle { prevent_destroy = true }
+  depends_on = [google_project_service.secret_manager]
+}
+
+resource "google_secret_manager_secret" "sealed_secrets_key" {
+  project   = var.project_id
+  secret_id = "comicrent-p9-sealed-secrets-tls-key"
+  replication {
+    auto {}
+  }
+  lifecycle { prevent_destroy = true }
+  depends_on = [google_project_service.secret_manager]
+}
+
+resource "google_secret_manager_secret_iam_member" "sealed_secrets_cert_accessor" {
+  project   = var.project_id
+  secret_id = google_secret_manager_secret.sealed_secrets_cert.secret_id
+  role      = "roles/secretmanager.secretAccessor"
+  member    = var.secret_accessor_member
+}
+
+resource "google_secret_manager_secret_iam_member" "sealed_secrets_key_accessor" {
+  project   = var.project_id
+  secret_id = google_secret_manager_secret.sealed_secrets_key.secret_id
+  role      = "roles/secretmanager.secretAccessor"
+  member    = var.secret_accessor_member
+}
+
+resource "google_secret_manager_secret_iam_member" "sealed_secrets_cert_version_adder" {
+  project   = var.project_id
+  secret_id = google_secret_manager_secret.sealed_secrets_cert.secret_id
+  role      = "roles/secretmanager.secretVersionAdder"
+  member    = var.secret_accessor_member
+}
+
+resource "google_secret_manager_secret_iam_member" "sealed_secrets_key_version_adder" {
+  project   = var.project_id
+  secret_id = google_secret_manager_secret.sealed_secrets_key.secret_id
+  role      = "roles/secretmanager.secretVersionAdder"
+  member    = var.secret_accessor_member
 }

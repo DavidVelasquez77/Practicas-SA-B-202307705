@@ -1,62 +1,50 @@
-P9 backup y restauración comprobada
-Fecha de captura: 2026-09-22T01:05:08.0171901-06:00
+P9 prueba de backup, pérdida controlada y restauración
+======================================================
 
-Comando de backup:
-velero backup create p9-functional-rebuild-v2 --include-namespaces=sa-p9 --include-cluster-resources=true --default-volumes-to-fs-backup --wait
+Prueba de RPO:
+- Backup: p9-data-proof-20260922-215517
+- Backup phase: Completed; errors/warnings: 0/0.
+- Completion UTC: 2026-09-23T03:58:42Z.
+- Pérdida simulada UTC: 2026-09-23T04:06:42.9834611Z.
+- RPO calculado: 00:08:00.9834611.
+- La fila id=1 P9-BEFORE-BACKUP-20260922-215517 se había escrito antes del
+  backup. La fila id=2 se escribió después. Se eliminaron ambas filas; en
+  origen la cuenta quedó en 0.
+- Restore p9-data-restore-20260922-235616: Completed; el restore reportó 50 s.
+  Los tres PodVolumeRestore terminaron Completed; el marcador id=1 se leyó
+  en el namespace aislado. La fila id=2 no se recuperó, como corresponde a
+  un backup anterior a esa escritura.
 
-NAME                       STATUS      ERRORS   WARNINGS   CREATED                         EXPIRES   STORAGE LOCATION   SELECTOR
-p9-functional-rebuild-v2   Completed   0        0          2026-09-22 00:59:15 -0600 CST   6d        default            <none>
+Prueba después de reconstruir:
+- Backup usado: p9-rebuild-20260923-114842.
+- Restore: p9-rebuild-restore-20260923-152725, namespace
+  sa-p9-rebuild-20260923-152725.
+- Salida compartida por el operador: Restore Completed; errors=0,
+  warnings=0; tres PodVolumeRestore Completed.
+- La consulta al PostgreSQL restaurado devolvió:
+  1|P9-BEFORE-BACKUP-20260922-215517|2026-09-23 06:35:41.640844+00
+- Después se insertó ese marcador recuperado en la tabla de prueba
+  auth_db.p9_recovery_probe activa. La consulta final devolvió la misma fila.
 
+Capturas:
+- capturas/terminal-p9-marker-before-backup.png
+- capturas/terminal-p9-backup-completed.png
+- capturas/terminal-p9-data-loss-rpo.png
+- capturas/terminal-p9-restore-data-verified.png
+- capturas/terminal-p9-restore-active-db.png
 
-> Phase:  Completed
+Esta prueba valida una fila de recuperación deliberadamente sembrada; no se
+afirma que se restauraron todos los registros de negocio de ComicRent.
 
-> Namespaces:
->   Included:  sa-p9
-    Excluded:  <none>
->   Included:        *
-    Excluded:        <none>
-> Storage Location:  default
-
->       sa-p9/comicrent-postgresql-0: data, dshm, empty-dir
->       sa-p9/comicrent-rabbitmq-0: data, empty-dir
-
-
-
-
-Comando de recuperación estática:
-pwsh -File P9/scripts/restore-data.ps1 -BackupName p9-functional-rebuild-v2 -RestoreName p9-evidence-restore-v2 -RecoveryNamespace sa-p9-evidence-v2
-
-NAME                     BACKUP                     STATUS      STARTED                         COMPLETED                       ERRORS   WARNINGS   CREATED                         SELECTOR
-p9-evidence-restore-v2   p9-functional-rebuild-v2   Completed   2026-09-22 01:00:03 -0600 CST   2026-09-22 01:01:14 -0600 CST   0        0          2026-09-22 01:00:03 -0600 CST   app.kubernetes.io/name=postgresql
-
-
-> Phase:                       Completed
-> Total items to be restored:  13
-> Items restored:              13
-
-> Started:    2026-09-22 01:00:03 -0600 CST
-> Completed:  2026-09-22 01:01:14 -0600 CST
-
-> Backup:  p9-functional-rebuild-v2
-
-> Namespace mappings:  sa-p9=sa-p9-evidence-v2
-
-> Label selector:  app.kubernetes.io/name=postgresql
-
-> Restore PVs:  true
-
->   Completed:
->     sa-p9-evidence-v2/comicrent-postgresql-0: data, dshm, empty-dir
-
-
-
-PodVolumeRestore:
-NAME                           PHASE       BYTES-DONE   TOTAL-BYTES
-p9-evidence-restore-v2-8r6rb   Completed   1079552      1079552
-p9-evidence-restore-v2-gbbz8   Completed   113369312    113369312
-p9-evidence-restore-v2-gsvzt   Completed   32856        32856
-
-Dato verificado en la base restaurada (auth_db.p9_recovery_probe):
-Defaulted container "postgresql" out of: postgresql, restore-wait (init)
-1|P9-REAL-DATA-20260922-RERUN|2026-09-22 06:58:07.237577+00
-
+Simulacro completo final (2026-09-24 UTC):
+- Backup p9-final-dr-20260923-175716: Completed, 0 errores y 0 advertencias;
+  completado 2026-09-23T23:57:51Z.
+- Restore p9-dr-restore-20260923-175941 en sa-p9-dr-20260923-175941:
+  Completed, 0 errores y 0 advertencias; tres PodVolumeRestore terminaron.
+- Marcador leído del volumen restaurado y luego de auth_db activa:
+  1|P9-BEFORE-BACKUP-20260923-170945
+- RTO destroy → bootstrap/verificación → restore → marcador activo:
+  00:31:48.3607182. RPO del backup al inicio del destroy: 00:03:00.5416209.
+- Finalizers eliminados automáticamente, sin intervención manual. Marcas,
+  salidas completas y límites de la prueba:
+  p9-reconstruction-20260923-175941.txt y ../INFORME-DR.md.
