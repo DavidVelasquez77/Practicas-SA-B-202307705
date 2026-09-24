@@ -19,16 +19,23 @@ Debe mostrar el contexto GKE de ComicRent P9 y finalizar sin fallos. No muestres
 
 **Muestra:** [`RUNBOOK-DR.md`](RUNBOOK-DR.md), especialmente preparación del operador, orden seed/app, validaciones, restore y promoción del marcador. Complementa con [`scripts/rebuild-dr.ps1`](scripts/rebuild-dr.ps1), que automatiza el simulacro completo.
 
-**Comando opcional, sin destruir recursos:** ejecuta el preflight únicamente si el clúster está encendido y el auxiliar pide comprobar el procedimiento:
+**Comando opcional, sin destruir recursos:** si el auxiliar pide comprobar el procedimiento, lista los backups y copia el nombre de uno reciente con fase `Completed`, errores `0` y advertencias `0`:
 
 ```powershell
+kubectl get backups -n velero --sort-by=.metadata.creationTimestamp
+$backup = 'PEGA_AQUI_EL_NOMBRE_COMPLETO_DEL_BACKUP_COMPLETED'
 $publicIp = (Invoke-RestMethod 'https://api.ipify.org').Trim()
 $cidr = "$publicIp/32"
-$backup = 'p9-final-dr-20260923-175716'
 pwsh -NoProfile -ExecutionPolicy Bypass -File P9/scripts/rebuild-dr.ps1 -MasterAuthorizedCidr $cidr -BackupName $backup -PreflightOnly
 ```
 
-El preflight valida backup, llave y estado; presenta el plan de destrucción de `app`, pero no lo aplica. No uses `-DestroyApp` para una demostración rutinaria.
+El preflight valida backup, llave y estado; presenta el plan de destrucción de `app`, pero no lo aplica. Si el auxiliar solicita el simulacro destructivo completo y hay tiempo para reconstruir, ejecuta el mismo wrapper con `-DestroyApp` en lugar de `-PreflightOnly`. El wrapper restaura y verifica el marcador recuperado en la base activa:
+
+```powershell
+pwsh -NoProfile -ExecutionPolicy Bypass -File P9/scripts/rebuild-dr.ps1 -MasterAuthorizedCidr $cidr -BackupName $backup -DestroyApp
+```
+
+Para hacer solo una restauración de Velero en un namespace aislado, sigue [`RUNBOOK-DR.md`, sección 3](RUNBOOK-DR.md#3-restaurar-y-verificar-postgresql-desde-velero). Esa prueba no reemplaza la base activa; el wrapper `rebuild-dr.ps1 -DestroyApp` es el flujo completo de reconstrucción y promoción del marcador.
 
 ### 1.2 Informe de la prueba de DR — 12 puntos
 
