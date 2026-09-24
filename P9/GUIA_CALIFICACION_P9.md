@@ -19,11 +19,18 @@ Debe mostrar el contexto GKE de ComicRent P9 y finalizar sin fallos. No muestres
 
 **Muestra:** [`RUNBOOK-DR.md`](RUNBOOK-DR.md), especialmente preparación del operador, orden seed/app, validaciones, restore y promoción del marcador. Complementa con [`scripts/rebuild-dr.ps1`](scripts/rebuild-dr.ps1), que automatiza el simulacro completo.
 
-**Comando opcional, sin destruir recursos:** si el auxiliar pide comprobar el procedimiento, lista los backups y copia el nombre de uno reciente con fase `Completed`, errores `0` y advertencias `0`:
+**Comando opcional, sin destruir recursos:** si el auxiliar pide comprobar el procedimiento, el bloque selecciona automáticamente el backup `Completed` más reciente, sin errores ni advertencias:
 
 ```powershell
-kubectl get backups -n velero --sort-by=.metadata.creationTimestamp
-$backup = 'PEGA_AQUI_EL_NOMBRE_COMPLETO_DEL_BACKUP_COMPLETED'
+$backupList = kubectl get backups -n velero -o json
+if ($LASTEXITCODE -ne 0) { throw 'No se pudieron listar los backups de Velero.' }
+$backupObject = ($backupList | ConvertFrom-Json).items |
+  Where-Object { $_.status.phase -eq 'Completed' -and [int]$_.status.errors -eq 0 -and [int]$_.status.warnings -eq 0 } |
+  Sort-Object { [DateTimeOffset]::Parse($_.metadata.creationTimestamp) } -Descending |
+  Select-Object -First 1
+if (-not $backupObject) { throw 'No hay un backup Completed sin errores ni advertencias.' }
+$backup = $backupObject.metadata.name
+"Backup seleccionado: $backup"
 $publicIp = (Invoke-RestMethod 'https://api.ipify.org').Trim()
 $cidr = "$publicIp/32"
 pwsh -NoProfile -ExecutionPolicy Bypass -File P9/scripts/rebuild-dr.ps1 -MasterAuthorizedCidr $cidr -BackupName $backup -PreflightOnly
@@ -36,7 +43,6 @@ pwsh -NoProfile -ExecutionPolicy Bypass -File P9/scripts/rebuild-dr.ps1 -MasterA
 ```
 
 Para hacer solo una restauración de Velero en un namespace aislado, sigue [`RUNBOOK-DR.md`, sección 3](RUNBOOK-DR.md#3-restaurar-y-verificar-postgresql-desde-velero). Esa prueba no reemplaza la base activa; el wrapper `rebuild-dr.ps1 -DestroyApp` es el flujo completo de reconstrucción y promoción del marcador.
-
 ### 1.2 Informe de la prueba de DR — 12 puntos
 
 **Muestra:** [`INFORME-DR.md`](INFORME-DR.md). Está organizado en los seis campos requeridos: objetivos, escenario, tiempos, pérdida, puntos únicos de fallo y brecha/plan.

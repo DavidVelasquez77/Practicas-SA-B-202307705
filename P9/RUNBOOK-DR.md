@@ -47,9 +47,17 @@ El script inicializa y aplica seed, asegura las versiones protegidas en Secret M
 Para repetir un simulacro destructivo completo, usa el wrapper que valida el backup, la llave y la IP antes de iniciar. El preflight no destruye recursos y muestra el plan:
 
 ~~~powershell
+$backupList = kubectl get backups -n velero -o json
+if ($LASTEXITCODE -ne 0) { throw 'No se pudieron listar los backups de Velero.' }
+$backupObject = ($backupList | ConvertFrom-Json).items |
+  Where-Object { $_.status.phase -eq 'Completed' -and [int]$_.status.errors -eq 0 -and [int]$_.status.warnings -eq 0 } |
+  Sort-Object { [DateTimeOffset]::Parse($_.metadata.creationTimestamp) } -Descending |
+  Select-Object -First 1
+if (-not $backupObject) { throw 'No hay un backup Completed sin errores ni advertencias.' }
+$backup = $backupObject.metadata.name
+"Backup seleccionado: $backup"
 $publicIp = (Invoke-RestMethod 'https://api.ipify.org').Trim()
 $cidr = "$publicIp/32"
-$backup = 'NOMBRE_DEL_BACKUP_COMPLETED'
 pwsh -NoProfile -ExecutionPolicy Bypass -File P9/scripts/rebuild-dr.ps1 -MasterAuthorizedCidr $cidr -BackupName $backup -PreflightOnly
 ~~~
 
@@ -72,15 +80,31 @@ Continúa cuando el clúster esté accesible, las Applications estén Synced/Hea
 Lista los backups y selecciona el más reciente con fase Completed y sin errores:
 
 ~~~powershell
-kubectl get backups -n velero --sort-by=.metadata.creationTimestamp
-velero backup describe NOMBRE_DEL_BACKUP_COMPLETED --details
+$backupList = kubectl get backups -n velero -o json
+if ($LASTEXITCODE -ne 0) { throw 'No se pudieron listar los backups de Velero.' }
+$backupObject = ($backupList | ConvertFrom-Json).items |
+  Where-Object { $_.status.phase -eq 'Completed' -and [int]$_.status.errors -eq 0 -and [int]$_.status.warnings -eq 0 } |
+  Sort-Object { [DateTimeOffset]::Parse($_.metadata.creationTimestamp) } -Descending |
+  Select-Object -First 1
+if (-not $backupObject) { throw 'No hay un backup Completed sin errores ni advertencias.' }
+$backup = $backupObject.metadata.name
+"Backup seleccionado: $backup"
+velero backup describe $backup --details
 ~~~
 
 Usa un nombre de restore y namespace nuevos. La restauración queda aislada para inspeccionar el contenido antes de promover datos:
 
 ~~~powershell
+$backupList = kubectl get backups -n velero -o json
+if ($LASTEXITCODE -ne 0) { throw 'No se pudieron listar los backups de Velero.' }
+$backupObject = ($backupList | ConvertFrom-Json).items |
+  Where-Object { $_.status.phase -eq 'Completed' -and [int]$_.status.errors -eq 0 -and [int]$_.status.warnings -eq 0 } |
+  Sort-Object { [DateTimeOffset]::Parse($_.metadata.creationTimestamp) } -Descending |
+  Select-Object -First 1
+if (-not $backupObject) { throw 'No hay un backup Completed sin errores ni advertencias.' }
+$backup = $backupObject.metadata.name
+"Backup seleccionado: $backup"
 $run = Get-Date -Format 'yyyyMMdd-HHmmss'
-$backup = 'NOMBRE_DEL_BACKUP_COMPLETED'
 $restore = "p9-recovery-$run"
 $recoveryNamespace = "sa-p9-recovery-$run"
 pwsh -NoProfile -ExecutionPolicy Bypass -File P9/scripts/restore-data.ps1 -BackupName $backup -RestoreName $restore -SourceNamespace sa-p9 -RecoveryNamespace $recoveryNamespace
