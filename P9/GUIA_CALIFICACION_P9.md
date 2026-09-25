@@ -26,7 +26,7 @@ $backupList = kubectl get backups -n velero -o json
 if ($LASTEXITCODE -ne 0) { throw 'No se pudieron listar los backups de Velero.' }
 $backupObject = ($backupList | ConvertFrom-Json).items |
   Where-Object { $_.status.phase -eq 'Completed' -and [int]$_.status.errors -eq 0 -and [int]$_.status.warnings -eq 0 } |
-  Sort-Object { [DateTimeOffset]::Parse($_.metadata.creationTimestamp) } -Descending |
+  Sort-Object { $_.metadata.creationTimestamp } -Descending |
   Select-Object -First 1
 if (-not $backupObject) { throw 'No hay un backup Completed sin errores ni advertencias.' }
 $backup = $backupObject.metadata.name
