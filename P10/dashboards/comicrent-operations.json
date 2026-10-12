@@ -1,0 +1,108 @@
+{
+  "id": null,
+  "uid": "comicrent-p10-operations",
+  "title": "ComicRent | Señales de oro",
+  "tags": ["comicrent", "p10", "sre"],
+  "timezone": "browser",
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "15s",
+  "time": { "from": "now-1h", "to": "now" },
+  "annotations": {
+    "list": [
+      {
+        "builtIn": 1,
+        "datasource": { "type": "grafana", "uid": "-- Grafana --" },
+        "enable": true,
+        "hide": true,
+        "iconColor": "rgba(0, 211, 255, 1)",
+        "name": "Annotations & Alerts",
+        "type": "dashboard"
+      }
+    ]
+  },
+  "panels": [
+    {
+      "id": 1,
+      "type": "timeseries",
+      "title": "Tráfico — solicitudes por segundo",
+      "description": "Volumen de solicitudes HTTP observadas en los servicios ComicRent.",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 0 },
+      "fieldConfig": { "defaults": { "unit": "reqps", "color": { "mode": "palette-classic" } }, "overrides": [] },
+      "options": { "legend": { "displayMode": "list", "placement": "bottom" }, "tooltip": { "mode": "multi", "sort": "desc" } },
+      "targets": [
+        { "expr": "sum by (service) (rate(comicrent_http_requests_total{namespace=\"sa-p9\"}[5m]))", "legendFormat": "{{service}}", "refId": "A" }
+      ]
+    },
+    {
+      "id": 2,
+      "type": "timeseries",
+      "title": "Latencia — percentil 95",
+      "description": "P95 de duración HTTP por servicio; se calcula desde el histograma instrumentado.",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 0 },
+      "fieldConfig": { "defaults": { "unit": "s", "color": { "mode": "palette-classic" } }, "overrides": [] },
+      "options": { "legend": { "displayMode": "list", "placement": "bottom" }, "tooltip": { "mode": "multi", "sort": "desc" } },
+      "targets": [
+        { "expr": "histogram_quantile(0.95, sum by (le, service) (rate(comicrent_http_request_duration_seconds_bucket{namespace=\"sa-p9\"}[5m])))", "legendFormat": "{{service}}", "refId": "A" }
+      ]
+    },
+    {
+      "id": 3,
+      "type": "timeseries",
+      "title": "Errores — respuestas 5xx",
+      "description": "Proporción de respuestas 5xx entre todas las solicitudes; ayuda a distinguir degradación de un aumento de tráfico.",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 8 },
+      "fieldConfig": { "defaults": { "unit": "percentunit", "min": 0, "max": 1, "color": { "mode": "thresholds" }, "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }, { "color": "orange", "value": 0.01 }, { "color": "red", "value": 0.05 }] } }, "overrides": [] },
+      "options": { "legend": { "displayMode": "list", "placement": "bottom" }, "tooltip": { "mode": "multi", "sort": "desc" } },
+      "targets": [
+        { "expr": "sum by (service) (rate(comicrent_http_requests_total{namespace=\"sa-p9\",status_class=\"5xx\"}[5m])) / clamp_min(sum by (service) (rate(comicrent_http_requests_total{namespace=\"sa-p9\"}[5m])), 0.001)", "legendFormat": "{{service}}", "refId": "A" }
+      ]
+    },
+    {
+      "id": 4,
+      "type": "timeseries",
+      "title": "Saturación — CPU frente a solicitudes",
+      "description": "Porcentaje de la CPU solicitada que usan los contenedores del namespace de la aplicación.",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 8 },
+      "fieldConfig": { "defaults": { "unit": "percent", "min": 0, "color": { "mode": "palette-classic" } }, "overrides": [] },
+      "options": { "legend": { "displayMode": "list", "placement": "bottom" }, "tooltip": { "mode": "multi", "sort": "desc" } },
+      "targets": [
+        { "expr": "100 * sum by (pod, container) (rate(container_cpu_usage_seconds_total{namespace=\"sa-p9\",container!=\"\",container!=\"POD\"}[5m])) / clamp_min(sum by (pod, container) (kube_pod_container_resource_requests{namespace=\"sa-p9\",resource=\"cpu\"}), 0.001)", "legendFormat": "{{pod}} / {{container}}", "refId": "A" }
+      ]
+    },
+    {
+      "id": 5,
+      "type": "timeseries",
+      "title": "Saturación — memoria frente a solicitudes",
+      "description": "Memoria de trabajo por contenedor comparada con su solicitud de memoria; valores cercanos a 100% indican poco margen.",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 16 },
+      "fieldConfig": { "defaults": { "unit": "percent", "min": 0, "color": { "mode": "palette-classic" } }, "overrides": [] },
+      "options": { "legend": { "displayMode": "list", "placement": "bottom" }, "tooltip": { "mode": "multi", "sort": "desc" } },
+      "targets": [
+        { "expr": "100 * sum by (pod, container) (container_memory_working_set_bytes{namespace=\"sa-p9\",container!=\"\",container!=\"POD\"}) / clamp_min(sum by (pod, container) (kube_pod_container_resource_requests{namespace=\"sa-p9\",resource=\"memory\"}), 1)", "legendFormat": "{{pod}} / {{container}}", "refId": "A" }
+      ]
+    },
+    {
+      "id": 6,
+      "type": "timeseries",
+      "title": "Actividad de negocio — rentas creadas y devueltas",
+      "description": "Eventos de negocio por segundo observados en rentals-service; sirve para verificar si el flujo de renta progresa.",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 24 },
+      "fieldConfig": { "defaults": { "unit": "ops", "color": { "mode": "palette-classic" } }, "overrides": [] },
+      "options": { "legend": { "displayMode": "list", "placement": "bottom" }, "tooltip": { "mode": "multi", "sort": "desc" } },
+      "targets": [
+        { "expr": "sum(rate(comicrent_rentals_created_total{namespace=\"sa-p9\"}[5m]))", "legendFormat": "Rentas creadas", "refId": "A" },
+        { "expr": "sum(rate(comicrent_rentals_returned_total{namespace=\"sa-p9\"}[5m]))", "legendFormat": "Rentas devueltas", "refId": "B" }
+      ]
+    }
+  ],
+  "templating": { "list": [] },
+  "links": [],
+  "liveNow": false
+}
