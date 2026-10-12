@@ -1,6 +1,7 @@
 import { BadGatewayException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { MicroservicesClientService } from './microservices-client.service';
+import { correlationContext } from '../observability/http-observability';
 
 describe('Gateway: comunicación downstream', () => {
   const config = new ConfigService({
@@ -24,5 +25,25 @@ describe('Gateway: comunicación downstream', () => {
   it('convierte una caída de red en HTTP 502', async () => {
     jest.spyOn(globalThis, 'fetch').mockRejectedValue(new TypeError('network unavailable'));
     await expect(new MicroservicesClientService(config).copiesRequest('/copies/7')).rejects.toBeInstanceOf(BadGatewayException);
+  });
+
+  it('propaga el identificador de correlación a Auth', async () => {
+    const fetchMock = jest.spyOn(globalThis, 'fetch').mockResolvedValue(
+      new Response(JSON.stringify({ valid: true, user: { id: 7, role: 'Cliente' } })),
+    );
+
+    await correlationContext.run('rental-flow-123', async () => {
+      await new MicroservicesClientService(config).authValidate('access_token=test');
+    });
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      'http://auth.test/auth/validate',
+      expect.objectContaining({
+        headers: expect.objectContaining({
+          Cookie: 'access_token=test',
+          'X-Correlation-ID': 'rental-flow-123',
+        }),
+      }),
+    );
   });
 });

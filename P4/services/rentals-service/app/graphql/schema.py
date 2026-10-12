@@ -1,4 +1,5 @@
 import strawberry
+from graphql import GraphQLError
 
 from app.graphql.inputs import (
     CreateRentalInput,
@@ -7,6 +8,7 @@ from app.graphql.types import Rental
 from app.services.rentals_service import (
     RentalsService,
 )
+from app.observability import log_graphql_error
 
 
 @strawberry.type
@@ -47,20 +49,22 @@ class Mutation:
         self,
         input: CreateRentalInput,
     ) -> Rental:
-        return await RentalsService.create(
-            input
-        )
+        try:
+            return await RentalsService.create(input)
+        except GraphQLError as exc:
+            log_graphql_error("graphql.rental.create.failed", exc)
+            raise
 
     @strawberry.mutation
     async def return_rental(
         self,
         id: int,
     ) -> Rental:
-        return (
-            await RentalsService.return_rental(
-                id
-            )
-        )
+        try:
+            return await RentalsService.return_rental(id)
+        except GraphQLError as exc:
+            log_graphql_error("graphql.rental.return.failed", exc)
+            raise
 
 
 schema = strawberry.Schema(

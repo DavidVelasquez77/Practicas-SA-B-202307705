@@ -26,6 +26,12 @@ from app.models.rental import RentalModel
 
 from uuid import uuid4
 
+from app.observability import (
+    RENTALS_CREATED,
+    RENTALS_RETURNED,
+    SERVICE_NAME_VALUE,
+    log_business_event,
+)
 from app.messaging.rabbitmq_publisher import (
     publish_copy_return_requested,
 )
@@ -298,6 +304,8 @@ class RentalsService:
                     "el alquiler."
                 ) from exc
 
+            RENTALS_CREATED.labels(service=SERVICE_NAME_VALUE).inc()
+            log_business_event("business.rental.created")
             return to_graphql(
                 rental
             )
@@ -381,6 +389,8 @@ class RentalsService:
                     "de devolución."
                 ) from exc
 
+            RENTALS_RETURNED.labels(service=SERVICE_NAME_VALUE).inc()
+            log_business_event("business.rental.returned")
             return to_graphql(
                 rental
             )

@@ -1,5 +1,6 @@
 import httpx
 
+from app.observability import inject_correlation_id
 from app.config import (
     HTTP_TIMEOUT_SECONDS,
 )
@@ -7,6 +8,7 @@ from app.config import (
 
 http_client = httpx.AsyncClient(
     timeout=HTTP_TIMEOUT_SECONDS,
+    event_hooks={"request": [inject_correlation_id]},
 )
 
 

@@ -1,5 +1,10 @@
 from contextlib import asynccontextmanager
 
+from app.observability import (
+    instrument_fastapi,
+    shutdown_tracing,
+    start_metrics_server,
+)
 from fastapi import FastAPI
 
 from app.database import init_db
@@ -23,8 +28,15 @@ async def lifespan(
     app: FastAPI,
 ):
     await init_db()
+    metrics_server, metrics_thread = start_metrics_server()
 
-    yield
+    try:
+        yield
+    finally:
+        metrics_server.shutdown()
+        metrics_server.server_close()
+        metrics_thread.join(timeout=2)
+        shutdown_tracing()
 
 
 app = FastAPI(
@@ -37,6 +49,8 @@ app = FastAPI(
     version="1.0.0",
     lifespan=lifespan,
 )
+
+instrument_fastapi(app)
 
 
 app.include_router(

@@ -1,3 +1,5 @@
+import { correlationContext } from '../observability/http-observability';
+
 import {
   BadGatewayException,
   BadRequestException,
@@ -80,6 +82,16 @@ export class MicroservicesClientService {
     headers: Record<string, string> = {},
   ): Promise<RemoteResponse<T>> {
 
+    const correlationId = correlationContext.getStore();
+    const requestHeaders: Record<string, string> = {
+      'Content-Type': 'application/json',
+      ...headers,
+    };
+
+    if (correlationId) {
+      requestHeaders['X-Correlation-ID'] = correlationId;
+    }
+
     const controller =
       new AbortController();
 
@@ -97,12 +109,7 @@ export class MicroservicesClientService {
           {
             method,
 
-            headers: {
-              'Content-Type':
-                'application/json',
-
-              ...headers,
-            },
+            headers: requestHeaders,
 
             body:
               body === undefined
