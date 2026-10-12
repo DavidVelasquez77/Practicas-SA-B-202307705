@@ -1,0 +1,235 @@
+name: P10 Release — Imágenes instrumentadas y GitOps
+
+on:
+  push:
+    tags: ['p10-v*.*.*']
+
+permissions:
+  contents: read
+  packages: write
+  id-token: write
+
+concurrency:
+  group: p10-release-production
+  cancel-in-progress: false
+
+env:
+  REGISTRY: ghcr.io/davidvelasquez77
+  GITOPS_BRANCH: feature/p10-observability
+
+jobs:
+  validate-release:
+    name: RELEASE / Validar versión P10
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    outputs:
+      image_tag: ${{ steps.release.outputs.image_tag }}
+    steps:
+      - name: Preparar historial completo
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: VALIDATE / Confirmar tag SemVer del branch P10
+        id: release
+        shell: bash
+        run: |
+          set -euo pipefail
+          [[ "$GITHUB_REF_NAME" =~ ^p10-v[0-9]+\.[0-9]+\.[0-9]+$ ]] || {
+            echo 'El tag P10 debe tener el formato p10-vX.Y.Z.' >&2
+            exit 1
+          }
+          git fetch origin feature/p10-instrumentation
+          git merge-base --is-ancestor "$GITHUB_SHA" origin/feature/p10-instrumentation || {
+            echo 'El tag debe apuntar a un commit integrado en feature/p10-instrumentation.' >&2
+            exit 1
+          }
+          image_tag="${GITHUB_REF_NAME#p10-}"
+          echo "image_tag=$image_tag" >> "$GITHUB_OUTPUT"
+          echo "Release de observabilidad $image_tag validado." >> "$GITHUB_STEP_SUMMARY"
+
+  ci:
+    name: CI / Pruebas y validaciones
+    needs: validate-release
+    uses: ./.github/workflows/p8-ci.yml
+    permissions:
+      contents: read
+
+  publish:
+    name: PUBLISH / GHCR / ${{ matrix.image }}
+    needs: [validate-release, ci]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - image: api-gateway
+            context: P4/api-gateway
+          - image: auth-service
+            context: P4/services/auth-service
+          - image: comics-service
+            context: P4/services/comics-service
+          - image: rentals-service
+            context: P4/services/rentals-service
+          - image: copies-service
+            context: P4/services/copies-service
+    env:
+      IMAGE_TAG: ${{ needs.validate-release.outputs.image_tag }}
+    steps:
+      - name: Preparar código
+        uses: actions/checkout@v4
+
+      - name: Configurar Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Autenticar Docker en GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: BUILD / Construir y publicar imagen instrumentada
+        id: build
+        uses: docker/build-push-action@v6
+        with:
+          context: ${{ matrix.context }}
+          file: ${{ matrix.context }}/Dockerfile.prod
+          push: true
+          platforms: linux/amd64
+          tags: |
+            ${{ env.REGISTRY }}/comicrent-${{ matrix.image }}:${{ env.IMAGE_TAG }}
+            ${{ env.REGISTRY }}/comicrent-${{ matrix.image }}:sha-${{ github.sha }}
+          labels: |
+            org.opencontainers.image.source=https://github.com/${{ github.repository }}
+            org.opencontainers.image.revision=${{ github.sha }}
+            org.opencontainers.image.version=${{ env.IMAGE_TAG }}
+          cache-from: type=gha,scope=p10-${{ matrix.image }}
+          cache-to: type=gha,mode=max,scope=p10-${{ matrix.image }}
+
+      - name: SECURITY / Trivy bloquea CVE críticas
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          image-ref: ${{ env.REGISTRY }}/comicrent-${{ matrix.image }}:${{ env.IMAGE_TAG }}
+          format: table
+          exit-code: '1'
+          severity: CRITICAL
+          ignore-unfixed: true
+          scanners: vuln
+
+      - name: SECURITY / Generar SBOM SPDX
+        uses: anchore/sbom-action@v0
+        with:
+          image: ${{ env.REGISTRY }}/comicrent-${{ matrix.image }}:${{ env.IMAGE_TAG }}
+          format: spdx-json
+          output-file: sbom-${{ matrix.image }}.spdx.json
+
+      - name: SECURITY / Instalar Cosign
+        uses: sigstore/cosign-installer@v3.7.0
+
+      - name: SECURITY / Firmar y verificar por digest
+        env:
+          COSIGN_YES: 'true'
+          IMAGE: ${{ env.REGISTRY }}/comicrent-${{ matrix.image }}:${{ env.IMAGE_TAG }}
+          DIGEST: ${{ steps.build.outputs.digest }}
+        run: |
+          set -euo pipefail
+          cosign sign "$IMAGE@$DIGEST"
+          cosign verify "$IMAGE@$DIGEST" \
+            --certificate-oidc-issuer=https://token.actions.githubusercontent.com \
+            --certificate-identity-regexp="https://github.com/${{ github.repository }}/.github/workflows/p10-release.yml@refs/tags/p10-v[0-9]+\\.[0-9]+\\.[0-9]+" \
+            > "cosign-${{ matrix.image }}.txt"
+          echo "${{ matrix.image }} $IMAGE@$DIGEST: Trivy, SBOM y Cosign verificados." >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Guardar SBOM y evidencia de firma
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: p10-supply-chain-${{ matrix.image }}
+          path: |
+            sbom-${{ matrix.image }}.spdx.json
+            cosign-${{ matrix.image }}.txt
+          if-no-files-found: ignore
+
+  gitops-pr:
+    name: GITOPS / Abrir PR de imágenes P10
+    needs: [validate-release, publish]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - name: Checkout del repositorio GitOps
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ vars.GITOPS_REPOSITORY }}
+          token: ${{ secrets.GITOPS_TOKEN }}
+          ref: ${{ env.GITOPS_BRANCH }}
+          path: gitops
+
+      - name: GITOPS / Actualizar release y valores observables
+        env:
+          IMAGE_TAG: ${{ needs.validate-release.outputs.image_tag }}
+        run: |
+          python - <<'PY'
+          import os
+          import re
+          from pathlib import Path
+
+          values_path = Path('gitops/apps/comicrent/values-p10.yaml')
+          lines = values_path.read_text(encoding='utf-8').splitlines(keepends=True)
+          services = {'api-gateway', 'auth-service', 'comics-service', 'rentals-service', 'copies-service'}
+          current_section = None
+          updated = set()
+          for index, line in enumerate(lines):
+              top_level = re.match(r'^([A-Za-z0-9_-]+):\s*(?:#.*)?$', line.rstrip('\n'))
+              if top_level:
+                  current_section = top_level.group(1)
+              if current_section in services and re.match(r'^    tag:\s*["\']?v[0-9]+\.[0-9]+\.[0-9]+["\']?\s*(?:#.*)?$', line.rstrip('\n')):
+                  lines[index] = re.sub(r'(?<=tag: )"?v[0-9]+\.[0-9]+\.[0-9]+"?', f'"{os.environ["IMAGE_TAG"]}"', line)
+                  updated.add(current_section)
+          if updated != services:
+              raise SystemExit(f'No se actualizaron todos los servicios: faltan {sorted(services - updated)}')
+          values_path.write_text(''.join(lines), encoding='utf-8')
+
+          application_path = Path('gitops/apps/p9/application.yaml')
+          application = application_path.read_text(encoding='utf-8')
+          application = re.sub(r'(?m)^(\s*targetRevision:\s*)main\s*$', rf'\1{os.environ["GITOPS_BRANCH"]}', application, count=1)
+          application = re.sub(r'(?m)^(\s*-\s*)values-p9\.yaml\s*$', r'\1values-p10.yaml', application, count=1)
+          application_path.write_text(application, encoding='utf-8')
+
+          releases = Path('gitops/releases')
+          releases.mkdir(exist_ok=True)
+          (releases / f'{os.environ["IMAGE_TAG"]}.md').write_text(
+              f'# {os.environ["IMAGE_TAG"]}\n\n'
+              f'Imágenes instrumentadas de P10; análisis Trivy sin CVE críticas bloqueantes, '
+              f'SBOM SPDX y firma Cosign verificada en GitHub Actions run {os.environ["GITHUB_RUN_ID"]}.\n',
+              encoding='utf-8',
+          )
+          PY
+          git -C gitops diff --check
+          git -C gitops diff -- apps/comicrent/values-p10.yaml apps/p9/application.yaml releases/
+
+      - name: GITOPS / Abrir Pull Request al branch P10
+        uses: peter-evans/create-pull-request@v7
+        with:
+          token: ${{ secrets.GITOPS_TOKEN }}
+          path: gitops
+          branch: automation/p10-release-${{ needs.validate-release.outputs.image_tag }}
+          base: ${{ env.GITOPS_BRANCH }}
+          delete-branch: true
+          title: "chore(p10): publicar imágenes instrumentadas ${{ needs.validate-release.outputs.image_tag }}"
+          commit-message: "chore(p10): actualizar imágenes a ${{ needs.validate-release.outputs.image_tag }}"
+          body: |
+            Actualización de las cinco imágenes instrumentadas de ComicRent para P10.
+
+            - CI de P8 reutilizada: pruebas, integración y validaciones.
+            - Trivy sin CVE CRITICAL bloqueantes.
+            - SBOM SPDX por imagen y firma Cosign keyless verificada por digest.
+            - ArgoCD aplica el cambio después de integrar este PR en `${{ env.GITOPS_BRANCH }}`.
+          add-paths: |
+            apps/comicrent/values-p10.yaml
+            apps/p9/application.yaml
+            releases/
