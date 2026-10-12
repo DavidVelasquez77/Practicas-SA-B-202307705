@@ -20,16 +20,10 @@ flowchart LR
   Loki[Loki]
   Collector[OTel Collector]
   Tempo[Tempo]
-  SLO[PrometheusRule<br/>indicadores y presupuesto de error]
-  Alertmanager[Alertmanager]
-  Runbook[Operador consulta el runbook]
-
   Services -->|scrape cada 15 s| Monitor --> Prometheus
   Services -->|OTLP HTTP :4318| Collector -->|OTLP gRPC :4317| Tempo
   Services -->|stdout JSON leído por API de Kubernetes| Alloy -->|push| Loki
   Prometheus --> Grafana
-  SLO -. reglas evaluadas .-> Prometheus
-  Prometheus -->|alerta accionable| Alertmanager --> Runbook
   Loki -->|logs enlazan por trace_id| Grafana
   Tempo -->|trazas enlazan a logs| Grafana
 
