@@ -100,6 +100,50 @@
         { "expr": "sum(rate(comicrent_rentals_created_total{namespace=\"sa-p9\"}[5m]))", "legendFormat": "Rentas creadas", "refId": "A" },
         { "expr": "sum(rate(comicrent_rentals_returned_total{namespace=\"sa-p9\"}[5m]))", "legendFormat": "Rentas devueltas", "refId": "B" }
       ]
+    },
+    {
+      "id": 7,
+      "type": "stat",
+      "title": "SLO disponibilidad — 30 días",
+      "description": "Porcentaje de solicitudes del api-gateway que no fueron 5xx ni timeout. Objetivo: 99.9%.",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 5, "w": 12, "x": 0, "y": 32 },
+      "fieldConfig": { "defaults": { "unit": "percentunit", "min": 0, "max": 1, "decimals": 3, "color": { "mode": "thresholds" }, "thresholds": { "mode": "absolute", "steps": [{ "color": "red", "value": null }, { "color": "green", "value": 0.999 }] } }, "overrides": [] },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "orientation": "auto", "textMode": "value", "colorMode": "value", "graphMode": "area", "justifyMode": "center" },
+      "targets": [{ "expr": "comicrent:slo:availability:good_ratio_30d", "legendFormat": "Disponibilidad", "refId": "A" }]
+    },
+    {
+      "id": 8,
+      "type": "stat",
+      "title": "Presupuesto de disponibilidad consumido",
+      "description": "Fracción del presupuesto de 0.1% de errores consumida en la ventana móvil de 30 días. 1.0 equivale a 100%.",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 5, "w": 12, "x": 12, "y": 32 },
+      "fieldConfig": { "defaults": { "unit": "percentunit", "min": 0, "decimals": 2, "color": { "mode": "thresholds" }, "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }, { "color": "orange", "value": 0.5 }, { "color": "red", "value": 0.75 }] } }, "overrides": [] },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "orientation": "auto", "textMode": "value", "colorMode": "value", "graphMode": "area", "justifyMode": "center" },
+      "targets": [{ "expr": "comicrent:slo:availability:budget_consumed_ratio_30d", "legendFormat": "Presupuesto usado", "refId": "A" }]
+    },
+    {
+      "id": 9,
+      "type": "stat",
+      "title": "SLO latencia — 30 días",
+      "description": "Porcentaje de solicitudes del api-gateway atendidas en 500 ms o menos. Objetivo: 95%.",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 5, "w": 12, "x": 0, "y": 37 },
+      "fieldConfig": { "defaults": { "unit": "percentunit", "min": 0, "max": 1, "decimals": 2, "color": { "mode": "thresholds" }, "thresholds": { "mode": "absolute", "steps": [{ "color": "red", "value": null }, { "color": "green", "value": 0.95 }] } }, "overrides": [] },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "orientation": "auto", "textMode": "value", "colorMode": "value", "graphMode": "area", "justifyMode": "center" },
+      "targets": [{ "expr": "comicrent:slo:latency:good_ratio_30d", "legendFormat": "Solicitudes <= 500 ms", "refId": "A" }]
+    },
+    {
+      "id": 10,
+      "type": "stat",
+      "title": "Presupuesto de latencia consumido",
+      "description": "Fracción del presupuesto de 5% de solicitudes lentas consumida en la ventana móvil de 30 días. 1.0 equivale a 100%.",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 5, "w": 12, "x": 12, "y": 37 },
+      "fieldConfig": { "defaults": { "unit": "percentunit", "min": 0, "decimals": 2, "color": { "mode": "thresholds" }, "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }, { "color": "orange", "value": 0.5 }, { "color": "red", "value": 0.75 }] } }, "overrides": [] },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "orientation": "auto", "textMode": "value", "colorMode": "value", "graphMode": "area", "justifyMode": "center" },
+      "targets": [{ "expr": "comicrent:slo:latency:budget_consumed_ratio_30d", "legendFormat": "Presupuesto usado", "refId": "A" }]
     }
   ],
   "templating": { "list": [] },
