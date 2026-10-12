@@ -1,0 +1,26 @@
+[
+  {
+    "service": "api-gateway",
+    "name": "POST",
+    "traceId": "a3f84aa1985dc03f443808ff9036e098",
+    "httpStatus": "502",
+    "status": "STATUS_CODE_ERROR",
+    "url": null,
+    "errorType": null,
+    "exceptionMessage": null,
+    "startTimeUnixNano": "1791846098794000000",
+    "endTimeUnixNano": "1791846099046771830"
+  },
+  {
+    "service": "api-gateway",
+    "name": "POST",
+    "traceId": "a3f84aa1985dc03f443808ff9036e098",
+    "httpStatus": null,
+    "status": "STATUS_CODE_ERROR",
+    "url": "http://auth-backend.p10.invalid:3001/auth/login",
+    "errorType": "ENOTFOUND",
+    "exceptionMessage": null,
+    "startTimeUnixNano": "1791846098918000000",
+    "endTimeUnixNano": "1791846099038390466"
+  }
+]

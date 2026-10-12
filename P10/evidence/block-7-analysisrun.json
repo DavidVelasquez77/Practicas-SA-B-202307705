@@ -1,0 +1,160 @@
+{
+  "apiVersion": "argoproj.io/v1alpha1",
+  "kind": "AnalysisRun",
+  "metadata": {
+    "annotations": {
+      "rollout.argoproj.io/revision": "9"
+    },
+    "creationTimestamp": "2026-10-12T23:00:59Z",
+    "generation": 3,
+    "labels": {
+      "app.kubernetes.io/instance": "comicrent",
+      "app.kubernetes.io/name": "api-gateway",
+      "rollout-type": "Step",
+      "rollouts-pod-template-hash": "b544dbdd9",
+      "step-index": "1"
+    },
+    "name": "comicrent-api-gateway-rollout-b544dbdd9-9-1",
+    "namespace": "sa-p9",
+    "ownerReferences": [
+      {
+        "apiVersion": "argoproj.io/v1alpha1",
+        "blockOwnerDeletion": true,
+        "controller": true,
+        "kind": "Rollout",
+        "name": "comicrent-api-gateway-rollout",
+        "uid": "893851f2-b677-4c83-9de4-dca520fc1bff"
+      }
+    ],
+    "resourceVersion": "1791846269083743015",
+    "uid": "6cb735a5-f2eb-41fc-b2bd-13937dee9b64"
+  },
+  "spec": {
+    "args": [
+      {
+        "name": "rollout-hash",
+        "value": "b544dbdd9"
+      }
+    ],
+    "metrics": [
+      {
+        "failureLimit": 0,
+        "initialDelay": "210s",
+        "name": "candidate-request-volume",
+        "provider": {
+          "prometheus": {
+            "address": "http://p10-observability-kube-pro-prometheus.observability.svc.cluster.local:9090",
+            "authentication": {
+              "oauth2": {},
+              "sigv4": {}
+            },
+            "query": "sum(increase(comicrent_http_requests_total{\n  namespace=\"sa-p9\",\n  service=\"api-gateway\",\n  rollouts_pod_template_hash=\"{{args.rollout-hash}}\"\n}[5m])) or vector(0)\n",
+            "timeout": 10
+          }
+        },
+        "successCondition": "result[0] >= 20"
+      },
+      {
+        "failureLimit": 0,
+        "initialDelay": "210s",
+        "name": "candidate-error-ratio",
+        "provider": {
+          "prometheus": {
+            "address": "http://p10-observability-kube-pro-prometheus.observability.svc.cluster.local:9090",
+            "authentication": {
+              "oauth2": {},
+              "sigv4": {}
+            },
+            "query": "(\n  sum(increase(comicrent_http_requests_total{\n    namespace=\"sa-p9\",\n    service=\"api-gateway\",\n    rollouts_pod_template_hash=\"{{args.rollout-hash}}\",\n    status_class=~\"5xx|timeout\"\n  }[5m]))\n  /\n  clamp_min(sum(increase(comicrent_http_requests_total{\n    namespace=\"sa-p9\",\n    service=\"api-gateway\",\n    rollouts_pod_template_hash=\"{{args.rollout-hash}}\"\n  }[5m])), 1)\n) or vector(0)\n",
+            "timeout": 10
+          }
+        },
+        "successCondition": "result[0] <= 0.001"
+      },
+      {
+        "failureLimit": 0,
+        "initialDelay": "210s",
+        "name": "candidate-p95-latency",
+        "provider": {
+          "prometheus": {
+            "address": "http://p10-observability-kube-pro-prometheus.observability.svc.cluster.local:9090",
+            "authentication": {
+              "oauth2": {},
+              "sigv4": {}
+            },
+            "query": "histogram_quantile(0.95,\n  sum by (le) (rate(comicrent_http_request_duration_seconds_bucket{\n    namespace=\"sa-p9\",\n    service=\"api-gateway\",\n    rollouts_pod_template_hash=\"{{args.rollout-hash}}\"\n  }[5m]))\n) or vector(0)\n",
+            "timeout": 10
+          }
+        },
+        "successCondition": "result[0] <= 0.5"
+      }
+    ]
+  },
+  "status": {
+    "completedAt": "2026-10-12T23:04:29Z",
+    "dryRunSummary": {},
+    "message": "Metric \"candidate-error-ratio\" assessed Failed due to failed (1) > failureLimit (0)",
+    "metricResults": [
+      {
+        "count": 1,
+        "failed": 1,
+        "measurements": [
+          {
+            "finishedAt": "2026-10-12T23:04:29Z",
+            "phase": "Failed",
+            "startedAt": "2026-10-12T23:04:29Z",
+            "value": "[1]"
+          }
+        ],
+        "metadata": {
+          "ResolvedPrometheusQuery": "(\n  sum(increase(comicrent_http_requests_total{\n    namespace=\"sa-p9\",\n    service=\"api-gateway\",\n    rollouts_pod_template_hash=\"b544dbdd9\",\n    status_class=~\"5xx|timeout\"\n  }[5m]))\n  /\n  clamp_min(sum(increase(comicrent_http_requests_total{\n    namespace=\"sa-p9\",\n    service=\"api-gateway\",\n    rollouts_pod_template_hash=\"b544dbdd9\"\n  }[5m])), 1)\n) or vector(0)\n"
+        },
+        "name": "candidate-error-ratio",
+        "phase": "Failed"
+      },
+      {
+        "consecutiveSuccess": 1,
+        "count": 1,
+        "measurements": [
+          {
+            "finishedAt": "2026-10-12T23:04:29Z",
+            "phase": "Successful",
+            "startedAt": "2026-10-12T23:04:29Z",
+            "value": "[44.031575017334255]"
+          }
+        ],
+        "metadata": {
+          "ResolvedPrometheusQuery": "sum(increase(comicrent_http_requests_total{\n  namespace=\"sa-p9\",\n  service=\"api-gateway\",\n  rollouts_pod_template_hash=\"b544dbdd9\"\n}[5m])) or vector(0)\n"
+        },
+        "name": "candidate-request-volume",
+        "phase": "Successful",
+        "successful": 1
+      },
+      {
+        "consecutiveSuccess": 1,
+        "count": 1,
+        "measurements": [
+          {
+            "finishedAt": "2026-10-12T23:04:29Z",
+            "phase": "Successful",
+            "startedAt": "2026-10-12T23:04:29Z",
+            "value": "[0.04871794871794872]"
+          }
+        ],
+        "metadata": {
+          "ResolvedPrometheusQuery": "histogram_quantile(0.95,\n  sum by (le) (rate(comicrent_http_request_duration_seconds_bucket{\n    namespace=\"sa-p9\",\n    service=\"api-gateway\",\n    rollouts_pod_template_hash=\"b544dbdd9\"\n  }[5m]))\n) or vector(0)\n"
+        },
+        "name": "candidate-p95-latency",
+        "phase": "Successful",
+        "successful": 1
+      }
+    ],
+    "phase": "Failed",
+    "runSummary": {
+      "count": 3,
+      "failed": 1,
+      "successful": 2
+    },
+    "startedAt": "2026-10-12T23:00:59Z"
+  }
+}

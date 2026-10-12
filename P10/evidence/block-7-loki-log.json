@@ -1,0 +1,13 @@
+{
+  "timestamp": "2026-10-12T23:01:39.044Z",
+  "level": "ERROR",
+  "service": "api-gateway",
+  "event": "http.request.failed",
+  "trace_id": "a3f84aa1985dc03f443808ff9036e098",
+  "span_id": "d71387692456e950",
+  "correlation_id": "p10-block7-fault-20261012T230138Z-1",
+  "method": "POST",
+  "route": "/api/auth/login",
+  "status_code": 502,
+  "error_type": "BadGatewayException"
+}
