@@ -101,7 +101,7 @@
           "values": false
         },
         "orientation": "auto",
-        "textMode": "value_and_name",
+        "textMode": "value",
         "colorMode": "background",
         "graphMode": "area",
         "justifyMode": "center"
@@ -110,14 +110,16 @@
         {
           "expr": "comicrent:slo:availability:good_ratio_30d",
           "legendFormat": "Disponibilidad",
-          "refId": "A"
+          "refId": "A",
+          "instant": true,
+          "range": false
         }
       ]
     },
     {
       "id": 3,
       "type": "stat",
-      "title": "Latencia ≤ 500 ms",
+      "title": "Latencia ≤500 ms",
       "description": "SLO de usuario: 95% de solicitudes en 500 ms o menos.",
       "datasource": {
         "type": "prometheus",
@@ -161,7 +163,7 @@
           "values": false
         },
         "orientation": "auto",
-        "textMode": "value_and_name",
+        "textMode": "value",
         "colorMode": "background",
         "graphMode": "area",
         "justifyMode": "center"
@@ -169,15 +171,17 @@
       "targets": [
         {
           "expr": "comicrent:slo:latency:good_ratio_30d",
-          "legendFormat": "Latencia ≤ 500 ms",
-          "refId": "A"
+          "legendFormat": "Latencia ≤500 ms",
+          "refId": "A",
+          "instant": true,
+          "range": false
         }
       ]
     },
     {
       "id": 4,
       "type": "stat",
-      "title": "Presupuesto · errores",
+      "title": "Budget · errores",
       "description": "Porcentaje del presupuesto mensual de errores ya consumido.",
       "datasource": {
         "type": "prometheus",
@@ -225,7 +229,7 @@
           "values": false
         },
         "orientation": "auto",
-        "textMode": "value_and_name",
+        "textMode": "value",
         "colorMode": "background",
         "graphMode": "area",
         "justifyMode": "center"
@@ -233,15 +237,17 @@
       "targets": [
         {
           "expr": "comicrent:slo:availability:budget_consumed_ratio_30d",
-          "legendFormat": "Presupuesto · errores",
-          "refId": "A"
+          "legendFormat": "Budget · errores",
+          "refId": "A",
+          "instant": true,
+          "range": false
         }
       ]
     },
     {
       "id": 5,
       "type": "stat",
-      "title": "Presupuesto · lentitud",
+      "title": "Budget · lentitud",
       "description": "Porcentaje del presupuesto mensual de respuestas lentas ya consumido.",
       "datasource": {
         "type": "prometheus",
@@ -289,7 +295,7 @@
           "values": false
         },
         "orientation": "auto",
-        "textMode": "value_and_name",
+        "textMode": "value",
         "colorMode": "background",
         "graphMode": "area",
         "justifyMode": "center"
@@ -297,8 +303,10 @@
       "targets": [
         {
           "expr": "comicrent:slo:latency:budget_consumed_ratio_30d",
-          "legendFormat": "Presupuesto · lentitud",
-          "refId": "A"
+          "legendFormat": "Budget · lentitud",
+          "refId": "A",
+          "instant": true,
+          "range": false
         }
       ]
     },
@@ -688,7 +696,7 @@
           "values": false
         },
         "orientation": "auto",
-        "textMode": "value_and_name",
+        "textMode": "value",
         "colorMode": "background",
         "graphMode": "area",
         "justifyMode": "center"
@@ -697,7 +705,9 @@
         {
           "expr": "sum(increase(comicrent_rentals_created_total{namespace=\"sa-p9\"}[24h])) or vector(0)",
           "legendFormat": "Rentas creadas · 24 h",
-          "refId": "A"
+          "refId": "A",
+          "instant": true,
+          "range": false
         }
       ]
     },
@@ -744,7 +754,7 @@
           "values": false
         },
         "orientation": "auto",
-        "textMode": "value_and_name",
+        "textMode": "value",
         "colorMode": "background",
         "graphMode": "area",
         "justifyMode": "center"
@@ -753,7 +763,9 @@
         {
           "expr": "sum(increase(comicrent_rentals_returned_total{namespace=\"sa-p9\"}[24h])) or vector(0)",
           "legendFormat": "Rentas devueltas · 24 h",
-          "refId": "A"
+          "refId": "A",
+          "instant": true,
+          "range": false
         }
       ]
     }

@@ -54,12 +54,12 @@ def stat(
         "options": {
             "reduceOptions": {"calcs": ["lastNotNull"], "fields": "", "values": False},
             "orientation": "auto",
-            "textMode": "value_and_name",
+            "textMode": "value",
             "colorMode": "background",
             "graphMode": "area",
             "justifyMode": "center",
         },
-        "targets": [target(expr, title)],
+        "targets": [{**target(expr, title), "instant": True, "range": False}],
     }
 
 
@@ -148,9 +148,9 @@ panels.append({
 
 panels.extend([
     stat(2, "Disponibilidad", "SLO de usuario: 99.9% de solicitudes sin 5xx/timeout en 30 días.", "comicrent:slo:availability:good_ratio_30d", 0, 3, decimals=3, thresholds=[(None, "red"), (0.999, "green")]),
-    stat(3, "Latencia ≤ 500 ms", "SLO de usuario: 95% de solicitudes en 500 ms o menos.", "comicrent:slo:latency:good_ratio_30d", 6, 3, thresholds=[(None, "red"), (0.95, "green")]),
-    stat(4, "Presupuesto · errores", "Porcentaje del presupuesto mensual de errores ya consumido.", "comicrent:slo:availability:budget_consumed_ratio_30d", 12, 3, thresholds=[(None, "green"), (0.5, "orange"), (1, "red")]),
-    stat(5, "Presupuesto · lentitud", "Porcentaje del presupuesto mensual de respuestas lentas ya consumido.", "comicrent:slo:latency:budget_consumed_ratio_30d", 18, 3, thresholds=[(None, "green"), (0.5, "orange"), (1, "red")]),
+    stat(3, "Latencia ≤500 ms", "SLO de usuario: 95% de solicitudes en 500 ms o menos.", "comicrent:slo:latency:good_ratio_30d", 6, 3, thresholds=[(None, "red"), (0.95, "green")]),
+    stat(4, "Budget · errores", "Porcentaje del presupuesto mensual de errores ya consumido.", "comicrent:slo:availability:budget_consumed_ratio_30d", 12, 3, thresholds=[(None, "green"), (0.5, "orange"), (1, "red")]),
+    stat(5, "Budget · lentitud", "Porcentaje del presupuesto mensual de respuestas lentas ya consumido.", "comicrent:slo:latency:budget_consumed_ratio_30d", 18, 3, thresholds=[(None, "green"), (0.5, "orange"), (1, "red")]),
 ])
 
 panels.extend([

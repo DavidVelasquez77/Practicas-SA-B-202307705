@@ -9,11 +9,14 @@ Esta práctica amplía el clúster GitOps de P9 con métricas, trazas y registro
 | Repositorio de código | [Practicas-SA-B-202307705](https://github.com/DavidVelasquez77/Practicas-SA-B-202307705) |
 | Repositorio GitOps | [Practicas-SA-B-202307705-gitops](https://github.com/DavidVelasquez77/Practicas-SA-B-202307705-gitops) |
 | Servicios instrumentados | `api-gateway`, `rentals-service` y `copies-service` en `sa-p9`; `auth-service` también está instrumentado. [Código del gateway](../P4/api-gateway/src/observability/telemetry.ts), [rentas](../P4/services/rentals-service/app/observability.py), [copias](../P4/services/copies-service/app/observability.py). |
+| Traza entre tres servicios | [Transacción verificada](evidence/three-service-transaction.md) y [traza Tempo](evidence/three-service-trace.json): `rentals-service` → `comics-service` y `copies-service`, un mismo `trace_id` en 14 spans. |
+| Métricas de negocio | [`comicrent_rentals_created_total` y `comicrent_rentals_returned_total`](evidence/business-metrics-live.json), emitidas desde el arranque y aumentadas por operaciones reales de creación y devolución. |
 | AnalysisTemplate por métricas | `api-gateway-metrics`, namespace `sa-p9`: [manifiesto GitOps](https://github.com/DavidVelasquez77/Practicas-SA-B-202307705-gitops/blob/feature/p10-observability/apps/comicrent/templates/p10-analysis.yaml). |
+| Publicación instrumentada | [GitHub Actions v0.9.2](https://github.com/DavidVelasquez77/Practicas-SA-B-202307705/actions/runs/38340568756) publicó cinco imágenes con Trivy, SBOM y Cosign; el [PR GitOps #27](https://github.com/DavidVelasquez77/Practicas-SA-B-202307705-gitops/pull/27) actualizó los tags. El [Rollout final](evidence/rollout-v0.9.2-healthy.json) quedó `Healthy` tras cuatro AnalysisRuns exitosos. |
 | Consultas del análisis | [PromQL exacto para volumen, error y p95](#consultas-promql-del-canary); [plantilla GitOps](https://github.com/DavidVelasquez77/Practicas-SA-B-202307705-gitops/blob/feature/p10-observability/apps/comicrent/templates/p10-analysis.yaml). |
 | SLO declarados | [Disponibilidad ≥99.9% y latencia ≥95% de solicitudes ≤500 ms, ambos en 30 días móviles](slo/SLOs.md). |
 | Reglas de alerta | [`PrometheusRule comicrent-slo-rules`](https://github.com/DavidVelasquez77/Practicas-SA-B-202307705-gitops/blob/feature/p10-observability/apps/p10/observability/rules/slo-rules.yaml), con [runbook de disponibilidad](runbooks/availability-error-budget.md) y [runbook de latencia](runbooks/latency-error-budget.md). |
-| Tablero | [JSON exportado de Grafana](dashboards/comicrent-operations.json), UID `comicrent-p10-operations`, y [captura del tablero en operación](evidence/grafana-dashboard-live.png). |
+| Tablero | [JSON exportado de Grafana](dashboards/comicrent-operations.json), UID `comicrent-p10-operations`, [SLO y señales de oro](evidence/grafana-dashboard-live.png) y [métricas de negocio](evidence/grafana-dashboard-business-live.png). |
 | Reversión por métricas | [AnalysisRun `comicrent-api-gateway-rollout-b544dbdd9-9-1` (`Failed`)](evidence/block-7-analysisrun.json) del Rollout `comicrent-api-gateway-rollout`, namespace `sa-p9`; [secuencia](evidence/block-7-canary-and-triage.md) y [estado estable recuperado](evidence/block-8-rollout-recovery.json). |
 | Recorrido síntoma a causa | [Alerta → Prometheus → Loki → Tempo, máximo 1 min 16.93 s desde `firing`](evidence/block-7-canary-and-triage.md); [marcas medidas](evidence/block-7-signal-summary.json). |
 | Video demostrativo | [Carpeta de Drive destinada al video](https://drive.google.com/drive/folders/1o23KFwNxf1ac2Y3ctkz1hr3OQOUZ1a3o?usp=sharing). La [guía de minutaje recomendado](#video-demostrativo) está abajo; después de grabar se agregará aquí el enlace directo al archivo y su minutaje real. |
@@ -38,9 +41,11 @@ flowchart LR
 
 [Fuente editable del diagrama](diagrams/telemetry-flow.mmd). El tablero responde por orden a tráfico, latencia, errores y saturación; añade actividad de rentas y consumo de los dos presupuestos.
 
-![Tablero Grafana de ComicRent con las señales de oro y los SLO durante el incidente de P10](evidence/grafana-dashboard-live.png)
+![Tablero Grafana de ComicRent con SLO actuales y señales de oro](evidence/grafana-dashboard-live.png)
 
-La captura muestra una ventana de 24 horas que incluye el incidente inducido. El panel de actividad de negocio indica `No data` porque no se crearon ni devolvieron rentas en esa ventana; los contadores instrumentados se emiten cuando ocurren esas operaciones.
+![Actividad de negocio y sondas Canary separadas en el tablero](evidence/grafana-dashboard-business-live.png)
+
+El tablero separa tráfico de usuarios y sondas controladas del Canary. La vista de negocio usa contadores inicializados en cero y ya se verificó con una renta creada y otra devuelta. La retención de Prometheus es de 31 días en un volumen de 40 GiB; el SLO de 30 días no debe interpretarse como historial completo hasta que transcurra esa ventana desde la nueva instrumentación.
 
 ## Consultas PromQL del canary
 
@@ -71,4 +76,4 @@ Duración requerida: 5–8 minutos. El video se publicará en la [carpeta de Dri
 | 2:45–3:45 | AnalysisTemplate: volumen, error y p95 de la revisión candidata en PromQL. |
 | 3:45–5:00 | AnalysisRun fallido, evento `RolloutAborted` y ReplicaSet estable. |
 | 5:00–6:30 | Alerta `ComicRentAvailabilityBudgetFastBurn`, ruta afectada, registro JSON en Loki y `trace_id` en Tempo. |
-| 6:30–7:15 | Informe: tiempos medidos, recuperación GitOps y mejora propuesta. |
+| 6:30–7:15 | Informe: tiempos medidos, recuperación GitOps y separación ya implementada entre tráfico de usuario y sondas Canary. |

@@ -2,7 +2,7 @@
 
 Aplica a `ComicRentLatencyBudgetFastBurn` y `ComicRentLatencyBudgetSlowBurn`.
 
-1. Abre el tablero `ComicRent — Operación` y confirma el p95 del `api-gateway` y el tráfico reciente. La SLO considera lenta una solicitud que excede 500 ms.
+1. Abre el tablero `ComicRent | Centro de operaciones` y confirma el p95 del `api-gateway` y el tráfico reciente. La SLO considera lenta una solicitud de usuario que excede 500 ms; las sondas `canary-test` no forman parte de este presupuesto.
 2. En Prometheus consulta el histograma por ruta y servicio para distinguir un problema general de una operación específica. Revisa también CPU y memoria frente a sus solicitudes para detectar saturación.
 3. Para una solicitud lenta, copia `trace_id` desde el registro JSON y abre la traza en Tempo. Identifica el span que concentra la espera; busca el mismo identificador en Loki para ver el contexto del servicio.
 4. Revisa cambios recientes y dependencias. Si una versión candidata está causando la degradación, evita promoverla; el AnalysisTemplate de Argo Rollouts debe impedir la promoción cuando el p95 exceda el límite.

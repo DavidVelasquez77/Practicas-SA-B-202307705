@@ -1,0 +1,818 @@
+{
+  "batches": [
+    {
+      "resource": {
+        "attributes": [
+          {
+            "key": "host.arch",
+            "value": {
+              "stringValue": "amd64"
+            }
+          },
+          {
+            "key": "host.name",
+            "value": {
+              "stringValue": "comicrent-p9-workloads-comics-service-6486d99db5-wxsgf"
+            }
+          },
+          {
+            "key": "process.command",
+            "value": {
+              "stringValue": "/app/dist/main.js"
+            }
+          },
+          {
+            "key": "process.command_args",
+            "value": {
+              "arrayValue": {
+                "values": [
+                  {
+                    "stringValue": "/usr/local/bin/node"
+                  },
+                  {
+                    "stringValue": "/app/dist/main.js"
+                  }
+                ]
+              }
+            }
+          },
+          {
+            "key": "process.executable.name",
+            "value": {
+              "stringValue": "node"
+            }
+          },
+          {
+            "key": "process.executable.path",
+            "value": {
+              "stringValue": "/usr/local/bin/node"
+            }
+          },
+          {
+            "key": "process.owner",
+            "value": {
+              "stringValue": "node"
+            }
+          },
+          {
+            "key": "process.pid",
+            "value": {
+              "intValue": "1"
+            }
+          },
+          {
+            "key": "process.runtime.description",
+            "value": {
+              "stringValue": "Node.js"
+            }
+          },
+          {
+            "key": "process.runtime.name",
+            "value": {
+              "stringValue": "nodejs"
+            }
+          },
+          {
+            "key": "process.runtime.version",
+            "value": {
+              "stringValue": "22.23.3"
+            }
+          },
+          {
+            "key": "telemetry.sdk.language",
+            "value": {
+              "stringValue": "nodejs"
+            }
+          },
+          {
+            "key": "telemetry.sdk.name",
+            "value": {
+              "stringValue": "opentelemetry"
+            }
+          },
+          {
+            "key": "telemetry.sdk.version",
+            "value": {
+              "stringValue": "2.12.0"
+            }
+          },
+          {
+            "key": "service.name",
+            "value": {
+              "stringValue": "comics-service"
+            }
+          },
+          {
+            "key": "k8s.namespace.name",
+            "value": {
+              "stringValue": "sa-p9"
+            }
+          }
+        ]
+      },
+      "scopeSpans": [
+        {
+          "scope": {
+            "name": "@opentelemetry/instrumentation-http",
+            "version": "0.223.0"
+          },
+          "spans": [
+            {
+              "traceId": "OYb2RK0VhV+6xLXfvJ9Fmw==",
+              "spanId": "eURGolpg6i4=",
+              "parentSpanId": "Ood1i3MXd34=",
+              "name": "POST",
+              "kind": "SPAN_KIND_SERVER",
+              "startTimeUnixNano": "1791862135631000000",
+              "endTimeUnixNano": "1791862136154810645",
+              "attributes": [
+                {
+                  "key": "http.request.method",
+                  "value": {
+                    "stringValue": "POST"
+                  }
+                },
+                {
+                  "key": "url.scheme",
+                  "value": {
+                    "stringValue": "http"
+                  }
+                },
+                {
+                  "key": "server.address",
+                  "value": {
+                    "stringValue": "comicrent-p9-workloads-comics-service"
+                  }
+                },
+                {
+                  "key": "network.peer.address",
+                  "value": {
+                    "stringValue": "::ffff:10.16.2.131"
+                  }
+                },
+                {
+                  "key": "network.peer.port",
+                  "value": {
+                    "intValue": "34800"
+                  }
+                },
+                {
+                  "key": "network.protocol.version",
+                  "value": {
+                    "stringValue": "1.1"
+                  }
+                },
+                {
+                  "key": "user_agent.original",
+                  "value": {
+                    "stringValue": "python-httpx/0.28.1"
+                  }
+                },
+                {
+                  "key": "url.path",
+                  "value": {
+                    "stringValue": "/graphql"
+                  }
+                },
+                {
+                  "key": "client.address",
+                  "value": {
+                    "stringValue": "::ffff:10.16.2.131"
+                  }
+                },
+                {
+                  "key": "server.port",
+                  "value": {
+                    "intValue": "3002"
+                  }
+                },
+                {
+                  "key": "http.response.status_code",
+                  "value": {
+                    "intValue": "200"
+                  }
+                }
+              ],
+              "status": {}
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "resource": {
+        "attributes": [
+          {
+            "key": "service.instance.id",
+            "value": {
+              "stringValue": "db5c262d-4426-4e28-9563-7eeb502bec45"
+            }
+          },
+          {
+            "key": "telemetry.sdk.language",
+            "value": {
+              "stringValue": "python"
+            }
+          },
+          {
+            "key": "telemetry.sdk.name",
+            "value": {
+              "stringValue": "opentelemetry"
+            }
+          },
+          {
+            "key": "telemetry.sdk.version",
+            "value": {
+              "stringValue": "1.45.1"
+            }
+          },
+          {
+            "key": "service.name",
+            "value": {
+              "stringValue": "rentals-service"
+            }
+          },
+          {
+            "key": "k8s.namespace.name",
+            "value": {
+              "stringValue": "sa-p9"
+            }
+          }
+        ]
+      },
+      "scopeSpans": [
+        {
+          "scope": {
+            "name": "opentelemetry.instrumentation.fastapi",
+            "version": "0.66b1"
+          },
+          "spans": [
+            {
+              "traceId": "OYb2RK0VhV+6xLXfvJ9Fmw==",
+              "spanId": "FW5iZlpcdyQ=",
+              "parentSpanId": "9myptNcXq9k=",
+              "name": "POST /graphql http receive",
+              "kind": "SPAN_KIND_INTERNAL",
+              "startTimeUnixNano": "1791862135607313604",
+              "endTimeUnixNano": "1791862135607358785",
+              "attributes": [
+                {
+                  "key": "asgi.event.type",
+                  "value": {
+                    "stringValue": "http.request"
+                  }
+                }
+              ],
+              "status": {}
+            },
+            {
+              "traceId": "OYb2RK0VhV+6xLXfvJ9Fmw==",
+              "spanId": "31oErxb1iRY=",
+              "parentSpanId": "9myptNcXq9k=",
+              "name": "POST /graphql http send",
+              "kind": "SPAN_KIND_INTERNAL",
+              "startTimeUnixNano": "1791862137108919929",
+              "endTimeUnixNano": "1791862137109078422",
+              "attributes": [
+                {
+                  "key": "asgi.event.type",
+                  "value": {
+                    "stringValue": "http.response.start"
+                  }
+                },
+                {
+                  "key": "http.status_code",
+                  "value": {
+                    "intValue": "200"
+                  }
+                }
+              ],
+              "status": {}
+            },
+            {
+              "traceId": "OYb2RK0VhV+6xLXfvJ9Fmw==",
+              "spanId": "4yC4eRPn9+k=",
+              "parentSpanId": "9myptNcXq9k=",
+              "name": "POST /graphql http send",
+              "kind": "SPAN_KIND_INTERNAL",
+              "startTimeUnixNano": "1791862137110670991",
+              "endTimeUnixNano": "1791862137110832787",
+              "attributes": [
+                {
+                  "key": "asgi.event.type",
+                  "value": {
+                    "stringValue": "http.response.body"
+                  }
+                }
+              ],
+              "status": {}
+            },
+            {
+              "traceId": "OYb2RK0VhV+6xLXfvJ9Fmw==",
+              "spanId": "9myptNcXq9k=",
+              "name": "POST /graphql",
+              "kind": "SPAN_KIND_SERVER",
+              "startTimeUnixNano": "1791862135605698586",
+              "endTimeUnixNano": "1791862137111141640",
+              "attributes": [
+                {
+                  "key": "http.scheme",
+                  "value": {
+                    "stringValue": "http"
+                  }
+                },
+                {
+                  "key": "http.host",
+                  "value": {
+                    "stringValue": "127.0.0.1:8001"
+                  }
+                },
+                {
+                  "key": "net.host.port",
+                  "value": {
+                    "intValue": "8001"
+                  }
+                },
+                {
+                  "key": "http.flavor",
+                  "value": {
+                    "stringValue": "1.1"
+                  }
+                },
+                {
+                  "key": "http.target",
+                  "value": {
+                    "stringValue": "/graphql"
+                  }
+                },
+                {
+                  "key": "http.server_name",
+                  "value": {
+                    "stringValue": "127.0.0.1:38006"
+                  }
+                },
+                {
+                  "key": "http.user_agent",
+                  "value": {
+                    "stringValue": "Mozilla/5.0 (Windows NT 10.0; Microsoft Windows 10.0.26200; es-GT) PowerShell/7.6.6"
+                  }
+                },
+                {
+                  "key": "net.peer.ip",
+                  "value": {
+                    "stringValue": "127.0.0.1"
+                  }
+                },
+                {
+                  "key": "net.peer.port",
+                  "value": {
+                    "intValue": "43770"
+                  }
+                },
+                {
+                  "key": "http.route",
+                  "value": {
+                    "stringValue": "/graphql"
+                  }
+                },
+                {
+                  "key": "http.method",
+                  "value": {
+                    "stringValue": "POST"
+                  }
+                },
+                {
+                  "key": "http.url",
+                  "value": {
+                    "stringValue": "http://127.0.0.1:38006/graphql"
+                  }
+                },
+                {
+                  "key": "http.status_code",
+                  "value": {
+                    "intValue": "200"
+                  }
+                }
+              ],
+              "status": {}
+            }
+          ]
+        },
+        {
+          "scope": {
+            "name": "opentelemetry.instrumentation.httpx",
+            "version": "0.66b1"
+          },
+          "spans": [
+            {
+              "traceId": "OYb2RK0VhV+6xLXfvJ9Fmw==",
+              "spanId": "Ood1i3MXd34=",
+              "parentSpanId": "9myptNcXq9k=",
+              "name": "POST",
+              "kind": "SPAN_KIND_CLIENT",
+              "startTimeUnixNano": "1791862135612809242",
+              "endTimeUnixNano": "1791862136157436304",
+              "attributes": [
+                {
+                  "key": "http.method",
+                  "value": {
+                    "stringValue": "POST"
+                  }
+                },
+                {
+                  "key": "http.url",
+                  "value": {
+                    "stringValue": "http://comicrent-p9-workloads-comics-service:3002/graphql"
+                  }
+                },
+                {
+                  "key": "http.status_code",
+                  "value": {
+                    "intValue": "200"
+                  }
+                }
+              ],
+              "status": {}
+            },
+            {
+              "traceId": "OYb2RK0VhV+6xLXfvJ9Fmw==",
+              "spanId": "BUE61Qwm4ZM=",
+              "parentSpanId": "9myptNcXq9k=",
+              "name": "GET",
+              "kind": "SPAN_KIND_CLIENT",
+              "startTimeUnixNano": "1791862136161686498",
+              "endTimeUnixNano": "1791862136537624719",
+              "attributes": [
+                {
+                  "key": "http.method",
+                  "value": {
+                    "stringValue": "GET"
+                  }
+                },
+                {
+                  "key": "http.url",
+                  "value": {
+                    "stringValue": "http://comicrent-p9-workloads-copies-service:8002/copies/available/by-comic/1"
+                  }
+                },
+                {
+                  "key": "http.status_code",
+                  "value": {
+                    "intValue": "200"
+                  }
+                }
+              ],
+              "status": {}
+            },
+            {
+              "traceId": "OYb2RK0VhV+6xLXfvJ9Fmw==",
+              "spanId": "+doYhvVO9vc=",
+              "parentSpanId": "9myptNcXq9k=",
+              "name": "PATCH",
+              "kind": "SPAN_KIND_CLIENT",
+              "startTimeUnixNano": "1791862136546598083",
+              "endTimeUnixNano": "1791862137089085215",
+              "attributes": [
+                {
+                  "key": "http.method",
+                  "value": {
+                    "stringValue": "PATCH"
+                  }
+                },
+                {
+                  "key": "http.url",
+                  "value": {
+                    "stringValue": "http://comicrent-p9-workloads-copies-service:8002/copies/1/rent"
+                  }
+                },
+                {
+                  "key": "http.status_code",
+                  "value": {
+                    "intValue": "200"
+                  }
+                }
+              ],
+              "status": {}
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "resource": {
+        "attributes": [
+          {
+            "key": "service.instance.id",
+            "value": {
+              "stringValue": "fe8e70eb-1119-46ce-860f-73a813ab0478"
+            }
+          },
+          {
+            "key": "telemetry.sdk.language",
+            "value": {
+              "stringValue": "python"
+            }
+          },
+          {
+            "key": "telemetry.sdk.name",
+            "value": {
+              "stringValue": "opentelemetry"
+            }
+          },
+          {
+            "key": "telemetry.sdk.version",
+            "value": {
+              "stringValue": "1.45.1"
+            }
+          },
+          {
+            "key": "service.name",
+            "value": {
+              "stringValue": "copies-service"
+            }
+          },
+          {
+            "key": "k8s.namespace.name",
+            "value": {
+              "stringValue": "sa-p9"
+            }
+          }
+        ]
+      },
+      "scopeSpans": [
+        {
+          "scope": {
+            "name": "opentelemetry.instrumentation.fastapi",
+            "version": "0.66b1"
+          },
+          "spans": [
+            {
+              "traceId": "OYb2RK0VhV+6xLXfvJ9Fmw==",
+              "spanId": "2CKa5zf1DnQ=",
+              "parentSpanId": "PueEc4IMYg8=",
+              "name": "GET /copies/available/by-comic/{comic_id} http send",
+              "kind": "SPAN_KIND_INTERNAL",
+              "startTimeUnixNano": "1791862136528874520",
+              "endTimeUnixNano": "1791862136529321260",
+              "attributes": [
+                {
+                  "key": "asgi.event.type",
+                  "value": {
+                    "stringValue": "http.response.start"
+                  }
+                },
+                {
+                  "key": "http.status_code",
+                  "value": {
+                    "intValue": "200"
+                  }
+                }
+              ],
+              "status": {}
+            },
+            {
+              "traceId": "OYb2RK0VhV+6xLXfvJ9Fmw==",
+              "spanId": "Sj6Bx3L+hpU=",
+              "parentSpanId": "PueEc4IMYg8=",
+              "name": "GET /copies/available/by-comic/{comic_id} http send",
+              "kind": "SPAN_KIND_INTERNAL",
+              "startTimeUnixNano": "1791862136537744883",
+              "endTimeUnixNano": "1791862136537915600",
+              "attributes": [
+                {
+                  "key": "asgi.event.type",
+                  "value": {
+                    "stringValue": "http.response.body"
+                  }
+                }
+              ],
+              "status": {}
+            },
+            {
+              "traceId": "OYb2RK0VhV+6xLXfvJ9Fmw==",
+              "spanId": "PueEc4IMYg8=",
+              "parentSpanId": "BUE61Qwm4ZM=",
+              "name": "GET /copies/available/by-comic/{comic_id}",
+              "kind": "SPAN_KIND_SERVER",
+              "startTimeUnixNano": "1791862136203133391",
+              "endTimeUnixNano": "1791862136538350200",
+              "attributes": [
+                {
+                  "key": "http.scheme",
+                  "value": {
+                    "stringValue": "http"
+                  }
+                },
+                {
+                  "key": "http.host",
+                  "value": {
+                    "stringValue": "10.16.0.25:8002"
+                  }
+                },
+                {
+                  "key": "net.host.port",
+                  "value": {
+                    "intValue": "8002"
+                  }
+                },
+                {
+                  "key": "http.flavor",
+                  "value": {
+                    "stringValue": "1.1"
+                  }
+                },
+                {
+                  "key": "http.target",
+                  "value": {
+                    "stringValue": "/copies/available/by-comic/1"
+                  }
+                },
+                {
+                  "key": "http.server_name",
+                  "value": {
+                    "stringValue": "comicrent-p9-workloads-copies-service:8002"
+                  }
+                },
+                {
+                  "key": "http.user_agent",
+                  "value": {
+                    "stringValue": "python-httpx/0.28.1"
+                  }
+                },
+                {
+                  "key": "net.peer.ip",
+                  "value": {
+                    "stringValue": "10.16.2.131"
+                  }
+                },
+                {
+                  "key": "net.peer.port",
+                  "value": {
+                    "intValue": "42736"
+                  }
+                },
+                {
+                  "key": "http.route",
+                  "value": {
+                    "stringValue": "/copies/available/by-comic/{comic_id}"
+                  }
+                },
+                {
+                  "key": "http.method",
+                  "value": {
+                    "stringValue": "GET"
+                  }
+                },
+                {
+                  "key": "http.url",
+                  "value": {
+                    "stringValue": "http://comicrent-p9-workloads-copies-service:8002/copies/available/by-comic/1"
+                  }
+                },
+                {
+                  "key": "http.status_code",
+                  "value": {
+                    "intValue": "200"
+                  }
+                }
+              ],
+              "status": {}
+            },
+            {
+              "traceId": "OYb2RK0VhV+6xLXfvJ9Fmw==",
+              "spanId": "2xkzU7HgQow=",
+              "parentSpanId": "Y3oORGKGIRk=",
+              "name": "PATCH /copies/{copy_id}/rent http send",
+              "kind": "SPAN_KIND_INTERNAL",
+              "startTimeUnixNano": "1791862137087360787",
+              "endTimeUnixNano": "1791862137087458087",
+              "attributes": [
+                {
+                  "key": "asgi.event.type",
+                  "value": {
+                    "stringValue": "http.response.start"
+                  }
+                },
+                {
+                  "key": "http.status_code",
+                  "value": {
+                    "intValue": "200"
+                  }
+                }
+              ],
+              "status": {}
+            },
+            {
+              "traceId": "OYb2RK0VhV+6xLXfvJ9Fmw==",
+              "spanId": "qDUDPPnR5cc=",
+              "parentSpanId": "Y3oORGKGIRk=",
+              "name": "PATCH /copies/{copy_id}/rent http send",
+              "kind": "SPAN_KIND_INTERNAL",
+              "startTimeUnixNano": "1791862137088091532",
+              "endTimeUnixNano": "1791862137088132867",
+              "attributes": [
+                {
+                  "key": "asgi.event.type",
+                  "value": {
+                    "stringValue": "http.response.body"
+                  }
+                }
+              ],
+              "status": {}
+            },
+            {
+              "traceId": "OYb2RK0VhV+6xLXfvJ9Fmw==",
+              "spanId": "Y3oORGKGIRk=",
+              "parentSpanId": "+doYhvVO9vc=",
+              "name": "PATCH /copies/{copy_id}/rent",
+              "kind": "SPAN_KIND_SERVER",
+              "startTimeUnixNano": "1791862136579988654",
+              "endTimeUnixNano": "1791862137088275945",
+              "attributes": [
+                {
+                  "key": "http.scheme",
+                  "value": {
+                    "stringValue": "http"
+                  }
+                },
+                {
+                  "key": "http.host",
+                  "value": {
+                    "stringValue": "10.16.0.25:8002"
+                  }
+                },
+                {
+                  "key": "net.host.port",
+                  "value": {
+                    "intValue": "8002"
+                  }
+                },
+                {
+                  "key": "http.flavor",
+                  "value": {
+                    "stringValue": "1.1"
+                  }
+                },
+                {
+                  "key": "http.target",
+                  "value": {
+                    "stringValue": "/copies/1/rent"
+                  }
+                },
+                {
+                  "key": "http.server_name",
+                  "value": {
+                    "stringValue": "comicrent-p9-workloads-copies-service:8002"
+                  }
+                },
+                {
+                  "key": "http.user_agent",
+                  "value": {
+                    "stringValue": "python-httpx/0.28.1"
+                  }
+                },
+                {
+                  "key": "net.peer.ip",
+                  "value": {
+                    "stringValue": "10.16.2.131"
+                  }
+                },
+                {
+                  "key": "net.peer.port",
+                  "value": {
+                    "intValue": "42736"
+                  }
+                },
+                {
+                  "key": "http.route",
+                  "value": {
+                    "stringValue": "/copies/{copy_id}/rent"
+                  }
+                },
+                {
+                  "key": "http.method",
+                  "value": {
+                    "stringValue": "PATCH"
+                  }
+                },
+                {
+                  "key": "http.url",
+                  "value": {
+                    "stringValue": "http://comicrent-p9-workloads-copies-service:8002/copies/1/rent"
+                  }
+                },
+                {
+                  "key": "http.status_code",
+                  "value": {
+                    "intValue": "200"
+                  }
+                }
+              ],
+              "status": {}
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

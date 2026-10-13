@@ -1,0 +1,76 @@
+{
+  "status": "success",
+  "data": {
+    "resultType": "vector",
+    "result": [
+      {
+        "metric": {
+          "__name__": "comicrent_rentals_created_total",
+          "app_kubernetes_io_name": "rentals-service",
+          "container": "rentals-service",
+          "endpoint": "metrics",
+          "instance": "10.16.2.131:9464",
+          "job": "sa-p9/comicrent-p10-services",
+          "namespace": "sa-p9",
+          "pod": "comicrent-p9-workloads-rentals-service-5df4547d4-lzwvn",
+          "service": "rentals-service"
+        },
+        "value": [
+          1791864876.228,
+          "2"
+        ]
+      },
+      {
+        "metric": {
+          "__name__": "comicrent_rentals_returned_total",
+          "app_kubernetes_io_name": "rentals-service",
+          "container": "rentals-service",
+          "endpoint": "metrics",
+          "instance": "10.16.2.131:9464",
+          "job": "sa-p9/comicrent-p10-services",
+          "namespace": "sa-p9",
+          "pod": "comicrent-p9-workloads-rentals-service-5df4547d4-lzwvn",
+          "service": "rentals-service"
+        },
+        "value": [
+          1791864876.228,
+          "1"
+        ]
+      },
+      {
+        "metric": {
+          "__name__": "comicrent_rentals_created_total",
+          "app_kubernetes_io_name": "rentals-service",
+          "container": "rentals-service",
+          "endpoint": "metrics",
+          "instance": "10.16.1.120:9464",
+          "job": "sa-p9/comicrent-p10-services",
+          "namespace": "sa-p9",
+          "pod": "comicrent-p9-workloads-rentals-service-5df4547d4-f7kdl",
+          "service": "rentals-service"
+        },
+        "value": [
+          1791864876.228,
+          "0"
+        ]
+      },
+      {
+        "metric": {
+          "__name__": "comicrent_rentals_returned_total",
+          "app_kubernetes_io_name": "rentals-service",
+          "container": "rentals-service",
+          "endpoint": "metrics",
+          "instance": "10.16.1.120:9464",
+          "job": "sa-p9/comicrent-p10-services",
+          "namespace": "sa-p9",
+          "pod": "comicrent-p9-workloads-rentals-service-5df4547d4-f7kdl",
+          "service": "rentals-service"
+        },
+        "value": [
+          1791864876.228,
+          "0"
+        ]
+      }
+    ]
+  }
+}
