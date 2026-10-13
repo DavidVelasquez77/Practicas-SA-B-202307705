@@ -13,12 +13,12 @@ Esta práctica amplía el clúster GitOps de P9 con métricas, trazas y registro
 | Consultas del análisis | [PromQL exacto para volumen, error y p95](#consultas-promql-del-canary); [plantilla GitOps](https://github.com/DavidVelasquez77/Practicas-SA-B-202307705-gitops/blob/feature/p10-observability/apps/comicrent/templates/p10-analysis.yaml). |
 | SLO declarados | [Disponibilidad ≥99.9% y latencia ≥95% de solicitudes ≤500 ms, ambos en 30 días móviles](slo/SLOs.md). |
 | Reglas de alerta | [`PrometheusRule comicrent-slo-rules`](https://github.com/DavidVelasquez77/Practicas-SA-B-202307705-gitops/blob/feature/p10-observability/apps/p10/observability/rules/slo-rules.yaml), con [runbook de disponibilidad](runbooks/availability-error-budget.md) y [runbook de latencia](runbooks/latency-error-budget.md). |
-| Tablero | [JSON exportado de Grafana](dashboards/comicrent-operations.json), UID `comicrent-p10-operations`. La captura en operación se incorporará a `evidence/` tras iniciar sesión en Grafana. |
+| Tablero | [JSON exportado de Grafana](dashboards/comicrent-operations.json), UID `comicrent-p10-operations`, y [captura del tablero en operación](evidence/grafana-dashboard-live.png). |
 | Reversión por métricas | [AnalysisRun `comicrent-api-gateway-rollout-b544dbdd9-9-1` (`Failed`)](evidence/block-7-analysisrun.json) del Rollout `comicrent-api-gateway-rollout`, namespace `sa-p9`; [secuencia](evidence/block-7-canary-and-triage.md) y [estado estable recuperado](evidence/block-8-rollout-recovery.json). |
 | Recorrido síntoma a causa | [Alerta → Prometheus → Loki → Tempo, máximo 1 min 16.93 s desde `firing`](evidence/block-7-canary-and-triage.md); [marcas medidas](evidence/block-7-signal-summary.json). |
 | Video demostrativo | Pendiente de grabación y enlace público directo. El [minutaje propuesto](#video-demostrativo) se sustituirá por el real tras grabarlo. |
 
-> **Estado de entrega:** faltan la captura del tablero en operación y la URL pública directa del video. La fila del video debe completarse antes de calificar; el enunciado asigna cero a enlaces ausentes o que requieran autenticación.
+> **Estado de entrega:** falta la URL pública directa del video con el minutaje real. La fila del video debe completarse antes de calificar; el enunciado asigna cero a enlaces ausentes o que requieran autenticación.
 
 ## Flujo de telemetría
 
@@ -37,6 +37,10 @@ flowchart LR
 ```
 
 [Fuente editable del diagrama](diagrams/telemetry-flow.mmd). El tablero responde por orden a tráfico, latencia, errores y saturación; añade actividad de rentas y consumo de los dos presupuestos.
+
+![Tablero Grafana de ComicRent con las señales de oro y los SLO durante el incidente de P10](evidence/grafana-dashboard-live.png)
+
+La captura muestra una ventana de 24 horas que incluye el incidente inducido. El panel de actividad de negocio indica `No data` porque no se crearon ni devolvieron rentas en esa ventana; los contadores instrumentados se emiten cuando ocurren esas operaciones.
 
 ## Consultas PromQL del canary
 
