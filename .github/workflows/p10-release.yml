@@ -15,7 +15,7 @@ concurrency:
 
 env:
   REGISTRY: ghcr.io/davidvelasquez77
-  GITOPS_BRANCH: feature/p10-observability
+  GITOPS_BRANCH: main
 
 jobs:
   validate-release:
