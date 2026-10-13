@@ -1,0 +1,29 @@
+{
+  "incidentDateUtc": "2026-10-12",
+  "source": "Saved AnalysisRun, current Rollout status, ArgoCD Application and Git commit",
+  "note": "The RolloutAborted event was observed at AnalysisRun completion; Kubernetes Events expired before this snapshot.",
+  "failedAnalysisRun": {
+    "name": "comicrent-api-gateway-rollout-b544dbdd9-9-1",
+    "phase": "Failed",
+    "completedAtUtc": "2026-10-12T23:04:29Z",
+    "candidateHash": "b544dbdd9"
+  },
+  "gitopsRevert": {
+    "commit": "60a2cc059b44ee90a6c204cb4b5ff368a1af8c59",
+    "committedAtUtc": "2026-10-12T23:07:28.0000000+00:00"
+  },
+  "currentRollout": {
+    "name": "comicrent-api-gateway-rollout",
+    "namespace": "sa-p9",
+    "stableRS": "bf669688c",
+    "currentPodHash": "bf669688c",
+    "phase": "Healthy",
+    "healthyConditionTimeUtc": "2026-10-12T23:07:48Z"
+  },
+  "currentApplication": {
+    "name": "comicrent-p9-workloads",
+    "namespace": "argocd",
+    "sync": "Synced",
+    "health": "Healthy"
+  }
+}
