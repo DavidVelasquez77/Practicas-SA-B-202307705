@@ -23,14 +23,14 @@ collectDefaultMetrics({ register: registry, prefix: 'comicrent_' });
 export const httpRequestsTotal = new Counter({
   name: 'comicrent_http_requests_total',
   help: 'HTTP requests completed by a ComicRent service.',
-  labelNames: ['method', 'route', 'status_class'],
+  labelNames: ['method', 'route', 'status_class', 'traffic_source'],
   registers: [registry],
 });
 
 export const httpRequestDurationSeconds = new Histogram({
   name: 'comicrent_http_request_duration_seconds',
   help: 'Duration of completed HTTP requests in seconds.',
-  labelNames: ['method', 'route', 'status_class'],
+  labelNames: ['method', 'route', 'status_class', 'traffic_source'],
   buckets: [0.05, 0.1, 0.25, 0.5, 0.75, 1, 2.5, 5, 10],
   registers: [registry],
 });
@@ -79,6 +79,11 @@ export function requestObservabilityMiddleware(): RequestHandler {
     const spanContext = trace.getActiveSpan()?.spanContext();
     const traceId = spanContext?.traceId ?? null;
     const spanId = spanContext?.spanId ?? null;
+    // A bounded label keeps controlled canary probes out of the user SLO.
+    const trafficSource =
+      request.header('x-comicrent-observability-probe') === 'canary'
+        ? 'canary-test'
+        : 'user';
     let finished = false;
 
     response.setHeader('X-Correlation-ID', correlationId);
@@ -98,9 +103,10 @@ export function requestObservabilityMiddleware(): RequestHandler {
           method,
           route,
           status_class: outcome,
+          traffic_source: trafficSource,
         });
         httpRequestDurationSeconds.observe(
-          { method, route, status_class: outcome },
+          { method, route, status_class: outcome, traffic_source: trafficSource },
           durationSeconds,
         );
 
@@ -124,6 +130,7 @@ export function requestObservabilityMiddleware(): RequestHandler {
             method,
             route,
             status_code: statusCode || null,
+            traffic_source: trafficSource,
             duration_ms: Number((durationSeconds * 1000).toFixed(3)),
           }),
         );

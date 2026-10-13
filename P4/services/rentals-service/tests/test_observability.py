@@ -7,10 +7,12 @@ from urllib.request import urlopen
 
 import httpx
 from opentelemetry import trace
+from prometheus_client import generate_latest
 
 from app.observability import (
     CorrelationAndMetricsMiddleware,
     HTTP_REQUESTS,
+    REGISTRY,
     correlation_id_context,
     inject_correlation_id,
     start_metrics_server,
@@ -18,6 +20,11 @@ from app.observability import (
 
 
 class ObservabilityTests(unittest.IsolatedAsyncioTestCase):
+    async def test_business_metrics_exist_before_first_rental(self):
+        metrics = generate_latest(REGISTRY).decode("utf-8")
+        self.assertIn('comicrent_rentals_created_total{service="rentals-service"} 0.0', metrics)
+        self.assertIn('comicrent_rentals_returned_total{service="rentals-service"} 0.0', metrics)
+
     async def test_httpx_hook_propagates_correlation_id(self):
         request = httpx.Request("GET", "http://copies.test/health")
         token: Token[str | None] = correlation_id_context.set("rental-flow-123")

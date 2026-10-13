@@ -92,6 +92,11 @@ RENTALS_RETURNED = Counter(
     registry=REGISTRY,
 )
 
+# Publish zero-valued business series before the first successful transaction.
+# The dashboard can then distinguish "no transactions" from "no telemetry".
+RENTALS_CREATED.labels(service=SERVICE_NAME_VALUE).inc(0)
+RENTALS_RETURNED.labels(service=SERVICE_NAME_VALUE).inc(0)
+
 
 async def inject_correlation_id(request: Any) -> None:
     inject(request.headers)

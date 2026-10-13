@@ -1,5 +1,7 @@
 import type { AddressInfo } from 'node:net';
-import { correlationContext, startMetricsServer } from './http-observability';
+import { EventEmitter } from 'node:events';
+import type { Request, Response } from 'express';
+import { correlationContext, registry, requestObservabilityMiddleware, startMetricsServer } from './http-observability';
 
 describe('API Gateway observability', () => {
   it('keeps the correlation ID available to downstream calls', async () => {
@@ -27,5 +29,24 @@ describe('API Gateway observability', () => {
         server.close((error) => (error ? reject(error) : resolve()));
       });
     }
+  });
+
+  it('marks controlled canary probes separately from user traffic', async () => {
+    const request = {
+      path: '/canary-probe-test',
+      method: 'GET',
+      header: (name: string) => name === 'x-comicrent-observability-probe' ? 'canary' : undefined,
+    } as unknown as Request;
+    const response = Object.assign(new EventEmitter(), {
+      statusCode: 200,
+      setHeader: jest.fn(),
+    }) as unknown as Response;
+
+    requestObservabilityMiddleware()(request, response, () => undefined);
+    response.emit('finish');
+
+    const metrics = await registry.metrics();
+    expect(metrics).toContain('route="/canary-probe-test",status_class="2xx",traffic_source="canary-test"');
+    expect(metrics).not.toContain('route="/canary-probe-test",status_class="2xx",traffic_source="user"');
   });
 });
