@@ -16,7 +16,7 @@ Esta práctica amplía el clúster GitOps de P9 con métricas, trazas y registro
 | Tablero | [JSON exportado de Grafana](dashboards/comicrent-operations.json), UID `comicrent-p10-operations`, y [captura del tablero en operación](evidence/grafana-dashboard-live.png). |
 | Reversión por métricas | [AnalysisRun `comicrent-api-gateway-rollout-b544dbdd9-9-1` (`Failed`)](evidence/block-7-analysisrun.json) del Rollout `comicrent-api-gateway-rollout`, namespace `sa-p9`; [secuencia](evidence/block-7-canary-and-triage.md) y [estado estable recuperado](evidence/block-8-rollout-recovery.json). |
 | Recorrido síntoma a causa | [Alerta → Prometheus → Loki → Tempo, máximo 1 min 16.93 s desde `firing`](evidence/block-7-canary-and-triage.md); [marcas medidas](evidence/block-7-signal-summary.json). |
-| Video demostrativo | Pendiente de grabación y enlace público directo. El [minutaje propuesto](#video-demostrativo) se sustituirá por el real tras grabarlo. |
+| Video demostrativo | [Carpeta de Drive destinada al video](https://drive.google.com/drive/folders/1o23KFwNxf1ac2Y3ctkz1hr3OQOUZ1a3o?usp=sharing). La [guía de minutaje recomendado](#video-demostrativo) está abajo; después de grabar se agregará aquí el enlace directo al archivo y su minutaje real. |
 
 > **Estado de entrega:** falta la URL pública directa del video con el minutaje real. La fila del video debe completarse antes de calificar; el enunciado asigna cero a enlaces ausentes o que requieran autenticación.
 
@@ -61,7 +61,7 @@ El fallo de P10 fue una URL de autenticación inválida en la revisión candidat
 
 ## Video demostrativo
 
-Duración requerida: 5–8 minutos. Este es el recorrido propuesto; al publicar el archivo se ajustarán los minutos a la grabación real y se pondrá su URL directa en la tabla.
+Duración requerida: 5–8 minutos. El video se publicará en la [carpeta de Drive de P10](https://drive.google.com/drive/folders/1o23KFwNxf1ac2Y3ctkz1hr3OQOUZ1a3o?usp=sharing). Este es el recorrido recomendado de **7 min 15 s**; al grabarlo se ajustarán los minutos a la duración real y se pondrá el enlace directo al archivo en la tabla.
 
 | Minutaje previsto | Qué mostrar |
 |---|---|
