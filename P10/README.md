@@ -21,9 +21,9 @@ Esta práctica amplía el clúster GitOps de P9 con métricas, trazas y registro
 | Tablero | [JSON exportado de Grafana](dashboards/comicrent-operations.json), UID `comicrent-p10-operations`; [SLO y presupuesto](evidence/grafana-dashboard-final-slo.jpg), [24 h observadas](evidence/grafana-dashboard-fault-24h.jpg), [señales con colores diferenciados](evidence/grafana-dashboard-final-golden-signals.jpg) y [métricas de negocio](evidence/grafana-dashboard-business-live.png). |
 | Reversión por métricas | [AnalysisRun `comicrent-api-gateway-rollout-cd956dbbc-15-1` (`Failed`)](evidence/public-canary-abort-analysisrun.json) del Rollout `comicrent-api-gateway-rollout`, namespace `sa-p9`. [Tráfico por Service público, aborto y recuperación](evidence/public-canary-traffic.md); [Rollout estable recuperado](evidence/public-canary-recovered-rollout.json). |
 | Recorrido síntoma a causa | [Alerta → Prometheus → Loki → Tempo, máximo 1 min 16.93 s desde `firing`](evidence/block-7-canary-and-triage.md); [marcas medidas](evidence/block-7-signal-summary.json). |
-| Video demostrativo | [Carpeta de Drive destinada al video](https://drive.google.com/drive/folders/1o23KFwNxf1ac2Y3ctkz1hr3OQOUZ1a3o?usp=sharing). La [guía de minutaje recomendado](#video-demostrativo) está abajo; después de grabar se agregará aquí el enlace directo al archivo y su minutaje real. |
+| Video demostrativo | [Carpeta pública de Drive con el video](https://drive.google.com/drive/folders/1o23KFwNxf1ac2Y3ctkz1hr3OQOUZ1a3o?usp=sharing). Recorrido previsto: **7 min 15 s**; ajustar el minutaje si la grabación final distribuye los puntos de otra manera. |
 
-> **Estado de entrega:** falta la URL pública directa del video con el minutaje real. La fila del video debe completarse antes de calificar; el enunciado asigna cero a enlaces ausentes o que requieran autenticación.
+> **Estado de entrega:** el enlace público lleva a la carpeta de Drive acordada y el minutaje previsto está en la tabla. Antes de calificar, confirmar que el video final esté dentro de esa carpeta y que el acceso público funcione.
 
 ## Flujo de telemetría
 
@@ -79,7 +79,7 @@ El fallo de P10 fue una URL de autenticación inválida en la revisión candidat
 
 ## Video demostrativo
 
-Duración requerida: 5–8 minutos. El video se publicará en la [carpeta de Drive de P10](https://drive.google.com/drive/folders/1o23KFwNxf1ac2Y3ctkz1hr3OQOUZ1a3o?usp=sharing). Este es el recorrido recomendado de **7 min 15 s**; al grabarlo se ajustarán los minutos a la duración real y se pondrá el enlace directo al archivo en la tabla.
+Duración requerida: 5–8 minutos. El video se publicará en la [carpeta pública de Drive de P10](https://drive.google.com/drive/folders/1o23KFwNxf1ac2Y3ctkz1hr3OQOUZ1a3o?usp=sharing). Este es el recorrido previsto de **7 min 15 s**; ajustar el minutaje de la tabla a la grabación final.
 
 | Minutaje previsto | Qué mostrar |
 |---|---|

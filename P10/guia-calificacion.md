@@ -1,6 +1,6 @@
 # Guía de calificación — Práctica 10
 
-Esta guía sigue el **Detalle de la Calificación, sección 8.2**, del enunciado. Trabajar desde `C:\Users\Vela\Desktop\SA\LAB\PRACTICAS`. La evidencia histórica permite revisar el simulacro sin repetir una falla frente al auxiliar. El video se añadirá al final de la entrega.
+Esta guía sigue el **Detalle de la Calificación, sección 8.2**, del enunciado. Trabajar desde `C:\Users\Vela\Desktop\SA\LAB\PRACTICAS`. La evidencia histórica permite revisar el simulacro sin repetir una falla frente al auxiliar. El README enlaza la carpeta pública de Drive y propone un recorrido de 7 min 15 s.
 
 ## Comprobación inicial (requisitos de 8.1)
 
@@ -13,7 +13,7 @@ kubectl get analysistemplate api-gateway-metrics -n sa-p9 -o yaml
 & (Join-Path $HOME 'bin/kubectl-argo-rollouts.exe') get rollout comicrent-api-gateway-rollout -n sa-p9
 ```
 
-Las aplicaciones deben estar `Synced/Healthy`, Prometheus y Grafana `Running`, el AnalysisTemplate debe contener `provider.prometheus` y el Rollout debe estar `Healthy`. Si el clúster estuvo apagado, verificar antes de presentar; las capturas no prueban que esté operativo **en ese momento**. La tabla 4.1 y las rutas públicas están en [README.md](README.md). La fila del video sigue pendiente de un enlace directo y minutaje real.
+Las aplicaciones deben estar `Synced/Healthy`, Prometheus y Grafana `Running`, el AnalysisTemplate debe contener `provider.prometheus` y el Rollout debe estar `Healthy`. Si el clúster estuvo apagado, verificar antes de presentar; las capturas no prueban que esté operativo **en ese momento**. La tabla 4.1 y las rutas públicas están en [README.md](README.md); ahí se conserva el enlace a la carpeta de Drive y el minutaje previsto.
 
 | Criterio | Mostrar primero | Si pide ejecutar algo |
 |---|---|---|

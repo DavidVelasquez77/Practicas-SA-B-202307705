@@ -1,38 +1,38 @@
 {
-  "captured_at_utc": "2026-10-13T18:26:04.336464+00:00",
+  "captured_at_utc": "2026-10-13T22:45:42.590916+00:00",
   "interpretation": "30d recording rules are active but history is incomplete until 30 days have elapsed; 24h indicators are observed evidence, not a replacement SLO.",
   "metrics": {
     "user_requests_24h": {
       "promql": "sum(increase(comicrent_http_requests_total{namespace=\"sa-p9\",service=\"api-gateway\",traffic_source=\"user\"}[24h])) or vector(0)",
-      "value": 741.2796503844698
+      "value": 738.1777355356421
     },
     "user_availability_24h": {
       "promql": "1 - ((sum(increase(comicrent_http_requests_total{namespace=\"sa-p9\",service=\"api-gateway\",traffic_source=\"user\",status_class=~\"5xx|timeout\"}[24h])) or vector(0)) / sum(increase(comicrent_http_requests_total{namespace=\"sa-p9\",service=\"api-gateway\",traffic_source=\"user\"}[24h])))",
-      "value": 0.9669519836223015
+      "value": 0.9668101612652648
     },
     "user_fast_ratio_24h": {
       "promql": "sum(increase(comicrent_http_request_duration_seconds_bucket{namespace=\"sa-p9\",service=\"api-gateway\",traffic_source=\"user\",le=\"0.5\"}[24h])) / sum(increase(comicrent_http_request_duration_seconds_count{namespace=\"sa-p9\",service=\"api-gateway\",traffic_source=\"user\"}[24h]))",
-      "value": 0.9971961573925486
+      "value": 0.9971838924709922
     },
     "history_days_available": {
       "promql": "(time() - min(min_over_time(timestamp(comicrent_http_requests_total{namespace=\"sa-p9\",service=\"api-gateway\",traffic_source=\"user\"})[30d:1h]))) / 86400",
-      "value": 0.5599675115749791
+      "value": 0.7402746412047634
     },
     "availability_record_30d_partial": {
       "promql": "comicrent:slo:availability:good_ratio_30d",
-      "value": 0.9669341775389992
+      "value": 0.9668101612652648
     },
     "latency_record_30d_partial": {
       "promql": "comicrent:slo:latency:good_ratio_30d",
-      "value": 0.997194415063915
+      "value": 0.9971838924709922
     },
     "availability_budget_30d_partial": {
       "promql": "comicrent:slo:availability:budget_consumed_ratio_30d",
-      "value": 33.0658224610008
+      "value": 33.18983873473524
     },
     "latency_budget_30d_partial": {
       "promql": "comicrent:slo:latency:budget_consumed_ratio_30d",
-      "value": 0.05611169872169946
+      "value": 0.05632215058015791
     }
   },
   "argocd": [
