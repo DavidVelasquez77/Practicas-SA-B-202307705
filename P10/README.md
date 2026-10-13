@@ -2,6 +2,8 @@
 
 Esta práctica amplía el clúster GitOps de P9 con métricas, trazas y registros correlacionados. ArgoCD despliega Prometheus, Alertmanager, Grafana, Loki, Tempo, Alloy y OpenTelemetry Collector; Argo Rollouts consulta métricas del candidato para decidir cada promoción. El incidente medido y el informe de operación ([PDF de una página](informe-operacion.pdf), [fuente Markdown](informe-operacion.md)) documentan el comportamiento real del sistema.
 
+[Guía de calificación por criterio de la rúbrica](guia-calificacion.md).
+
 ## Tabla de enlaces obligatoria (sección 4.1)
 
 | Ítem | Enlace o dato requerido |
@@ -16,8 +18,8 @@ Esta práctica amplía el clúster GitOps de P9 con métricas, trazas y registro
 | Consultas del análisis | [PromQL exacto para volumen, error y p95](#consultas-promql-del-canary); [plantilla GitOps](https://github.com/DavidVelasquez77/Practicas-SA-B-202307705-gitops/blob/feature/p10-observability/apps/comicrent/templates/p10-analysis.yaml). |
 | SLO declarados | [Disponibilidad ≥99.9% y latencia ≥95% de solicitudes ≤500 ms, ambos en 30 días móviles](slo/SLOs.md). |
 | Reglas de alerta | [`PrometheusRule comicrent-slo-rules`](https://github.com/DavidVelasquez77/Practicas-SA-B-202307705-gitops/blob/feature/p10-observability/apps/p10/observability/rules/slo-rules.yaml), con [runbook de disponibilidad](runbooks/availability-error-budget.md) y [runbook de latencia](runbooks/latency-error-budget.md). |
-| Tablero | [JSON exportado de Grafana](dashboards/comicrent-operations.json), UID `comicrent-p10-operations`, [SLO y señales de oro](evidence/grafana-dashboard-live.png) y [métricas de negocio](evidence/grafana-dashboard-business-live.png). |
-| Reversión por métricas | [AnalysisRun `comicrent-api-gateway-rollout-b544dbdd9-9-1` (`Failed`)](evidence/block-7-analysisrun.json) del Rollout `comicrent-api-gateway-rollout`, namespace `sa-p9`; [secuencia](evidence/block-7-canary-and-triage.md) y [estado estable recuperado](evidence/block-8-rollout-recovery.json). |
+| Tablero | [JSON exportado de Grafana](dashboards/comicrent-operations.json), UID `comicrent-p10-operations`; [SLO y presupuesto](evidence/grafana-dashboard-final-slo.jpg), [24 h observadas](evidence/grafana-dashboard-fault-24h.jpg), [señales con colores diferenciados](evidence/grafana-dashboard-final-golden-signals.jpg) y [métricas de negocio](evidence/grafana-dashboard-business-live.png). |
+| Reversión por métricas | [AnalysisRun `comicrent-api-gateway-rollout-cd956dbbc-15-1` (`Failed`)](evidence/public-canary-abort-analysisrun.json) del Rollout `comicrent-api-gateway-rollout`, namespace `sa-p9`. [Tráfico por Service público, aborto y recuperación](evidence/public-canary-traffic.md); [Rollout estable recuperado](evidence/public-canary-recovered-rollout.json). |
 | Recorrido síntoma a causa | [Alerta → Prometheus → Loki → Tempo, máximo 1 min 16.93 s desde `firing`](evidence/block-7-canary-and-triage.md); [marcas medidas](evidence/block-7-signal-summary.json). |
 | Video demostrativo | [Carpeta de Drive destinada al video](https://drive.google.com/drive/folders/1o23KFwNxf1ac2Y3ctkz1hr3OQOUZ1a3o?usp=sharing). La [guía de minutaje recomendado](#video-demostrativo) está abajo; después de grabar se agregará aquí el enlace directo al archivo y su minutaje real. |
 
@@ -29,11 +31,16 @@ Esta práctica amplía el clúster GitOps de P9 con métricas, trazas y registro
 flowchart LR
   GitOps[Repositorio GitOps] --> ArgoCD[ArgoCD]
   ArgoCD --> Stack[Prometheus · Grafana · Loki · Tempo · Alloy · OTel Collector]
-  Services[ComicRent: gateway · rentas · copias · auth] -->|/metrics| Prometheus
+  Client[Cliente] --> PublicService[Service público del gateway]
+  PublicService --> Stable[Gateway estable]
+  PublicService --> Candidate[Gateway candidato]
+  Stable -->|/metrics| Prometheus
+  Candidate -->|/metrics por hash| Prometheus
+  Services[ComicRent: rentas · copias · auth] -->|/metrics| Prometheus
   Services -->|trazas OTLP| Collector[OTel Collector] --> Tempo
   Services -->|logs JSON con trace_id| Alloy --> Loki
   Prometheus -->|SLI y burn rate| Alerts[PrometheusRule → Alertmanager → runbook]
-  Prometheus -->|error y p95 candidatos| Rollouts[Argo Rollouts]
+  Prometheus -->|volumen, error y p95 del candidato; solo usuario| Rollouts[Argo Rollouts]
   Prometheus --> Grafana
   Loki --> Grafana
   Tempo --> Grafana
@@ -41,28 +48,34 @@ flowchart LR
 
 [Fuente editable del diagrama](diagrams/telemetry-flow.mmd). El tablero responde por orden a tráfico, latencia, errores y saturación; añade actividad de rentas y consumo de los dos presupuestos.
 
-![Tablero Grafana de ComicRent con SLO actuales y señales de oro](evidence/grafana-dashboard-live.png)
+![Tablero Grafana con objetivos de 30 días, señalando historial incompleto](evidence/grafana-dashboard-slo-24h.jpg)
+
+![Indicadores de las 24 horas observadas y edad del primer dato](evidence/grafana-dashboard-fault-24h.jpg)
+
+![Consumo del presupuesto de error tras el fallo controlado](evidence/grafana-dashboard-error-budget.jpg)
 
 ![Actividad de negocio y sondas Canary separadas en el tablero](evidence/grafana-dashboard-business-live.png)
 
-El tablero separa tráfico de usuarios y sondas controladas del Canary. La vista de negocio usa contadores inicializados en cero y ya se verificó con una renta creada y otra devuelta. La retención de Prometheus es de 31 días en un volumen de 40 GiB; el SLO de 30 días no debe interpretarse como historial completo hasta que transcurra esa ventana desde la nueva instrumentación.
+El tablero separa tráfico de usuarios y sondas controladas del Canary. Las tarjetas tienen colores diferenciados por función y las series usan gamas propias para tráfico, latencia, errores, CPU y memoria, con áreas degradadas para facilitar la lectura de tendencias. La fila «Evidencia reciente» muestra el **volumen y los dos indicadores de las últimas 24 horas**, más la edad del primer dato. Sirve para demostrar el cálculo durante la calificación del 17 de octubre sin fabricar un mes de observaciones; no reemplaza los dos SLO de 30 días. La vista de negocio usa contadores inicializados en cero y ya se verificó con una renta creada y otra devuelta. El simulacro público de Canary consumió presupuesto de disponibilidad, de modo que la ventana reciente **no aparece artificialmente en 100%** después de recuperarse. Prometheus retiene hasta 31 días en un volumen de 40 GiB; [criterio y límites de la demostración](slo/SLOs.md#demostración-antes-de-la-calificación-del-17-de-octubre).
 
 ## Consultas PromQL del canary
 
 Las consultas están en el [AnalysisTemplate `api-gateway-metrics`](https://github.com/DavidVelasquez77/Practicas-SA-B-202307705-gitops/blob/feature/p10-observability/apps/comicrent/templates/p10-analysis.yaml). `HASH` representa el argumento `rollout-hash` de la revisión candidata. Se evalúan sobre los últimos cinco minutos y se exige volumen ≥20 para evitar una decisión basada en una sola solicitud fría.
 
+En la configuración P10, el Service público selecciona tanto el ReplicaSet estable como el candidato; Argo Rollouts aproxima los pesos mediante el número de réplicas. Con solo tres réplicas, `10%` y `25%` son objetivos de promoción, **no porcentajes exactos de tráfico**. El análisis filtra `traffic_source="user"`, de modo que las sondas marcadas como Canary no deciden la promoción. [Prueba por el Service público](evidence/public-canary-traffic.md).
+
 ```promql
 # Volumen: se promociona únicamente con al menos 20 solicitudes recientes.
-sum(increase(comicrent_http_requests_total{namespace="sa-p9",service="api-gateway",rollouts_pod_template_hash="HASH"}[5m])) or vector(0)
+sum(increase(comicrent_http_requests_total{namespace="sa-p9",service="api-gateway",traffic_source="user",rollouts_pod_template_hash="HASH"}[5m])) or vector(0)
 
 # Errores 5xx y timeout / solicitudes del candidato: debe ser <= 0.001.
-(sum(increase(comicrent_http_requests_total{namespace="sa-p9",service="api-gateway",rollouts_pod_template_hash="HASH",status_class=~"5xx|timeout"}[5m])) / clamp_min(sum(increase(comicrent_http_requests_total{namespace="sa-p9",service="api-gateway",rollouts_pod_template_hash="HASH"}[5m])), 1)) or vector(0)
+(sum(increase(comicrent_http_requests_total{namespace="sa-p9",service="api-gateway",traffic_source="user",rollouts_pod_template_hash="HASH",status_class=~"5xx|timeout"}[5m])) / clamp_min(sum(increase(comicrent_http_requests_total{namespace="sa-p9",service="api-gateway",traffic_source="user",rollouts_pod_template_hash="HASH"}[5m])), 1)) or vector(0)
 
 # p95 de latencia del candidato: debe ser <= 0.5 segundos.
-histogram_quantile(0.95, sum by (le) (rate(comicrent_http_request_duration_seconds_bucket{namespace="sa-p9",service="api-gateway",rollouts_pod_template_hash="HASH"}[5m]))) or vector(0)
+histogram_quantile(0.95, sum by (le) (rate(comicrent_http_request_duration_seconds_bucket{namespace="sa-p9",service="api-gateway",traffic_source="user",rollouts_pod_template_hash="HASH"}[5m]))) or vector(0)
 ```
 
-El fallo de P10 fue una URL de autenticación inválida en la revisión candidata. Prometheus midió tasa de error `1.0`; el AnalysisRun falló y Argo Rollouts abortó sin intervención. La versión estable conservó sus tres réplicas. [Evidencia completa](evidence/block-7-canary-and-triage.md).
+El fallo de P10 fue una URL de autenticación inválida en la revisión candidata. En la [prueba corregida por el Service público](evidence/public-canary-traffic.md), el cliente recibió `401` de la versión estable y `502` del candidato. Prometheus midió tasa de error candidata `1.0`; el AnalysisRun falló y Argo Rollouts abortó sin intervención. La versión estable conservó sus tres réplicas. El tráfico lo generó un cliente de demostración, no usuarios espontáneos; la diferencia con el antiguo Job sintético es que la decisión consulta los **contadores HTTP observados en el candidato**, filtrados a solicitudes sin cabecera de sonda.
 
 ## Video demostrativo
 

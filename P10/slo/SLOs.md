@@ -1,6 +1,6 @@
 # SLO de ComicRent
 
-Los objetivos se miden en el `api-gateway`, el punto de entrada que representa la experiencia HTTP del usuario. Las rutas `/health` y `/metrics` no cuentan como solicitudes de usuario. Las sondas controladas del canary llevan `X-ComicRent-Observability-Probe: canary` y reciben la etiqueta de cardinalidad fija `traffic_source="canary-test"`; el SLO solo usa `traffic_source="user"`. El AnalysisTemplate sigue viendo ambas clases para evaluar la revisión candidata.
+Los objetivos se miden en el `api-gateway`, el punto de entrada que representa la experiencia HTTP del usuario. Las rutas `/health` y `/metrics` no cuentan como solicitudes de usuario. Las sondas controladas del canary llevan `X-ComicRent-Observability-Probe: canary` y reciben la etiqueta de cardinalidad fija `traffic_source="canary-test"`; tanto el SLO como el AnalysisTemplate P10 usan solo `traffic_source="user"` para evaluar el comportamiento de la revisión candidata.
 
 | SLO | Indicador y objetivo | Ventana | Presupuesto |
 |---|---|---|---|
@@ -39,3 +39,9 @@ Las reglas usan tasas de consumo del presupuesto con ventanas múltiples; no ale
 | Advertencia, quema lenta | Burn rate mayor a 6× en 30 minutos y 6 horas; `for: 5m`. Consume aproximadamente 5% del presupuesto mensual en seis horas. | Investigar en el turno operativo y evitar promociones mientras persista el consumo. |
 
 Cada alerta lleva la URL del runbook correspondiente. Prometheus retiene 31 días con un volumen de 40 GiB y un límite de 36 GB de datos; el espacio debe vigilarse para evitar que el límite de tamaño reduzca la ventana antes de 30 días. Durante los primeros 30 días desde la nueva instrumentación, la ventana aún no contiene un mes completo y no debe presentarse como una medición histórica completa.
+
+## Demostración antes de la calificación del 17 de octubre
+
+El enunciado exige declarar **una ventana**, pero no prescribe que sea de 30 días ni exige esperar a que transcurra para comprobar las reglas. Conservamos 30 días como horizonte de operación y presupuesto a largo plazo. Para demostrar el sistema antes del 17 de octubre, el tablero presenta además una ventana **observada de 24 horas**: solicitudes de usuario, fracción sin 5xx/timeout y fracción completada en ≤500 ms. También muestra la edad de la primera muestra disponible. Esa edad no demuestra continuidad si el clúster estuvo apagado; para evaluar intervalos sin muestras hay que mirar la serie temporal o `up`. La fila es una comprobación operativa corta, **no un tercer SLO ni una simulación de datos históricos**.
+
+En la calificación se puede abrir la regla de registro `comicrent:slo:availability:good_ratio_30d`, su presupuesto consumido y las alertas de burn rate; luego comparar los paneles de 24 horas con las series HTTP originales. Si no hay solicitudes en la ventana corta, el indicador debe quedar sin dato y se debe mostrar el volumen cero, nunca declarar 100% de cumplimiento. Para interpretar un porcentaje con poco tráfico se debe informar el denominador. El 30 d mostrado mientras tanto usa únicamente las muestras disponibles desde la instrumentación; no es una evaluación mensual completa.

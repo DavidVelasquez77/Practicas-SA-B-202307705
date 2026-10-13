@@ -9,3 +9,5 @@ Aplica a `ComicRentAvailabilityBudgetFastBurn` y `ComicRentAvailabilityBudgetSlo
 5. Comprueba que los errores disminuyan, que el Rollout y las aplicaciones estén saludables y que el burn rate vuelva bajo el umbral. Registra la causa, mitigación y enlaces a la traza y los registros.
 
 La alerta rápida requiere atención inmediata porque a ese ritmo consume aproximadamente 2% del presupuesto de 30 días en una hora. La alerta lenta requiere investigación durante el turno porque consume aproximadamente 5% en seis horas y, si continúa, agota el margen disponible.
+
+**Límite del indicador:** las conexiones que fallan antes de llegar al gateway no incrementan `comicrent_http_requests_total`. En la prueba de promoción por el Service público hubo dos `URLError` del cliente durante la transición; se conservaron en la [evidencia del Canary](../evidence/public-canary-traffic.md). Ante reportes de conexión sin 5xx internos, verifica la IP pública y los endpoints del Service y añade una sonda externa de disponibilidad; no concluyas que el 100% del panel implica ausencia de fallos de red.

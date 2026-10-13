@@ -1,0 +1,2026 @@
+{
+    "apiVersion": "argoproj.io/v1alpha1",
+    "kind": "Application",
+    "metadata": {
+        "annotations": {
+            "argocd.argoproj.io/sync-wave": "7",
+            "argocd.argoproj.io/tracking-id": "comicrent-p9:argoproj.io/Application:argocd/comicrent-p9-workloads"
+        },
+        "creationTimestamp": "2026-10-12T17:47:20Z",
+        "generation": 1191,
+        "labels": {
+            "app.kubernetes.io/part-of": "comicrent-p9"
+        },
+        "name": "comicrent-p9-workloads",
+        "namespace": "argocd",
+        "resourceVersion": "1791915601254079020",
+        "uid": "8b4d7222-2d7e-4f5e-b318-c42296f3e1bf"
+    },
+    "spec": {
+        "destination": {
+            "namespace": "sa-p9",
+            "server": "https://kubernetes.default.svc"
+        },
+        "ignoreDifferences": [
+            {
+                "group": "",
+                "jsonPointers": [
+                    "/spec/selector"
+                ],
+                "kind": "Service",
+                "name": "comicrent-api-gateway-canary",
+                "namespace": "sa-p9"
+            },
+            {
+                "group": "",
+                "jsonPointers": [
+                    "/spec/selector"
+                ],
+                "kind": "Service",
+                "name": "comicrent-p9-workloads-api-gateway",
+                "namespace": "sa-p9"
+            }
+        ],
+        "project": "comicrent-p9",
+        "source": {
+            "helm": {
+                "valueFiles": [
+                    "values-p10.yaml"
+                ]
+            },
+            "path": "apps/comicrent",
+            "repoURL": "https://github.com/DavidVelasquez77/Practicas-SA-B-202307705-gitops.git",
+            "targetRevision": "feature/p10-observability"
+        },
+        "syncPolicy": {
+            "automated": {
+                "prune": true,
+                "selfHeal": true
+            },
+            "syncOptions": [
+                "CreateNamespace=false",
+                "ServerSideApply=true",
+                "RespectIgnoreDifferences=true"
+            ]
+        }
+    },
+    "status": {
+        "controllerNamespace": "argocd",
+        "health": {
+            "lastTransitionTime": "2026-10-13T18:15:51Z",
+            "status": "Healthy"
+        },
+        "history": [
+            {
+                "deployStartedAt": "2026-10-13T04:12:13Z",
+                "deployedAt": "2026-10-13T04:12:23Z",
+                "id": 17,
+                "initiatedBy": {
+                    "automated": true
+                },
+                "revision": "9816fc7eb4c864e2681eb22556f202c347c39d6b",
+                "source": {
+                    "helm": {
+                        "valueFiles": [
+                            "values-p10.yaml"
+                        ]
+                    },
+                    "path": "apps/comicrent",
+                    "repoURL": "https://github.com/DavidVelasquez77/Practicas-SA-B-202307705-gitops.git",
+                    "targetRevision": "feature/p10-observability"
+                }
+            },
+            {
+                "deployStartedAt": "2026-10-13T04:18:39Z",
+                "deployedAt": "2026-10-13T04:18:52Z",
+                "id": 18,
+                "initiatedBy": {
+                    "automated": true
+                },
+                "revision": "c85effe80c3c4cac2224dc6d38f9c0eea6f31a5c",
+                "source": {
+                    "helm": {
+                        "valueFiles": [
+                            "values-p10.yaml"
+                        ]
+                    },
+                    "path": "apps/comicrent",
+                    "repoURL": "https://github.com/DavidVelasquez77/Practicas-SA-B-202307705-gitops.git",
+                    "targetRevision": "feature/p10-observability"
+                }
+            },
+            {
+                "deployStartedAt": "2026-10-13T17:48:01Z",
+                "deployedAt": "2026-10-13T17:48:14Z",
+                "id": 19,
+                "initiatedBy": {
+                    "automated": true
+                },
+                "revision": "2fac25ff0045f44173c2076b63d889342c9be8bf",
+                "source": {
+                    "helm": {
+                        "valueFiles": [
+                            "values-p10.yaml"
+                        ]
+                    },
+                    "path": "apps/comicrent",
+                    "repoURL": "https://github.com/DavidVelasquez77/Practicas-SA-B-202307705-gitops.git",
+                    "targetRevision": "feature/p10-observability"
+                }
+            },
+            {
+                "deployStartedAt": "2026-10-13T17:52:18Z",
+                "deployedAt": "2026-10-13T17:52:30Z",
+                "id": 20,
+                "initiatedBy": {
+                    "automated": true
+                },
+                "revision": "51143f24df839d3b9b2a9270fdd6f1b5d4465acd",
+                "source": {
+                    "helm": {
+                        "valueFiles": [
+                            "values-p10.yaml"
+                        ]
+                    },
+                    "path": "apps/comicrent",
+                    "repoURL": "https://github.com/DavidVelasquez77/Practicas-SA-B-202307705-gitops.git",
+                    "targetRevision": "feature/p10-observability"
+                }
+            },
+            {
+                "deployStartedAt": "2026-10-13T17:55:09Z",
+                "deployedAt": "2026-10-13T17:55:19Z",
+                "id": 21,
+                "initiatedBy": {
+                    "automated": true
+                },
+                "revision": "7411c318987560ce69e281f5fbacf68ea5db54ef",
+                "source": {
+                    "helm": {
+                        "valueFiles": [
+                            "values-p10.yaml"
+                        ]
+                    },
+                    "path": "apps/comicrent",
+                    "repoURL": "https://github.com/DavidVelasquez77/Practicas-SA-B-202307705-gitops.git",
+                    "targetRevision": "feature/p10-observability"
+                }
+            },
+            {
+                "deployStartedAt": "2026-10-13T17:57:39Z",
+                "deployedAt": "2026-10-13T17:57:55Z",
+                "id": 22,
+                "initiatedBy": {
+                    "automated": true
+                },
+                "revision": "1116273145fde3dac1949e40f4aaf643725b493b",
+                "source": {
+                    "helm": {
+                        "valueFiles": [
+                            "values-p10.yaml"
+                        ]
+                    },
+                    "path": "apps/comicrent",
+                    "repoURL": "https://github.com/DavidVelasquez77/Practicas-SA-B-202307705-gitops.git",
+                    "targetRevision": "feature/p10-observability"
+                }
+            },
+            {
+                "deployStartedAt": "2026-10-13T18:07:26Z",
+                "deployedAt": "2026-10-13T18:07:39Z",
+                "id": 23,
+                "initiatedBy": {
+                    "automated": true
+                },
+                "revision": "19b4c4be92d074e42f3fd4f23c9433818d50c56d",
+                "source": {
+                    "helm": {
+                        "valueFiles": [
+                            "values-p10.yaml"
+                        ]
+                    },
+                    "path": "apps/comicrent",
+                    "repoURL": "https://github.com/DavidVelasquez77/Practicas-SA-B-202307705-gitops.git",
+                    "targetRevision": "feature/p10-observability"
+                }
+            },
+            {
+                "deployStartedAt": "2026-10-13T18:09:49Z",
+                "deployedAt": "2026-10-13T18:10:06Z",
+                "id": 24,
+                "initiatedBy": {
+                    "automated": true
+                },
+                "revision": "e03f9935044c313cea1b7f82fb36b27ea6820bed",
+                "source": {
+                    "helm": {
+                        "valueFiles": [
+                            "values-p10.yaml"
+                        ]
+                    },
+                    "path": "apps/comicrent",
+                    "repoURL": "https://github.com/DavidVelasquez77/Practicas-SA-B-202307705-gitops.git",
+                    "targetRevision": "feature/p10-observability"
+                }
+            },
+            {
+                "deployStartedAt": "2026-10-13T18:11:35Z",
+                "deployedAt": "2026-10-13T18:11:47Z",
+                "id": 25,
+                "initiatedBy": {
+                    "automated": true
+                },
+                "revision": "6bb0e6e31555562f8f2a1f2fc40256a53c4e3902",
+                "source": {
+                    "helm": {
+                        "valueFiles": [
+                            "values-p10.yaml"
+                        ]
+                    },
+                    "path": "apps/comicrent",
+                    "repoURL": "https://github.com/DavidVelasquez77/Practicas-SA-B-202307705-gitops.git",
+                    "targetRevision": "feature/p10-observability"
+                }
+            },
+            {
+                "deployStartedAt": "2026-10-13T18:14:03Z",
+                "deployedAt": "2026-10-13T18:14:24Z",
+                "id": 26,
+                "initiatedBy": {
+                    "automated": true
+                },
+                "revision": "d04619a54fe6d0ac4fbc524430f008d84c8a2957",
+                "source": {
+                    "helm": {
+                        "valueFiles": [
+                            "values-p10.yaml"
+                        ]
+                    },
+                    "path": "apps/comicrent",
+                    "repoURL": "https://github.com/DavidVelasquez77/Practicas-SA-B-202307705-gitops.git",
+                    "targetRevision": "feature/p10-observability"
+                }
+            }
+        ],
+        "operationState": {
+            "finishedAt": "2026-10-13T18:14:24Z",
+            "message": "successfully synced (all tasks run)",
+            "operation": {
+                "initiatedBy": {
+                    "automated": true
+                },
+                "retry": {
+                    "limit": 5
+                },
+                "sync": {
+                    "prune": true,
+                    "revision": "d04619a54fe6d0ac4fbc524430f008d84c8a2957",
+                    "source": {
+                        "helm": {
+                            "valueFiles": [
+                                "values-p10.yaml"
+                            ]
+                        },
+                        "path": "apps/comicrent",
+                        "repoURL": "https://github.com/DavidVelasquez77/Practicas-SA-B-202307705-gitops.git",
+                        "targetRevision": "feature/p10-observability"
+                    },
+                    "syncOptions": [
+                        "CreateNamespace=false",
+                        "ServerSideApply=true",
+                        "RespectIgnoreDifferences=true"
+                    ]
+                }
+            },
+            "phase": "Succeeded",
+            "startedAt": "2026-10-13T18:14:03Z",
+            "syncResult": {
+                "resources": [
+                    {
+                        "group": "networking.k8s.io",
+                        "hookPhase": "Running",
+                        "kind": "NetworkPolicy",
+                        "message": "networkpolicy.networking.k8s.io/comicrent-api-gateway serverside-applied",
+                        "name": "comicrent-api-gateway",
+                        "namespace": "sa-p9",
+                        "status": "Synced",
+                        "syncPhase": "Sync",
+                        "version": "v1"
+                    },
+                    {
+                        "group": "networking.k8s.io",
+                        "hookPhase": "Running",
+                        "kind": "NetworkPolicy",
+                        "message": "networkpolicy.networking.k8s.io/comicrent-summary-consumer serverside-applied",
+                        "name": "comicrent-summary-consumer",
+                        "namespace": "sa-p9",
+                        "status": "Synced",
+                        "syncPhase": "Sync",
+                        "version": "v1"
+                    },
+                    {
+                        "group": "networking.k8s.io",
+                        "hookPhase": "Running",
+                        "kind": "NetworkPolicy",
+                        "message": "networkpolicy.networking.k8s.io/comicrent-cron-tick serverside-applied",
+                        "name": "comicrent-cron-tick",
+                        "namespace": "sa-p9",
+                        "status": "Synced",
+                        "syncPhase": "Sync",
+                        "version": "v1"
+                    },
+                    {
+                        "group": "networking.k8s.io",
+                        "hookPhase": "Running",
+                        "kind": "NetworkPolicy",
+                        "message": "networkpolicy.networking.k8s.io/comicrent-postgresql serverside-applied",
+                        "name": "comicrent-postgresql",
+                        "namespace": "sa-p9",
+                        "status": "Synced",
+                        "syncPhase": "Sync",
+                        "version": "v1"
+                    },
+                    {
+                        "group": "networking.k8s.io",
+                        "hookPhase": "Running",
+                        "kind": "NetworkPolicy",
+                        "message": "networkpolicy.networking.k8s.io/comicrent-allow-dns serverside-applied",
+                        "name": "comicrent-allow-dns",
+                        "namespace": "sa-p9",
+                        "status": "Synced",
+                        "syncPhase": "Sync",
+                        "version": "v1"
+                    },
+                    {
+                        "group": "networking.k8s.io",
+                        "hookPhase": "Running",
+                        "kind": "NetworkPolicy",
+                        "message": "networkpolicy.networking.k8s.io/comicrent-rentals-service serverside-applied",
+                        "name": "comicrent-rentals-service",
+                        "namespace": "sa-p9",
+                        "status": "Synced",
+                        "syncPhase": "Sync",
+                        "version": "v1"
+                    },
+                    {
+                        "group": "networking.k8s.io",
+                        "hookPhase": "Running",
+                        "kind": "NetworkPolicy",
+                        "message": "networkpolicy.networking.k8s.io/comicrent-default-deny serverside-applied",
+                        "name": "comicrent-default-deny",
+                        "namespace": "sa-p9",
+                        "status": "Synced",
+                        "syncPhase": "Sync",
+                        "version": "v1"
+                    },
+                    {
+                        "group": "networking.k8s.io",
+                        "hookPhase": "Running",
+                        "kind": "NetworkPolicy",
+                        "message": "networkpolicy.networking.k8s.io/comicrent-comics-service serverside-applied",
+                        "name": "comicrent-comics-service",
+                        "namespace": "sa-p9",
+                        "status": "Synced",
+                        "syncPhase": "Sync",
+                        "version": "v1"
+                    },
+                    {
+                        "group": "networking.k8s.io",
+                        "hookPhase": "Running",
+                        "kind": "NetworkPolicy",
+                        "message": "networkpolicy.networking.k8s.io/comicrent-upgrade-test serverside-applied",
+                        "name": "comicrent-upgrade-test",
+                        "namespace": "sa-p9",
+                        "status": "Synced",
+                        "syncPhase": "Sync",
+                        "version": "v1"
+                    },
+                    {
+                        "group": "networking.k8s.io",
+                        "hookPhase": "Running",
+                        "kind": "NetworkPolicy",
+                        "message": "networkpolicy.networking.k8s.io/comicrent-copies-consumer serverside-applied",
+                        "name": "comicrent-copies-consumer",
+                        "namespace": "sa-p9",
+                        "status": "Synced",
+                        "syncPhase": "Sync",
+                        "version": "v1"
+                    },
+                    {
+                        "group": "networking.k8s.io",
+                        "hookPhase": "Running",
+                        "kind": "NetworkPolicy",
+                        "message": "networkpolicy.networking.k8s.io/comicrent-rabbitmq serverside-applied",
+                        "name": "comicrent-rabbitmq",
+                        "namespace": "sa-p9",
+                        "status": "Synced",
+                        "syncPhase": "Sync",
+                        "version": "v1"
+                    },
+                    {
+                        "group": "networking.k8s.io",
+                        "hookPhase": "Running",
+                        "kind": "NetworkPolicy",
+                        "message": "networkpolicy.networking.k8s.io/comicrent-auth-service serverside-applied",
+                        "name": "comicrent-auth-service",
+                        "namespace": "sa-p9",
+                        "status": "Synced",
+                        "syncPhase": "Sync",
+                        "version": "v1"
+                    },
+                    {
+                        "group": "networking.k8s.io",
+                        "hookPhase": "Running",
+                        "kind": "NetworkPolicy",
+                        "message": "networkpolicy.networking.k8s.io/comicrent-copies-service serverside-applied",
+                        "name": "comicrent-copies-service",
+                        "namespace": "sa-p9",
+                        "status": "Synced",
+                        "syncPhase": "Sync",
+                        "version": "v1"
+                    },
+                    {
+                        "group": "networking.k8s.io",
+                        "hookPhase": "Running",
+                        "kind": "NetworkPolicy",
+                        "message": "networkpolicy.networking.k8s.io/comicrent-cron-summary serverside-applied",
+                        "name": "comicrent-cron-summary",
+                        "namespace": "sa-p9",
+                        "status": "Synced",
+                        "syncPhase": "Sync",
+                        "version": "v1"
+                    },
+                    {
+                        "group": "policy",
+                        "hookPhase": "Running",
+                        "kind": "PodDisruptionBudget",
+                        "message": "poddisruptionbudget.policy/comicrent-postgresql serverside-applied",
+                        "name": "comicrent-postgresql",
+                        "namespace": "sa-p9",
+                        "status": "Synced",
+                        "syncPhase": "Sync",
+                        "version": "v1"
+                    },
+                    {
+                        "group": "policy",
+                        "hookPhase": "Running",
+                        "kind": "PodDisruptionBudget",
+                        "message": "poddisruptionbudget.policy/comicrent-p9-workloads-comics-service serverside-applied",
+                        "name": "comicrent-p9-workloads-comics-service",
+                        "namespace": "sa-p9",
+                        "status": "Synced",
+                        "syncPhase": "Sync",
+                        "version": "v1"
+                    },
+                    {
+                        "group": "policy",
+                        "hookPhase": "Running",
+                        "kind": "PodDisruptionBudget",
+                        "message": "poddisruptionbudget.policy/comicrent-p9-workloads-rentals-service serverside-applied",
+                        "name": "comicrent-p9-workloads-rentals-service",
+                        "namespace": "sa-p9",
+                        "status": "Synced",
+                        "syncPhase": "Sync",
+                        "version": "v1"
+                    },
+                    {
+                        "group": "policy",
+                        "hookPhase": "Running",
+                        "kind": "PodDisruptionBudget",
+                        "message": "poddisruptionbudget.policy/comicrent-p9-workloads-api-gateway serverside-applied",
+                        "name": "comicrent-p9-workloads-api-gateway",
+                        "namespace": "sa-p9",
+                        "status": "Synced",
+                        "syncPhase": "Sync",
+                        "version": "v1"
+                    },
+                    {
+                        "group": "policy",
+                        "hookPhase": "Running",
+                        "kind": "PodDisruptionBudget",
+                        "message": "poddisruptionbudget.policy/comicrent-p9-workloads-copies-service serverside-applied",
+                        "name": "comicrent-p9-workloads-copies-service",
+                        "namespace": "sa-p9",
+                        "status": "Synced",
+                        "syncPhase": "Sync",
+                        "version": "v1"
+                    },
+                    {
+                        "group": "policy",
+                        "hookPhase": "Running",
+                        "kind": "PodDisruptionBudget",
+                        "message": "poddisruptionbudget.policy/comicrent-rabbitmq serverside-applied",
+                        "name": "comicrent-rabbitmq",
+                        "namespace": "sa-p9",
+                        "status": "Synced",
+                        "syncPhase": "Sync",
+                        "version": "v1"
+                    },
+                    {
+                        "group": "policy",
+                        "hookPhase": "Running",
+                        "kind": "PodDisruptionBudget",
+                        "message": "poddisruptionbudget.policy/comicrent-p9-workloads-auth-service serverside-applied",
+                        "name": "comicrent-p9-workloads-auth-service",
+                        "namespace": "sa-p9",
+                        "status": "Synced",
+                        "syncPhase": "Sync",
+                        "version": "v1"
+                    },
+                    {
+                        "group": "",
+                        "hookPhase": "Running",
+                        "kind": "ServiceAccount",
+                        "message": "serviceaccount/comicrent-rabbitmq serverside-applied",
+                        "name": "comicrent-rabbitmq",
+                        "namespace": "sa-p9",
+                        "status": "Synced",
+                        "syncPhase": "Sync",
+                        "version": "v1"
+                    },
+                    {
+                        "group": "",
+                        "hookPhase": "Running",
+                        "kind": "ServiceAccount",
+                        "message": "serviceaccount/comicrent-p9-workloads-copies-service serverside-applied",
+                        "name": "comicrent-p9-workloads-copies-service",
+                        "namespace": "sa-p9",
+                        "status": "Synced",
+                        "syncPhase": "Sync",
+                        "version": "v1"
+                    },
+                    {
+                        "group": "",
+                        "hookPhase": "Running",
+                        "kind": "ServiceAccount",
+                        "message": "serviceaccount/comicrent-p9-workloads-auth-service serverside-applied",
+                        "name": "comicrent-p9-workloads-auth-service",
+                        "namespace": "sa-p9",
+                        "status": "Synced",
+                        "syncPhase": "Sync",
+                        "version": "v1"
+                    },
+                    {
+                        "group": "",
+                        "hookPhase": "Running",
+                        "kind": "ServiceAccount",
+                        "message": "serviceaccount/p8-analysis serverside-applied",
+                        "name": "p8-analysis",
+                        "namespace": "sa-p9",
+                        "status": "Synced",
+                        "syncPhase": "Sync",
+                        "version": "v1"
+                    },
+                    {
+                        "group": "",
+                        "hookPhase": "Running",
+                        "kind": "ServiceAccount",
+                        "message": "serviceaccount/comicrent-summary-consumer serverside-applied",
+                        "name": "comicrent-summary-consumer",
+                        "namespace": "sa-p9",
+                        "status": "Synced",
+                        "syncPhase": "Sync",
+                        "version": "v1"
+                    },
+                    {
+                        "group": "",
+                        "hookPhase": "Running",
+                        "kind": "ServiceAccount",
+                        "message": "serviceaccount/comicrent-cron-summary serverside-applied",
+                        "name": "comicrent-cron-summary",
+                        "namespace": "sa-p9",
+                        "status": "Synced",
+                        "syncPhase": "Sync",
+                        "version": "v1"
+                    },
+                    {
+                        "group": "",
+                        "hookPhase": "Running",
+                        "kind": "ServiceAccount",
+                        "message": "serviceaccount/comicrent-p9-workloads-copies-consumer serverside-applied",
+                        "name": "comicrent-p9-workloads-copies-consumer",
+                        "namespace": "sa-p9",
+                        "status": "Synced",
+                        "syncPhase": "Sync",
+                        "version": "v1"
+                    },
+                    {
+                        "group": "",
+                        "hookPhase": "Running",
+                        "kind": "ServiceAccount",
+                        "message": "serviceaccount/comicrent-postgresql serverside-applied",
+                        "name": "comicrent-postgresql",
+                        "namespace": "sa-p9",
+                        "status": "Synced",
+                        "syncPhase": "Sync",
+                        "version": "v1"
+                    },
+                    {
+                        "group": "",
+                        "hookPhase": "Running",
+                        "kind": "ServiceAccount",
+                        "message": "serviceaccount/comicrent-cron-tick serverside-applied",
+                        "name": "comicrent-cron-tick",
+                        "namespace": "sa-p9",
+                        "status": "Synced",
+                        "syncPhase": "Sync",
+                        "version": "v1"
+                    },
+                    {
+                        "group": "",
+                        "hookPhase": "Running",
+                        "kind": "ServiceAccount",
+                        "message": "serviceaccount/comicrent-p9-workloads-rentals-service serverside-applied",
+                        "name": "comicrent-p9-workloads-rentals-service",
+                        "namespace": "sa-p9",
+                        "status": "Synced",
+                        "syncPhase": "Sync",
+                        "version": "v1"
+                    },
+                    {
+                        "group": "",
+                        "hookPhase": "Running",
+                        "kind": "ServiceAccount",
+                        "message": "serviceaccount/comicrent-p9-workloads-api-gateway serverside-applied",
+                        "name": "comicrent-p9-workloads-api-gateway",
+                        "namespace": "sa-p9",
+                        "status": "Synced",
+                        "syncPhase": "Sync",
+                        "version": "v1"
+                    },
+                    {
+                        "group": "",
+                        "hookPhase": "Running",
+                        "kind": "ServiceAccount",
+                        "message": "serviceaccount/comicrent-p9-workloads-comics-service serverside-applied",
+                        "name": "comicrent-p9-workloads-comics-service",
+                        "namespace": "sa-p9",
+                        "status": "Synced",
+                        "syncPhase": "Sync",
+                        "version": "v1"
+                    },
+                    {
+                        "group": "",
+                        "hookPhase": "Running",
+                        "kind": "Secret",
+                        "message": "secret/comicrent-rabbitmq serverside-applied",
+                        "name": "comicrent-rabbitmq",
+                        "namespace": "sa-p9",
+                        "status": "Synced",
+                        "syncPhase": "Sync",
+                        "version": "v1"
+                    },
+                    {
+                        "group": "",
+                        "hookPhase": "Running",
+                        "kind": "Secret",
+                        "message": "secret/comicrent-rabbitmq-config serverside-applied",
+                        "name": "comicrent-rabbitmq-config",
+                        "namespace": "sa-p9",
+                        "status": "Synced",
+                        "syncPhase": "Sync",
+                        "version": "v1"
+                    },
+                    {
+                        "group": "",
+                        "hookPhase": "Running",
+                        "kind": "ConfigMap",
+                        "message": "configmap/comicrent-operations-config serverside-applied",
+                        "name": "comicrent-operations-config",
+                        "namespace": "sa-p9",
+                        "status": "Synced",
+                        "syncPhase": "Sync",
+                        "version": "v1"
+                    },
+                    {
+                        "group": "",
+                        "hookPhase": "Running",
+                        "kind": "ConfigMap",
+                        "message": "configmap/comicrent-p9-workloads-copies-consumer-config serverside-applied",
+                        "name": "comicrent-p9-workloads-copies-consumer-config",
+                        "namespace": "sa-p9",
+                        "status": "Synced",
+                        "syncPhase": "Sync",
+                        "version": "v1"
+                    },
+                    {
+                        "group": "",
+                        "hookPhase": "Running",
+                        "kind": "ConfigMap",
+                        "message": "configmap/comicrent-p9-workloads-copies-service-config serverside-applied",
+                        "name": "comicrent-p9-workloads-copies-service-config",
+                        "namespace": "sa-p9",
+                        "status": "Synced",
+                        "syncPhase": "Sync",
+                        "version": "v1"
+                    },
+                    {
+                        "group": "",
+                        "hookPhase": "Running",
+                        "kind": "ConfigMap",
+                        "message": "configmap/comicrent-postgresql-init-scripts serverside-applied",
+                        "name": "comicrent-postgresql-init-scripts",
+                        "namespace": "sa-p9",
+                        "status": "Synced",
+                        "syncPhase": "Sync",
+                        "version": "v1"
+                    },
+                    {
+                        "group": "",
+                        "hookPhase": "Running",
+                        "kind": "ConfigMap",
+                        "message": "configmap/comicrent-p9-workloads-auth-service-config serverside-applied",
+                        "name": "comicrent-p9-workloads-auth-service-config",
+                        "namespace": "sa-p9",
+                        "status": "Synced",
+                        "syncPhase": "Sync",
+                        "version": "v1"
+                    },
+                    {
+                        "group": "",
+                        "hookPhase": "Running",
+                        "kind": "ConfigMap",
+                        "message": "configmap/comicrent-p9-workloads-rentals-service-config serverside-applied",
+                        "name": "comicrent-p9-workloads-rentals-service-config",
+                        "namespace": "sa-p9",
+                        "status": "Synced",
+                        "syncPhase": "Sync",
+                        "version": "v1"
+                    },
+                    {
+                        "group": "",
+                        "hookPhase": "Running",
+                        "kind": "ConfigMap",
+                        "message": "configmap/comicrent-p9-workloads-comics-service-config serverside-applied",
+                        "name": "comicrent-p9-workloads-comics-service-config",
+                        "namespace": "sa-p9",
+                        "status": "Synced",
+                        "syncPhase": "Sync",
+                        "version": "v1"
+                    },
+                    {
+                        "group": "",
+                        "hookPhase": "Running",
+                        "kind": "ConfigMap",
+                        "message": "configmap/comicrent-p9-workloads-api-gateway-config serverside-applied",
+                        "name": "comicrent-p9-workloads-api-gateway-config",
+                        "namespace": "sa-p9",
+                        "status": "Synced",
+                        "syncPhase": "Sync",
+                        "version": "v1"
+                    },
+                    {
+                        "group": "rbac.authorization.k8s.io",
+                        "hookPhase": "Running",
+                        "kind": "Role",
+                        "message": "role.rbac.authorization.k8s.io/comicrent-cron-summary serverside-applied",
+                        "name": "comicrent-cron-summary",
+                        "namespace": "sa-p9",
+                        "status": "Synced",
+                        "syncPhase": "Sync",
+                        "version": "v1"
+                    },
+                    {
+                        "group": "rbac.authorization.k8s.io",
+                        "hookPhase": "Running",
+                        "kind": "Role",
+                        "message": "role.rbac.authorization.k8s.io/comicrent-p9-workloads-api-gateway serverside-applied",
+                        "name": "comicrent-p9-workloads-api-gateway",
+                        "namespace": "sa-p9",
+                        "status": "Synced",
+                        "syncPhase": "Sync",
+                        "version": "v1"
+                    },
+                    {
+                        "group": "rbac.authorization.k8s.io",
+                        "hookPhase": "Running",
+                        "kind": "Role",
+                        "message": "role.rbac.authorization.k8s.io/comicrent-p9-workloads-comics-service serverside-applied",
+                        "name": "comicrent-p9-workloads-comics-service",
+                        "namespace": "sa-p9",
+                        "status": "Synced",
+                        "syncPhase": "Sync",
+                        "version": "v1"
+                    },
+                    {
+                        "group": "rbac.authorization.k8s.io",
+                        "hookPhase": "Running",
+                        "kind": "Role",
+                        "message": "role.rbac.authorization.k8s.io/comicrent-p9-workloads-auth-service serverside-applied",
+                        "name": "comicrent-p9-workloads-auth-service",
+                        "namespace": "sa-p9",
+                        "status": "Synced",
+                        "syncPhase": "Sync",
+                        "version": "v1"
+                    },
+                    {
+                        "group": "rbac.authorization.k8s.io",
+                        "hookPhase": "Running",
+                        "kind": "Role",
+                        "message": "role.rbac.authorization.k8s.io/comicrent-p9-workloads-copies-service serverside-applied",
+                        "name": "comicrent-p9-workloads-copies-service",
+                        "namespace": "sa-p9",
+                        "status": "Synced",
+                        "syncPhase": "Sync",
+                        "version": "v1"
+                    },
+                    {
+                        "group": "rbac.authorization.k8s.io",
+                        "hookPhase": "Running",
+                        "kind": "Role",
+                        "message": "role.rbac.authorization.k8s.io/comicrent-cron-tick serverside-applied",
+                        "name": "comicrent-cron-tick",
+                        "namespace": "sa-p9",
+                        "status": "Synced",
+                        "syncPhase": "Sync",
+                        "version": "v1"
+                    },
+                    {
+                        "group": "rbac.authorization.k8s.io",
+                        "hookPhase": "Running",
+                        "kind": "Role",
+                        "message": "role.rbac.authorization.k8s.io/comicrent-summary-consumer serverside-applied",
+                        "name": "comicrent-summary-consumer",
+                        "namespace": "sa-p9",
+                        "status": "Synced",
+                        "syncPhase": "Sync",
+                        "version": "v1"
+                    },
+                    {
+                        "group": "rbac.authorization.k8s.io",
+                        "hookPhase": "Running",
+                        "kind": "Role",
+                        "message": "role.rbac.authorization.k8s.io/comicrent-p9-workloads-rentals-service serverside-applied",
+                        "name": "comicrent-p9-workloads-rentals-service",
+                        "namespace": "sa-p9",
+                        "status": "Synced",
+                        "syncPhase": "Sync",
+                        "version": "v1"
+                    },
+                    {
+                        "group": "rbac.authorization.k8s.io",
+                        "hookPhase": "Running",
+                        "kind": "Role",
+                        "message": "role.rbac.authorization.k8s.io/comicrent-p9-workloads-copies-consumer serverside-applied",
+                        "name": "comicrent-p9-workloads-copies-consumer",
+                        "namespace": "sa-p9",
+                        "status": "Synced",
+                        "syncPhase": "Sync",
+                        "version": "v1"
+                    },
+                    {
+                        "group": "rbac.authorization.k8s.io",
+                        "hookPhase": "Running",
+                        "kind": "Role",
+                        "message": "role.rbac.authorization.k8s.io/comicrent-rabbitmq-endpoint-reader serverside-applied",
+                        "name": "comicrent-rabbitmq-endpoint-reader",
+                        "namespace": "sa-p9",
+                        "status": "Synced",
+                        "syncPhase": "Sync",
+                        "version": "v1"
+                    },
+                    {
+                        "group": "rbac.authorization.k8s.io",
+                        "hookPhase": "Running",
+                        "kind": "RoleBinding",
+                        "message": "rolebinding.rbac.authorization.k8s.io/comicrent-cron-summary serverside-applied",
+                        "name": "comicrent-cron-summary",
+                        "namespace": "sa-p9",
+                        "status": "Synced",
+                        "syncPhase": "Sync",
+                        "version": "v1"
+                    },
+                    {
+                        "group": "rbac.authorization.k8s.io",
+                        "hookPhase": "Running",
+                        "kind": "RoleBinding",
+                        "message": "rolebinding.rbac.authorization.k8s.io/comicrent-cron-tick serverside-applied",
+                        "name": "comicrent-cron-tick",
+                        "namespace": "sa-p9",
+                        "status": "Synced",
+                        "syncPhase": "Sync",
+                        "version": "v1"
+                    },
+                    {
+                        "group": "rbac.authorization.k8s.io",
+                        "hookPhase": "Running",
+                        "kind": "RoleBinding",
+                        "message": "rolebinding.rbac.authorization.k8s.io/comicrent-p9-workloads-api-gateway serverside-applied",
+                        "name": "comicrent-p9-workloads-api-gateway",
+                        "namespace": "sa-p9",
+                        "status": "Synced",
+                        "syncPhase": "Sync",
+                        "version": "v1"
+                    },
+                    {
+                        "group": "rbac.authorization.k8s.io",
+                        "hookPhase": "Running",
+                        "kind": "RoleBinding",
+                        "message": "rolebinding.rbac.authorization.k8s.io/comicrent-p9-workloads-auth-service serverside-applied",
+                        "name": "comicrent-p9-workloads-auth-service",
+                        "namespace": "sa-p9",
+                        "status": "Synced",
+                        "syncPhase": "Sync",
+                        "version": "v1"
+                    },
+                    {
+                        "group": "rbac.authorization.k8s.io",
+                        "hookPhase": "Running",
+                        "kind": "RoleBinding",
+                        "message": "rolebinding.rbac.authorization.k8s.io/comicrent-p9-workloads-copies-consumer serverside-applied",
+                        "name": "comicrent-p9-workloads-copies-consumer",
+                        "namespace": "sa-p9",
+                        "status": "Synced",
+                        "syncPhase": "Sync",
+                        "version": "v1"
+                    },
+                    {
+                        "group": "rbac.authorization.k8s.io",
+                        "hookPhase": "Running",
+                        "kind": "RoleBinding",
+                        "message": "rolebinding.rbac.authorization.k8s.io/comicrent-p9-workloads-copies-service serverside-applied",
+                        "name": "comicrent-p9-workloads-copies-service",
+                        "namespace": "sa-p9",
+                        "status": "Synced",
+                        "syncPhase": "Sync",
+                        "version": "v1"
+                    },
+                    {
+                        "group": "rbac.authorization.k8s.io",
+                        "hookPhase": "Running",
+                        "kind": "RoleBinding",
+                        "message": "rolebinding.rbac.authorization.k8s.io/comicrent-p9-workloads-rentals-service serverside-applied",
+                        "name": "comicrent-p9-workloads-rentals-service",
+                        "namespace": "sa-p9",
+                        "status": "Synced",
+                        "syncPhase": "Sync",
+                        "version": "v1"
+                    },
+                    {
+                        "group": "rbac.authorization.k8s.io",
+                        "hookPhase": "Running",
+                        "kind": "RoleBinding",
+                        "message": "rolebinding.rbac.authorization.k8s.io/comicrent-summary-consumer serverside-applied",
+                        "name": "comicrent-summary-consumer",
+                        "namespace": "sa-p9",
+                        "status": "Synced",
+                        "syncPhase": "Sync",
+                        "version": "v1"
+                    },
+                    {
+                        "group": "rbac.authorization.k8s.io",
+                        "hookPhase": "Running",
+                        "kind": "RoleBinding",
+                        "message": "rolebinding.rbac.authorization.k8s.io/comicrent-rabbitmq-endpoint-reader serverside-applied",
+                        "name": "comicrent-rabbitmq-endpoint-reader",
+                        "namespace": "sa-p9",
+                        "status": "Synced",
+                        "syncPhase": "Sync",
+                        "version": "v1"
+                    },
+                    {
+                        "group": "rbac.authorization.k8s.io",
+                        "hookPhase": "Running",
+                        "kind": "RoleBinding",
+                        "message": "rolebinding.rbac.authorization.k8s.io/comicrent-p9-workloads-comics-service serverside-applied",
+                        "name": "comicrent-p9-workloads-comics-service",
+                        "namespace": "sa-p9",
+                        "status": "Synced",
+                        "syncPhase": "Sync",
+                        "version": "v1"
+                    },
+                    {
+                        "group": "",
+                        "hookPhase": "Running",
+                        "kind": "Service",
+                        "message": "service/comicrent-rabbitmq-headless serverside-applied",
+                        "name": "comicrent-rabbitmq-headless",
+                        "namespace": "sa-p9",
+                        "status": "Synced",
+                        "syncPhase": "Sync",
+                        "version": "v1"
+                    },
+                    {
+                        "group": "",
+                        "hookPhase": "Running",
+                        "kind": "Service",
+                        "message": "service/comicrent-postgresql-hl serverside-applied",
+                        "name": "comicrent-postgresql-hl",
+                        "namespace": "sa-p9",
+                        "status": "Synced",
+                        "syncPhase": "Sync",
+                        "version": "v1"
+                    },
+                    {
+                        "group": "",
+                        "hookPhase": "Running",
+                        "kind": "Service",
+                        "message": "service/comicrent-postgresql serverside-applied",
+                        "name": "comicrent-postgresql",
+                        "namespace": "sa-p9",
+                        "status": "Synced",
+                        "syncPhase": "Sync",
+                        "version": "v1"
+                    },
+                    {
+                        "group": "",
+                        "hookPhase": "Running",
+                        "kind": "Service",
+                        "message": "service/comicrent-rabbitmq serverside-applied",
+                        "name": "comicrent-rabbitmq",
+                        "namespace": "sa-p9",
+                        "status": "Synced",
+                        "syncPhase": "Sync",
+                        "version": "v1"
+                    },
+                    {
+                        "group": "",
+                        "hookPhase": "Running",
+                        "kind": "Service",
+                        "message": "service/comicrent-p9-workloads-copies-service serverside-applied",
+                        "name": "comicrent-p9-workloads-copies-service",
+                        "namespace": "sa-p9",
+                        "status": "Synced",
+                        "syncPhase": "Sync",
+                        "version": "v1"
+                    },
+                    {
+                        "group": "",
+                        "hookPhase": "Running",
+                        "kind": "Service",
+                        "message": "service/comicrent-p9-workloads-comics-service serverside-applied",
+                        "name": "comicrent-p9-workloads-comics-service",
+                        "namespace": "sa-p9",
+                        "status": "Synced",
+                        "syncPhase": "Sync",
+                        "version": "v1"
+                    },
+                    {
+                        "group": "",
+                        "hookPhase": "Running",
+                        "kind": "Service",
+                        "message": "service/comicrent-p9-workloads-api-gateway serverside-applied",
+                        "name": "comicrent-p9-workloads-api-gateway",
+                        "namespace": "sa-p9",
+                        "status": "Synced",
+                        "syncPhase": "Sync",
+                        "version": "v1"
+                    },
+                    {
+                        "group": "",
+                        "hookPhase": "Running",
+                        "kind": "Service",
+                        "message": "service/comicrent-p9-workloads-rentals-service serverside-applied",
+                        "name": "comicrent-p9-workloads-rentals-service",
+                        "namespace": "sa-p9",
+                        "status": "Synced",
+                        "syncPhase": "Sync",
+                        "version": "v1"
+                    },
+                    {
+                        "group": "",
+                        "hookPhase": "Running",
+                        "kind": "Service",
+                        "message": "service/comicrent-p9-workloads-auth-service serverside-applied",
+                        "name": "comicrent-p9-workloads-auth-service",
+                        "namespace": "sa-p9",
+                        "status": "Synced",
+                        "syncPhase": "Sync",
+                        "version": "v1"
+                    },
+                    {
+                        "group": "apps",
+                        "hookPhase": "Running",
+                        "images": [
+                            "ghcr.io/davidvelasquez77/comicrent-copies-service:v0.8.5"
+                        ],
+                        "kind": "Deployment",
+                        "message": "deployment.apps/comicrent-p9-workloads-copies-consumer serverside-applied",
+                        "name": "comicrent-p9-workloads-copies-consumer",
+                        "namespace": "sa-p9",
+                        "status": "Synced",
+                        "syncPhase": "Sync",
+                        "version": "v1"
+                    },
+                    {
+                        "group": "apps",
+                        "hookPhase": "Running",
+                        "images": [
+                            "ghcr.io/davidvelasquez77/comicrent-copies-service:v0.9.2"
+                        ],
+                        "kind": "Deployment",
+                        "message": "deployment.apps/comicrent-p9-workloads-copies-service serverside-applied",
+                        "name": "comicrent-p9-workloads-copies-service",
+                        "namespace": "sa-p9",
+                        "status": "Synced",
+                        "syncPhase": "Sync",
+                        "version": "v1"
+                    },
+                    {
+                        "group": "apps",
+                        "hookPhase": "Running",
+                        "images": [
+                            "ghcr.io/davidvelasquez77/comicrent-comics-service:v0.9.2"
+                        ],
+                        "kind": "Deployment",
+                        "message": "deployment.apps/comicrent-p9-workloads-comics-service serverside-applied",
+                        "name": "comicrent-p9-workloads-comics-service",
+                        "namespace": "sa-p9",
+                        "status": "Synced",
+                        "syncPhase": "Sync",
+                        "version": "v1"
+                    },
+                    {
+                        "group": "apps",
+                        "hookPhase": "Running",
+                        "images": [
+                            "ghcr.io/davidvelasquez77/comicrent-rentals-service:v0.9.2"
+                        ],
+                        "kind": "Deployment",
+                        "message": "deployment.apps/comicrent-p9-workloads-rentals-service serverside-applied",
+                        "name": "comicrent-p9-workloads-rentals-service",
+                        "namespace": "sa-p9",
+                        "status": "Synced",
+                        "syncPhase": "Sync",
+                        "version": "v1"
+                    },
+                    {
+                        "group": "apps",
+                        "hookPhase": "Running",
+                        "images": [
+                            "ghcr.io/davidvelasquez77/comicrent-operations-jobs:v0.8.5"
+                        ],
+                        "kind": "Deployment",
+                        "message": "deployment.apps/comicrent-summary-consumer serverside-applied",
+                        "name": "comicrent-summary-consumer",
+                        "namespace": "sa-p9",
+                        "status": "Synced",
+                        "syncPhase": "Sync",
+                        "version": "v1"
+                    },
+                    {
+                        "group": "apps",
+                        "hookPhase": "Running",
+                        "images": [
+                            "ghcr.io/davidvelasquez77/comicrent-auth-service:v0.9.2"
+                        ],
+                        "kind": "Deployment",
+                        "message": "deployment.apps/comicrent-p9-workloads-auth-service serverside-applied",
+                        "name": "comicrent-p9-workloads-auth-service",
+                        "namespace": "sa-p9",
+                        "status": "Synced",
+                        "syncPhase": "Sync",
+                        "version": "v1"
+                    },
+                    {
+                        "group": "apps",
+                        "hookPhase": "Running",
+                        "images": [
+                            "registry-1.docker.io/bitnami/postgresql@sha256:7d77a46bbf200709237318c27dec0eaeae2520e403dd18fdebde2be7a6b04993"
+                        ],
+                        "kind": "StatefulSet",
+                        "message": "statefulset.apps/comicrent-postgresql serverside-applied",
+                        "name": "comicrent-postgresql",
+                        "namespace": "sa-p9",
+                        "status": "Synced",
+                        "syncPhase": "Sync",
+                        "version": "v1"
+                    },
+                    {
+                        "group": "apps",
+                        "hookPhase": "Running",
+                        "images": [
+                            "docker.io/bitnamilegacy/rabbitmq:3.13.5-debian-12-r1"
+                        ],
+                        "kind": "StatefulSet",
+                        "message": "statefulset.apps/comicrent-rabbitmq serverside-applied",
+                        "name": "comicrent-rabbitmq",
+                        "namespace": "sa-p9",
+                        "status": "Synced",
+                        "syncPhase": "Sync",
+                        "version": "v1"
+                    },
+                    {
+                        "group": "batch",
+                        "hookPhase": "Running",
+                        "images": [
+                            "ghcr.io/davidvelasquez77/comicrent-operations-jobs:v0.8.5"
+                        ],
+                        "kind": "CronJob",
+                        "message": "cronjob.batch/comicrent-cron-summary serverside-applied",
+                        "name": "comicrent-cron-summary",
+                        "namespace": "sa-p9",
+                        "status": "Synced",
+                        "syncPhase": "Sync",
+                        "version": "v1"
+                    },
+                    {
+                        "group": "batch",
+                        "hookPhase": "Running",
+                        "images": [
+                            "ghcr.io/davidvelasquez77/comicrent-operations-jobs:v0.8.5"
+                        ],
+                        "kind": "CronJob",
+                        "message": "cronjob.batch/comicrent-cron-tick serverside-applied",
+                        "name": "comicrent-cron-tick",
+                        "namespace": "sa-p9",
+                        "status": "Synced",
+                        "syncPhase": "Sync",
+                        "version": "v1"
+                    },
+                    {
+                        "group": "argoproj.io",
+                        "hookPhase": "Running",
+                        "kind": "AnalysisTemplate",
+                        "message": "analysistemplate.argoproj.io/api-gateway-metrics serverside-applied",
+                        "name": "api-gateway-metrics",
+                        "namespace": "sa-p9",
+                        "status": "Synced",
+                        "syncPhase": "Sync",
+                        "version": "v1alpha1"
+                    },
+                    {
+                        "group": "argoproj.io",
+                        "hookPhase": "Running",
+                        "images": [
+                            "ghcr.io/davidvelasquez77/comicrent-api-gateway:v0.9.2"
+                        ],
+                        "kind": "Rollout",
+                        "message": "rollout.argoproj.io/comicrent-api-gateway-rollout serverside-applied",
+                        "name": "comicrent-api-gateway-rollout",
+                        "namespace": "sa-p9",
+                        "status": "Synced",
+                        "syncPhase": "Sync",
+                        "version": "v1alpha1"
+                    },
+                    {
+                        "group": "bitnami.com",
+                        "hookPhase": "Running",
+                        "kind": "SealedSecret",
+                        "message": "sealedsecret.bitnami.com/comicrent-postgresql-secret serverside-applied",
+                        "name": "comicrent-postgresql-secret",
+                        "namespace": "sa-p9",
+                        "status": "Synced",
+                        "syncPhase": "Sync",
+                        "version": "v1alpha1"
+                    },
+                    {
+                        "group": "bitnami.com",
+                        "hookPhase": "Running",
+                        "kind": "SealedSecret",
+                        "message": "sealedsecret.bitnami.com/comicrent-rabbitmq-secret serverside-applied",
+                        "name": "comicrent-rabbitmq-secret",
+                        "namespace": "sa-p9",
+                        "status": "Synced",
+                        "syncPhase": "Sync",
+                        "version": "v1alpha1"
+                    },
+                    {
+                        "group": "bitnami.com",
+                        "hookPhase": "Running",
+                        "kind": "SealedSecret",
+                        "message": "sealedsecret.bitnami.com/comicrent-auth-secret serverside-applied",
+                        "name": "comicrent-auth-secret",
+                        "namespace": "sa-p9",
+                        "status": "Synced",
+                        "syncPhase": "Sync",
+                        "version": "v1alpha1"
+                    }
+                ],
+                "revision": "d04619a54fe6d0ac4fbc524430f008d84c8a2957",
+                "source": {
+                    "helm": {
+                        "valueFiles": [
+                            "values-p10.yaml"
+                        ]
+                    },
+                    "path": "apps/comicrent",
+                    "repoURL": "https://github.com/DavidVelasquez77/Practicas-SA-B-202307705-gitops.git",
+                    "targetRevision": "feature/p10-observability"
+                }
+            }
+        },
+        "reconciledAt": "2026-10-13T18:20:00Z",
+        "resourceHealthSource": "appTree",
+        "resources": [
+            {
+                "kind": "ConfigMap",
+                "name": "comicrent-operations-config",
+                "namespace": "sa-p9",
+                "status": "Synced",
+                "version": "v1"
+            },
+            {
+                "kind": "ConfigMap",
+                "name": "comicrent-p9-workloads-api-gateway-config",
+                "namespace": "sa-p9",
+                "status": "Synced",
+                "version": "v1"
+            },
+            {
+                "kind": "ConfigMap",
+                "name": "comicrent-p9-workloads-auth-service-config",
+                "namespace": "sa-p9",
+                "status": "Synced",
+                "version": "v1"
+            },
+            {
+                "kind": "ConfigMap",
+                "name": "comicrent-p9-workloads-comics-service-config",
+                "namespace": "sa-p9",
+                "status": "Synced",
+                "version": "v1"
+            },
+            {
+                "kind": "ConfigMap",
+                "name": "comicrent-p9-workloads-copies-consumer-config",
+                "namespace": "sa-p9",
+                "status": "Synced",
+                "version": "v1"
+            },
+            {
+                "kind": "ConfigMap",
+                "name": "comicrent-p9-workloads-copies-service-config",
+                "namespace": "sa-p9",
+                "status": "Synced",
+                "version": "v1"
+            },
+            {
+                "kind": "ConfigMap",
+                "name": "comicrent-p9-workloads-rentals-service-config",
+                "namespace": "sa-p9",
+                "status": "Synced",
+                "version": "v1"
+            },
+            {
+                "kind": "ConfigMap",
+                "name": "comicrent-postgresql-init-scripts",
+                "namespace": "sa-p9",
+                "status": "Synced",
+                "version": "v1"
+            },
+            {
+                "kind": "Secret",
+                "name": "comicrent-rabbitmq",
+                "namespace": "sa-p9",
+                "status": "Synced",
+                "version": "v1"
+            },
+            {
+                "kind": "Secret",
+                "name": "comicrent-rabbitmq-config",
+                "namespace": "sa-p9",
+                "status": "Synced",
+                "version": "v1"
+            },
+            {
+                "kind": "Service",
+                "name": "comicrent-p9-workloads-api-gateway",
+                "namespace": "sa-p9",
+                "status": "Synced",
+                "version": "v1"
+            },
+            {
+                "kind": "Service",
+                "name": "comicrent-p9-workloads-auth-service",
+                "namespace": "sa-p9",
+                "status": "Synced",
+                "version": "v1"
+            },
+            {
+                "kind": "Service",
+                "name": "comicrent-p9-workloads-comics-service",
+                "namespace": "sa-p9",
+                "status": "Synced",
+                "version": "v1"
+            },
+            {
+                "kind": "Service",
+                "name": "comicrent-p9-workloads-copies-service",
+                "namespace": "sa-p9",
+                "status": "Synced",
+                "version": "v1"
+            },
+            {
+                "kind": "Service",
+                "name": "comicrent-p9-workloads-rentals-service",
+                "namespace": "sa-p9",
+                "status": "Synced",
+                "version": "v1"
+            },
+            {
+                "kind": "Service",
+                "name": "comicrent-postgresql",
+                "namespace": "sa-p9",
+                "status": "Synced",
+                "version": "v1"
+            },
+            {
+                "kind": "Service",
+                "name": "comicrent-postgresql-hl",
+                "namespace": "sa-p9",
+                "status": "Synced",
+                "version": "v1"
+            },
+            {
+                "kind": "Service",
+                "name": "comicrent-rabbitmq",
+                "namespace": "sa-p9",
+                "status": "Synced",
+                "version": "v1"
+            },
+            {
+                "kind": "Service",
+                "name": "comicrent-rabbitmq-headless",
+                "namespace": "sa-p9",
+                "status": "Synced",
+                "version": "v1"
+            },
+            {
+                "kind": "ServiceAccount",
+                "name": "comicrent-cron-summary",
+                "namespace": "sa-p9",
+                "status": "Synced",
+                "version": "v1"
+            },
+            {
+                "kind": "ServiceAccount",
+                "name": "comicrent-cron-tick",
+                "namespace": "sa-p9",
+                "status": "Synced",
+                "version": "v1"
+            },
+            {
+                "kind": "ServiceAccount",
+                "name": "comicrent-p9-workloads-api-gateway",
+                "namespace": "sa-p9",
+                "status": "Synced",
+                "version": "v1"
+            },
+            {
+                "kind": "ServiceAccount",
+                "name": "comicrent-p9-workloads-auth-service",
+                "namespace": "sa-p9",
+                "status": "Synced",
+                "version": "v1"
+            },
+            {
+                "kind": "ServiceAccount",
+                "name": "comicrent-p9-workloads-comics-service",
+                "namespace": "sa-p9",
+                "status": "Synced",
+                "version": "v1"
+            },
+            {
+                "kind": "ServiceAccount",
+                "name": "comicrent-p9-workloads-copies-consumer",
+                "namespace": "sa-p9",
+                "status": "Synced",
+                "version": "v1"
+            },
+            {
+                "kind": "ServiceAccount",
+                "name": "comicrent-p9-workloads-copies-service",
+                "namespace": "sa-p9",
+                "status": "Synced",
+                "version": "v1"
+            },
+            {
+                "kind": "ServiceAccount",
+                "name": "comicrent-p9-workloads-rentals-service",
+                "namespace": "sa-p9",
+                "status": "Synced",
+                "version": "v1"
+            },
+            {
+                "kind": "ServiceAccount",
+                "name": "comicrent-postgresql",
+                "namespace": "sa-p9",
+                "status": "Synced",
+                "version": "v1"
+            },
+            {
+                "kind": "ServiceAccount",
+                "name": "comicrent-rabbitmq",
+                "namespace": "sa-p9",
+                "status": "Synced",
+                "version": "v1"
+            },
+            {
+                "kind": "ServiceAccount",
+                "name": "comicrent-summary-consumer",
+                "namespace": "sa-p9",
+                "status": "Synced",
+                "version": "v1"
+            },
+            {
+                "kind": "ServiceAccount",
+                "name": "p8-analysis",
+                "namespace": "sa-p9",
+                "status": "Synced",
+                "version": "v1"
+            },
+            {
+                "group": "apps",
+                "kind": "Deployment",
+                "name": "comicrent-p9-workloads-auth-service",
+                "namespace": "sa-p9",
+                "status": "Synced",
+                "version": "v1"
+            },
+            {
+                "group": "apps",
+                "kind": "Deployment",
+                "name": "comicrent-p9-workloads-comics-service",
+                "namespace": "sa-p9",
+                "status": "Synced",
+                "version": "v1"
+            },
+            {
+                "group": "apps",
+                "kind": "Deployment",
+                "name": "comicrent-p9-workloads-copies-consumer",
+                "namespace": "sa-p9",
+                "status": "Synced",
+                "version": "v1"
+            },
+            {
+                "group": "apps",
+                "kind": "Deployment",
+                "name": "comicrent-p9-workloads-copies-service",
+                "namespace": "sa-p9",
+                "status": "Synced",
+                "version": "v1"
+            },
+            {
+                "group": "apps",
+                "kind": "Deployment",
+                "name": "comicrent-p9-workloads-rentals-service",
+                "namespace": "sa-p9",
+                "status": "Synced",
+                "version": "v1"
+            },
+            {
+                "group": "apps",
+                "kind": "Deployment",
+                "name": "comicrent-summary-consumer",
+                "namespace": "sa-p9",
+                "status": "Synced",
+                "version": "v1"
+            },
+            {
+                "group": "apps",
+                "kind": "StatefulSet",
+                "name": "comicrent-postgresql",
+                "namespace": "sa-p9",
+                "status": "Synced",
+                "version": "v1"
+            },
+            {
+                "group": "apps",
+                "kind": "StatefulSet",
+                "name": "comicrent-rabbitmq",
+                "namespace": "sa-p9",
+                "status": "Synced",
+                "version": "v1"
+            },
+            {
+                "group": "argoproj.io",
+                "kind": "AnalysisTemplate",
+                "name": "api-gateway-metrics",
+                "namespace": "sa-p9",
+                "status": "Synced",
+                "version": "v1alpha1"
+            },
+            {
+                "group": "argoproj.io",
+                "kind": "Rollout",
+                "name": "comicrent-api-gateway-rollout",
+                "namespace": "sa-p9",
+                "status": "Synced",
+                "version": "v1alpha1"
+            },
+            {
+                "group": "batch",
+                "kind": "CronJob",
+                "name": "comicrent-cron-summary",
+                "namespace": "sa-p9",
+                "status": "Synced",
+                "version": "v1"
+            },
+            {
+                "group": "batch",
+                "kind": "CronJob",
+                "name": "comicrent-cron-tick",
+                "namespace": "sa-p9",
+                "status": "Synced",
+                "version": "v1"
+            },
+            {
+                "group": "bitnami.com",
+                "kind": "SealedSecret",
+                "name": "comicrent-auth-secret",
+                "namespace": "sa-p9",
+                "status": "Synced",
+                "version": "v1alpha1"
+            },
+            {
+                "group": "bitnami.com",
+                "kind": "SealedSecret",
+                "name": "comicrent-postgresql-secret",
+                "namespace": "sa-p9",
+                "status": "Synced",
+                "version": "v1alpha1"
+            },
+            {
+                "group": "bitnami.com",
+                "kind": "SealedSecret",
+                "name": "comicrent-rabbitmq-secret",
+                "namespace": "sa-p9",
+                "status": "Synced",
+                "version": "v1alpha1"
+            },
+            {
+                "group": "networking.k8s.io",
+                "kind": "NetworkPolicy",
+                "name": "comicrent-allow-dns",
+                "namespace": "sa-p9",
+                "status": "Synced",
+                "version": "v1"
+            },
+            {
+                "group": "networking.k8s.io",
+                "kind": "NetworkPolicy",
+                "name": "comicrent-api-gateway",
+                "namespace": "sa-p9",
+                "status": "Synced",
+                "version": "v1"
+            },
+            {
+                "group": "networking.k8s.io",
+                "kind": "NetworkPolicy",
+                "name": "comicrent-auth-service",
+                "namespace": "sa-p9",
+                "status": "Synced",
+                "version": "v1"
+            },
+            {
+                "group": "networking.k8s.io",
+                "kind": "NetworkPolicy",
+                "name": "comicrent-comics-service",
+                "namespace": "sa-p9",
+                "status": "Synced",
+                "version": "v1"
+            },
+            {
+                "group": "networking.k8s.io",
+                "kind": "NetworkPolicy",
+                "name": "comicrent-copies-consumer",
+                "namespace": "sa-p9",
+                "status": "Synced",
+                "version": "v1"
+            },
+            {
+                "group": "networking.k8s.io",
+                "kind": "NetworkPolicy",
+                "name": "comicrent-copies-service",
+                "namespace": "sa-p9",
+                "status": "Synced",
+                "version": "v1"
+            },
+            {
+                "group": "networking.k8s.io",
+                "kind": "NetworkPolicy",
+                "name": "comicrent-cron-summary",
+                "namespace": "sa-p9",
+                "status": "Synced",
+                "version": "v1"
+            },
+            {
+                "group": "networking.k8s.io",
+                "kind": "NetworkPolicy",
+                "name": "comicrent-cron-tick",
+                "namespace": "sa-p9",
+                "status": "Synced",
+                "version": "v1"
+            },
+            {
+                "group": "networking.k8s.io",
+                "kind": "NetworkPolicy",
+                "name": "comicrent-default-deny",
+                "namespace": "sa-p9",
+                "status": "Synced",
+                "version": "v1"
+            },
+            {
+                "group": "networking.k8s.io",
+                "kind": "NetworkPolicy",
+                "name": "comicrent-postgresql",
+                "namespace": "sa-p9",
+                "status": "Synced",
+                "version": "v1"
+            },
+            {
+                "group": "networking.k8s.io",
+                "kind": "NetworkPolicy",
+                "name": "comicrent-rabbitmq",
+                "namespace": "sa-p9",
+                "status": "Synced",
+                "version": "v1"
+            },
+            {
+                "group": "networking.k8s.io",
+                "kind": "NetworkPolicy",
+                "name": "comicrent-rentals-service",
+                "namespace": "sa-p9",
+                "status": "Synced",
+                "version": "v1"
+            },
+            {
+                "group": "networking.k8s.io",
+                "kind": "NetworkPolicy",
+                "name": "comicrent-summary-consumer",
+                "namespace": "sa-p9",
+                "status": "Synced",
+                "version": "v1"
+            },
+            {
+                "group": "networking.k8s.io",
+                "kind": "NetworkPolicy",
+                "name": "comicrent-upgrade-test",
+                "namespace": "sa-p9",
+                "status": "Synced",
+                "version": "v1"
+            },
+            {
+                "group": "policy",
+                "kind": "PodDisruptionBudget",
+                "name": "comicrent-p9-workloads-api-gateway",
+                "namespace": "sa-p9",
+                "status": "Synced",
+                "version": "v1"
+            },
+            {
+                "group": "policy",
+                "kind": "PodDisruptionBudget",
+                "name": "comicrent-p9-workloads-auth-service",
+                "namespace": "sa-p9",
+                "status": "Synced",
+                "version": "v1"
+            },
+            {
+                "group": "policy",
+                "kind": "PodDisruptionBudget",
+                "name": "comicrent-p9-workloads-comics-service",
+                "namespace": "sa-p9",
+                "status": "Synced",
+                "version": "v1"
+            },
+            {
+                "group": "policy",
+                "kind": "PodDisruptionBudget",
+                "name": "comicrent-p9-workloads-copies-service",
+                "namespace": "sa-p9",
+                "status": "Synced",
+                "version": "v1"
+            },
+            {
+                "group": "policy",
+                "kind": "PodDisruptionBudget",
+                "name": "comicrent-p9-workloads-rentals-service",
+                "namespace": "sa-p9",
+                "status": "Synced",
+                "version": "v1"
+            },
+            {
+                "group": "policy",
+                "kind": "PodDisruptionBudget",
+                "name": "comicrent-postgresql",
+                "namespace": "sa-p9",
+                "status": "Synced",
+                "version": "v1"
+            },
+            {
+                "group": "policy",
+                "kind": "PodDisruptionBudget",
+                "name": "comicrent-rabbitmq",
+                "namespace": "sa-p9",
+                "status": "Synced",
+                "version": "v1"
+            },
+            {
+                "group": "rbac.authorization.k8s.io",
+                "kind": "Role",
+                "name": "comicrent-cron-summary",
+                "namespace": "sa-p9",
+                "status": "Synced",
+                "version": "v1"
+            },
+            {
+                "group": "rbac.authorization.k8s.io",
+                "kind": "Role",
+                "name": "comicrent-cron-tick",
+                "namespace": "sa-p9",
+                "status": "Synced",
+                "version": "v1"
+            },
+            {
+                "group": "rbac.authorization.k8s.io",
+                "kind": "Role",
+                "name": "comicrent-p9-workloads-api-gateway",
+                "namespace": "sa-p9",
+                "status": "Synced",
+                "version": "v1"
+            },
+            {
+                "group": "rbac.authorization.k8s.io",
+                "kind": "Role",
+                "name": "comicrent-p9-workloads-auth-service",
+                "namespace": "sa-p9",
+                "status": "Synced",
+                "version": "v1"
+            },
+            {
+                "group": "rbac.authorization.k8s.io",
+                "kind": "Role",
+                "name": "comicrent-p9-workloads-comics-service",
+                "namespace": "sa-p9",
+                "status": "Synced",
+                "version": "v1"
+            },
+            {
+                "group": "rbac.authorization.k8s.io",
+                "kind": "Role",
+                "name": "comicrent-p9-workloads-copies-consumer",
+                "namespace": "sa-p9",
+                "status": "Synced",
+                "version": "v1"
+            },
+            {
+                "group": "rbac.authorization.k8s.io",
+                "kind": "Role",
+                "name": "comicrent-p9-workloads-copies-service",
+                "namespace": "sa-p9",
+                "status": "Synced",
+                "version": "v1"
+            },
+            {
+                "group": "rbac.authorization.k8s.io",
+                "kind": "Role",
+                "name": "comicrent-p9-workloads-rentals-service",
+                "namespace": "sa-p9",
+                "status": "Synced",
+                "version": "v1"
+            },
+            {
+                "group": "rbac.authorization.k8s.io",
+                "kind": "Role",
+                "name": "comicrent-rabbitmq-endpoint-reader",
+                "namespace": "sa-p9",
+                "status": "Synced",
+                "version": "v1"
+            },
+            {
+                "group": "rbac.authorization.k8s.io",
+                "kind": "Role",
+                "name": "comicrent-summary-consumer",
+                "namespace": "sa-p9",
+                "status": "Synced",
+                "version": "v1"
+            },
+            {
+                "group": "rbac.authorization.k8s.io",
+                "kind": "RoleBinding",
+                "name": "comicrent-cron-summary",
+                "namespace": "sa-p9",
+                "status": "Synced",
+                "version": "v1"
+            },
+            {
+                "group": "rbac.authorization.k8s.io",
+                "kind": "RoleBinding",
+                "name": "comicrent-cron-tick",
+                "namespace": "sa-p9",
+                "status": "Synced",
+                "version": "v1"
+            },
+            {
+                "group": "rbac.authorization.k8s.io",
+                "kind": "RoleBinding",
+                "name": "comicrent-p9-workloads-api-gateway",
+                "namespace": "sa-p9",
+                "status": "Synced",
+                "version": "v1"
+            },
+            {
+                "group": "rbac.authorization.k8s.io",
+                "kind": "RoleBinding",
+                "name": "comicrent-p9-workloads-auth-service",
+                "namespace": "sa-p9",
+                "status": "Synced",
+                "version": "v1"
+            },
+            {
+                "group": "rbac.authorization.k8s.io",
+                "kind": "RoleBinding",
+                "name": "comicrent-p9-workloads-comics-service",
+                "namespace": "sa-p9",
+                "status": "Synced",
+                "version": "v1"
+            },
+            {
+                "group": "rbac.authorization.k8s.io",
+                "kind": "RoleBinding",
+                "name": "comicrent-p9-workloads-copies-consumer",
+                "namespace": "sa-p9",
+                "status": "Synced",
+                "version": "v1"
+            },
+            {
+                "group": "rbac.authorization.k8s.io",
+                "kind": "RoleBinding",
+                "name": "comicrent-p9-workloads-copies-service",
+                "namespace": "sa-p9",
+                "status": "Synced",
+                "version": "v1"
+            },
+            {
+                "group": "rbac.authorization.k8s.io",
+                "kind": "RoleBinding",
+                "name": "comicrent-p9-workloads-rentals-service",
+                "namespace": "sa-p9",
+                "status": "Synced",
+                "version": "v1"
+            },
+            {
+                "group": "rbac.authorization.k8s.io",
+                "kind": "RoleBinding",
+                "name": "comicrent-rabbitmq-endpoint-reader",
+                "namespace": "sa-p9",
+                "status": "Synced",
+                "version": "v1"
+            },
+            {
+                "group": "rbac.authorization.k8s.io",
+                "kind": "RoleBinding",
+                "name": "comicrent-summary-consumer",
+                "namespace": "sa-p9",
+                "status": "Synced",
+                "version": "v1"
+            }
+        ],
+        "sourceHydrator": {},
+        "sourceType": "Helm",
+        "summary": {
+            "images": [
+                "docker.io/bitnamilegacy/rabbitmq:3.13.5-debian-12-r1",
+                "ghcr.io/davidvelasquez77/comicrent-api-gateway:v0.9.2",
+                "ghcr.io/davidvelasquez77/comicrent-auth-service:v0.9.2",
+                "ghcr.io/davidvelasquez77/comicrent-comics-service:v0.9.2",
+                "ghcr.io/davidvelasquez77/comicrent-copies-service:v0.8.5",
+                "ghcr.io/davidvelasquez77/comicrent-copies-service:v0.9.2",
+                "ghcr.io/davidvelasquez77/comicrent-operations-jobs:v0.8.5",
+                "ghcr.io/davidvelasquez77/comicrent-rentals-service:v0.9.2",
+                "registry-1.docker.io/bitnami/postgresql@sha256:7d77a46bbf200709237318c27dec0eaeae2520e403dd18fdebde2be7a6b04993"
+            ]
+        },
+        "sync": {
+            "comparedTo": {
+                "destination": {
+                    "namespace": "sa-p9",
+                    "server": "https://kubernetes.default.svc"
+                },
+                "ignoreDifferences": [
+                    {
+                        "jsonPointers": [
+                            "/spec/selector"
+                        ],
+                        "kind": "Service",
+                        "name": "comicrent-api-gateway-canary",
+                        "namespace": "sa-p9"
+                    },
+                    {
+                        "jsonPointers": [
+                            "/spec/selector"
+                        ],
+                        "kind": "Service",
+                        "name": "comicrent-p9-workloads-api-gateway",
+                        "namespace": "sa-p9"
+                    }
+                ],
+                "source": {
+                    "helm": {
+                        "valueFiles": [
+                            "values-p10.yaml"
+                        ]
+                    },
+                    "path": "apps/comicrent",
+                    "repoURL": "https://github.com/DavidVelasquez77/Practicas-SA-B-202307705-gitops.git",
+                    "targetRevision": "feature/p10-observability"
+                }
+            },
+            "revision": "d04619a54fe6d0ac4fbc524430f008d84c8a2957",
+            "status": "Synced"
+        }
+    }
+}

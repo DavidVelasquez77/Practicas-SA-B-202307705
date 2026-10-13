@@ -1,0 +1,93 @@
+{
+  "captured_at_utc": "2026-10-13T18:09:34.726777+00:00",
+  "service": "comicrent-p9-workloads-api-gateway",
+  "endpoint": "http://136.71.50.47:3000/api/auth/login",
+  "initial_stable_hash": "56c56d8b57",
+  "candidate_hash": "cd956dbbc",
+  "request_counts": {
+    "401": 124,
+    "502": 27
+  },
+  "expected_abort": true,
+  "outcome_verified": true,
+  "failed_analysisrun": "comicrent-api-gateway-rollout-cd956dbbc-15-1",
+  "rollout_observations": [
+    {
+      "at_utc": "2026-10-13T18:07:04.467119+00:00",
+      "phase": "Healthy",
+      "step": 10,
+      "stable_hash": "56c56d8b57",
+      "current_hash": "56c56d8b57"
+    },
+    {
+      "at_utc": "2026-10-13T18:07:19.064354+00:00",
+      "phase": "Healthy",
+      "step": 10,
+      "stable_hash": "56c56d8b57",
+      "current_hash": "56c56d8b57"
+    },
+    {
+      "at_utc": "2026-10-13T18:07:34.118333+00:00",
+      "phase": "Healthy",
+      "step": 10,
+      "stable_hash": "56c56d8b57",
+      "current_hash": "56c56d8b57"
+    },
+    {
+      "at_utc": "2026-10-13T18:07:49.205686+00:00",
+      "phase": "Progressing",
+      "step": 0,
+      "stable_hash": "56c56d8b57",
+      "current_hash": "cd956dbbc"
+    },
+    {
+      "at_utc": "2026-10-13T18:08:04.061135+00:00",
+      "phase": "Progressing",
+      "step": 1,
+      "stable_hash": "56c56d8b57",
+      "current_hash": "cd956dbbc"
+    },
+    {
+      "at_utc": "2026-10-13T18:08:19.070889+00:00",
+      "phase": "Progressing",
+      "step": 1,
+      "stable_hash": "56c56d8b57",
+      "current_hash": "cd956dbbc"
+    },
+    {
+      "at_utc": "2026-10-13T18:08:34.045885+00:00",
+      "phase": "Progressing",
+      "step": 1,
+      "stable_hash": "56c56d8b57",
+      "current_hash": "cd956dbbc"
+    },
+    {
+      "at_utc": "2026-10-13T18:08:49.059244+00:00",
+      "phase": "Progressing",
+      "step": 1,
+      "stable_hash": "56c56d8b57",
+      "current_hash": "cd956dbbc"
+    },
+    {
+      "at_utc": "2026-10-13T18:09:04.107775+00:00",
+      "phase": "Progressing",
+      "step": 1,
+      "stable_hash": "56c56d8b57",
+      "current_hash": "cd956dbbc"
+    },
+    {
+      "at_utc": "2026-10-13T18:09:19.085530+00:00",
+      "phase": "Progressing",
+      "step": 1,
+      "stable_hash": "56c56d8b57",
+      "current_hash": "cd956dbbc"
+    },
+    {
+      "at_utc": "2026-10-13T18:09:34.092976+00:00",
+      "phase": "Degraded",
+      "step": 0,
+      "stable_hash": "56c56d8b57",
+      "current_hash": "cd956dbbc"
+    }
+  ]
+}
