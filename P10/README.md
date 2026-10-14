@@ -36,6 +36,16 @@ Esta práctica amplía el clúster GitOps de P9 con métricas, trazas y registro
 
 No se expone un endpoint que fuerce errores. Para generar una solicitud segura y correlacionable, abre un PowerShell y deja este reenvío activo:
 
+Para mover las señales del tablero con una ráfaga breve, puedes ejecutar desde la raíz del repositorio:
+
+```powershell
+python P10/tools/demo-dashboard-traffic.py --requests 20 --interval 0.5
+```
+
+El generador consulta el Service y confirma que el Rollout esté `Healthy` antes de enviar hasta 50 logins ficticios; espera HTTP `401` y no crea rentas ni modifica el Canary. Muestra los `correlation_id` para buscar los registros JSON en Loki. Mueve las señales de solicitudes, latencia y logs/trazas; no genera actividad de negocio, saturación ni errores `5xx`.
+
+Para seguir una solicitud individual mediante un port-forward local, usa este procedimiento:
+
 ```powershell
 kubectl port-forward -n sa-p9 svc/comicrent-p9-workloads-api-gateway 3000:3000
 ```

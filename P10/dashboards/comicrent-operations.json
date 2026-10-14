@@ -822,7 +822,7 @@
       "id": 8,
       "type": "timeseries",
       "title": "03 · Errores 5xx",
-      "description": "Proporción de respuestas 5xx; incluye la revisión candidata para diagnosticar despliegues.",
+      "description": "Proporción de respuestas 5xx; muestra 0% cuando hay tráfico del servicio pero no errores.",
       "datasource": {
         "type": "prometheus",
         "uid": "prometheus"
@@ -944,7 +944,7 @@
       },
       "targets": [
         {
-          "expr": "sum by (service) (rate(comicrent_http_requests_total{namespace=\"sa-p9\",status_class=\"5xx\"}[5m])) / clamp_min(sum by (service) (rate(comicrent_http_requests_total{namespace=\"sa-p9\"}[5m])), 0.001)",
+          "expr": "(sum by (service) (rate(comicrent_http_requests_total{namespace=\"sa-p9\",status_class=\"5xx\"}[5m])) or on (service) (0 * sum by (service) (rate(comicrent_http_requests_total{namespace=\"sa-p9\"}[5m])))) / clamp_min(sum by (service) (rate(comicrent_http_requests_total{namespace=\"sa-p9\"}[5m])), 0.001)",
           "legendFormat": "{{service}}",
           "refId": "A"
         }
