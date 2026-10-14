@@ -18,7 +18,7 @@ Esta práctica amplía el clúster GitOps de P9 con métricas, trazas y registro
 | Consultas del análisis | [PromQL exacto para volumen, error y p95](#consultas-promql-del-canary); [plantilla GitOps](https://github.com/DavidVelasquez77/Practicas-SA-B-202307705-gitops/blob/main/apps/comicrent/templates/p10-analysis.yaml). |
 | SLO declarados | [Disponibilidad ≥99.9% y latencia ≥95% de solicitudes ≤500 ms, ambos en 30 días móviles](slo/SLOs.md). |
 | Reglas de alerta | [`PrometheusRule comicrent-slo-rules`](https://github.com/DavidVelasquez77/Practicas-SA-B-202307705-gitops/blob/main/apps/p10/observability/rules/slo-rules.yaml), con [runbook de disponibilidad](runbooks/availability-error-budget.md) y [runbook de latencia](runbooks/latency-error-budget.md). |
-| Canal de alertas | La rama GitOps `feature/p10-observability` configura Alertmanager para enviar alertas SLO `warning`/`critical` al canal Discord `#alertas-p10`; el webhook se almacena como `SealedSecret`. La [prueba E2E](evidence/discord-alertmanager-e2e.md) entregó una alerta sintética y registró 1 envío exitoso, 0 fallos. La aplicación desplegada aún sigue `main`; la ruta quedará activa al integrar y sincronizar la rama. |
+| Canal de alertas | Alertmanager activo enruta alertas SLO `warning`/`critical` al canal Discord `#alertas-p10`; el webhook está cifrado en un `SealedSecret`. GitOps `main` y ArgoCD están sincronizados en `919c453`. La [prueba E2E estable](evidence/discord-alertmanager-e2e.md) confirma una notificación entregada y cero fallos. |
 | Tablero | [JSON exportado de Grafana](dashboards/comicrent-operations.json), UID `comicrent-p10-operations`; [SLO y presupuesto](evidence/grafana-dashboard-final-slo.jpg), [24 h observadas](evidence/grafana-dashboard-fault-24h.jpg), [señales con colores diferenciados](evidence/grafana-dashboard-final-golden-signals.jpg) y [métricas de negocio](evidence/grafana-dashboard-business-live.png). |
 | Reversión por métricas | [AnalysisRun `comicrent-api-gateway-rollout-cd956dbbc-15-1` (`Failed`)](evidence/public-canary-abort-analysisrun.json) del Rollout `comicrent-api-gateway-rollout`, namespace `sa-p9`. [Tráfico por Service público, aborto y recuperación](evidence/public-canary-traffic.md); [Rollout estable recuperado](evidence/public-canary-recovered-rollout.json). |
 | Recorrido síntoma a causa | [Alerta → Prometheus → Loki → Tempo, máximo 1 min 16.93 s desde `firing`](evidence/block-7-canary-and-triage.md); [marcas medidas](evidence/block-7-signal-summary.json). |
@@ -28,29 +28,31 @@ Esta práctica amplía el clúster GitOps de P9 con métricas, trazas y registro
 
 ## Flujo de telemetría
 
-```mermaid
-flowchart LR
-  GitOps[Repositorio GitOps] --> ArgoCD[ArgoCD]
-  ArgoCD --> Stack[Prometheus · Grafana · Loki · Tempo · Alloy · OTel Collector]
-  Client[Cliente] --> PublicService[Service público del gateway]
-  PublicService --> Stable[Gateway estable]
-  PublicService --> Candidate[Gateway candidato]
-  Stable -->|/metrics| Prometheus
-  Candidate -->|/metrics por hash| Prometheus
-  Services[ComicRent: rentas · copias · auth] -->|/metrics| Prometheus
-  Services -->|trazas OTLP| Collector[OTel Collector] --> Tempo
-  Services -->|logs JSON con trace_id| Alloy --> Loki
-  Rules[PrometheusRule<br/>SLI · presupuesto · burn rate] -->|reglas cargadas| Prometheus
-  Prometheus -->|alertas firing| Alertmanager[Alertmanager]
-  Alertmanager -->|warning/critical · webhook cifrado| Discord[Discord<br/>#alertas-p10]
-  Alertmanager -->|estado de alertas| Grafana
-  Prometheus -->|volumen, error y p95 del candidato; solo usuario| Rollouts[Argo Rollouts]
-  Prometheus --> Grafana
-  Loki --> Grafana
-  Tempo --> Grafana
+![Diagrama de telemetría de ComicRent P10: GitOps, tráfico, métricas, logs, trazas, alertas y Canary](<diagrams/ComicRent P10 · Flujo de telemetría.png>)
+
+[Fuente editable Mermaid](diagrams/telemetry-flow.mmd). El tablero responde por orden a tráfico, latencia, errores y saturación; añade actividad de rentas y consumo de los dos presupuestos.
+
+### Demostración en vivo del recorrido de una solicitud
+
+No se expone un endpoint que fuerce errores. Para generar una solicitud segura y correlacionable, abre un PowerShell y deja este reenvío activo:
+
+```powershell
+kubectl port-forward -n sa-p9 svc/comicrent-p9-workloads-api-gateway 3000:3000
 ```
 
-[Fuente editable del diagrama](diagrams/telemetry-flow.mmd). El tablero responde por orden a tráfico, latencia, errores y saturación; añade actividad de rentas y consumo de los dos presupuestos.
+En otra terminal PowerShell 7, envía un login con datos ficticios. La respuesta esperada es `401`; el gateway registra la solicitud y devuelve el identificador de correlación:
+
+```powershell
+$correlationId = "p10-demo-$([guid]::NewGuid().ToString('N'))"
+$body = @{ correo = 'demo-observability@example.invalid'; contrasena = 'credencial-ficticia' } | ConvertTo-Json -Compress
+$response = Invoke-WebRequest -Method Post -Uri 'http://127.0.0.1:3000/api/auth/login' -ContentType 'application/json' -Headers @{ 'X-Correlation-ID' = $correlationId } -Body $body -SkipHttpErrorCheck
+"HTTP: $($response.StatusCode)"
+"Correlation ID: $($response.Headers['X-Correlation-ID'])"
+```
+
+En Grafana Explore, selecciona Loki y busca `{namespace="sa-p9",service_name="api-gateway"} |= "$correlationId"`. Abre el `trace_id` del registro en Tempo. En Prometheus puedes consultar `increase(comicrent_http_requests_total{namespace="sa-p9",service="api-gateway",route="/api/auth/login",status_class="4xx",traffic_source="user"}[5m])`. Esta solicitud `401` es un rechazo esperado: demuestra propagación y correlación, pero **no** es una falla 5xx ni debe disparar la alerta SLO.
+
+Para demostrar una falla real, la alerta, el diagnóstico y la reversión, muestra el [incidente controlado ya ejecutado](evidence/block-7-canary-and-triage.md): el candidato produjo `502` por una dependencia de autenticación inválida, Prometheus activó la alerta y Argo Rollouts abortó conservando la versión estable. El detalle de la señal, el registro JSON y la traza está en esa evidencia y sus archivos enlazados.
 
 ![Tablero Grafana con objetivos de 30 días, señalando historial incompleto](evidence/grafana-dashboard-slo-24h.jpg)
 
