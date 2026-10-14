@@ -18,7 +18,7 @@ Esta práctica amplía el clúster GitOps de P9 con métricas, trazas y registro
 | Consultas del análisis | [PromQL exacto para volumen, error y p95](#consultas-promql-del-canary); [plantilla GitOps](https://github.com/DavidVelasquez77/Practicas-SA-B-202307705-gitops/blob/main/apps/comicrent/templates/p10-analysis.yaml). |
 | SLO declarados | [Disponibilidad ≥99.9% y latencia ≥95% de solicitudes ≤500 ms, ambos en 30 días móviles](slo/SLOs.md). |
 | Reglas de alerta | [`PrometheusRule comicrent-slo-rules`](https://github.com/DavidVelasquez77/Practicas-SA-B-202307705-gitops/blob/main/apps/p10/observability/rules/slo-rules.yaml), con [runbook de disponibilidad](runbooks/availability-error-budget.md) y [runbook de latencia](runbooks/latency-error-budget.md). |
-| Canal de alertas | Alertmanager envía alertas de presupuesto SLO con severidad `warning` o `critical` al canal Discord `#alertas-p10`. El webhook queda cifrado como `SealedSecret` en `observability`; no se versiona la URL en texto plano. |
+| Canal de alertas | La rama GitOps `feature/p10-observability` configura Alertmanager para enviar alertas SLO `warning`/`critical` al canal Discord `#alertas-p10`; el webhook se almacena como `SealedSecret`. La [prueba E2E](evidence/discord-alertmanager-e2e.md) entregó una alerta sintética y registró 1 envío exitoso, 0 fallos. La aplicación desplegada aún sigue `main`; la ruta quedará activa al integrar y sincronizar la rama. |
 | Tablero | [JSON exportado de Grafana](dashboards/comicrent-operations.json), UID `comicrent-p10-operations`; [SLO y presupuesto](evidence/grafana-dashboard-final-slo.jpg), [24 h observadas](evidence/grafana-dashboard-fault-24h.jpg), [señales con colores diferenciados](evidence/grafana-dashboard-final-golden-signals.jpg) y [métricas de negocio](evidence/grafana-dashboard-business-live.png). |
 | Reversión por métricas | [AnalysisRun `comicrent-api-gateway-rollout-cd956dbbc-15-1` (`Failed`)](evidence/public-canary-abort-analysisrun.json) del Rollout `comicrent-api-gateway-rollout`, namespace `sa-p9`. [Tráfico por Service público, aborto y recuperación](evidence/public-canary-traffic.md); [Rollout estable recuperado](evidence/public-canary-recovered-rollout.json). |
 | Recorrido síntoma a causa | [Alerta → Prometheus → Loki → Tempo, máximo 1 min 16.93 s desde `firing`](evidence/block-7-canary-and-triage.md); [marcas medidas](evidence/block-7-signal-summary.json). |
@@ -40,7 +40,10 @@ flowchart LR
   Services[ComicRent: rentas · copias · auth] -->|/metrics| Prometheus
   Services -->|trazas OTLP| Collector[OTel Collector] --> Tempo
   Services -->|logs JSON con trace_id| Alloy --> Loki
-  Prometheus -->|SLI y burn rate| Alerts[PrometheusRule → Alertmanager → runbook]
+  Rules[PrometheusRule<br/>SLI · presupuesto · burn rate] -->|reglas cargadas| Prometheus
+  Prometheus -->|alertas firing| Alertmanager[Alertmanager]
+  Alertmanager -->|warning/critical · webhook cifrado| Discord[Discord<br/>#alertas-p10]
+  Alertmanager -->|estado de alertas| Grafana
   Prometheus -->|volumen, error y p95 del candidato; solo usuario| Rollouts[Argo Rollouts]
   Prometheus --> Grafana
   Loki --> Grafana
