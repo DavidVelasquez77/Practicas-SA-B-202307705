@@ -1,22 +1,23 @@
 # Evidencia: Alertmanager estable hacia Discord
 
-**Fecha de verificación:** 14 de octubre de 2026, aproximadamente 22:50 UTC
+**Fecha de verificación:** 14 de octubre de 2026
 
 **Canal:** `#alertas-p10` del servidor `ComicRent P10 - Alertas`
 
-**Alerta de prueba:** `P10DiscordLiveVerification`, severidad `warning`
+**Alerta de prueba posterior a HA:** `P10DiscordHAValidation`, severidad `warning`
 
-**GitOps:** `main`, commit `919c4538592652a3ca08c8b6ab7dede514c01f22`
+**GitOps:** `main`, commit `b2d655d87398bfd7c33b156c13d9050bb1c68564`
 
 ## Resultado
 
-La aplicación raíz `p10-observability` y la aplicación hija `p10-prometheus` quedaron `Synced/Healthy` en la revisión GitOps `919c453`. ArgoCD aplicó el `SealedSecret` `p10-alertmanager-discord`; el controlador creó el Secret de ejecución con una clave `webhook_url`. El valor del webhook no se imprimió ni se guardó en texto plano.
+La aplicación raíz `p10-observability` y la aplicación hija `p10-prometheus` quedaron `Synced/Healthy` en la revisión GitOps `b2d655d`. ArgoCD aplicó el `SealedSecret` `p10-alertmanager-discord`; el controlador creó el Secret de ejecución con una clave `webhook_url`. El valor del webhook no se imprimió ni se guardó en texto plano.
 
-El Alertmanager estable quedó disponible con sus dos contenedores `Ready`, sin reinicios. Su configuración activa contiene el receptor `discord-comicrent`, utiliza el archivo montado `/etc/alertmanager/secrets/p10-alertmanager-discord/webhook_url` y envía al canal las alertas `warning` y `critical`. El receptor `discard` es el destino predeterminado para alertas que no coincidan con esa ruta.
+Se configuraron dos réplicas de Alertmanager. Ambas quedaron `Ready` en nodos distintos y el API reportó `cluster=ready`, dos peers y `alertmanager_cluster_members 2`. El operador configura el gossip de los peers. La configuración activa contiene el receptor `discord-comicrent`, utiliza el archivo montado `/etc/alertmanager/secrets/p10-alertmanager-discord/webhook_url` y envía al canal las alertas `warning` y `critical`. El receptor `discard` es el destino predeterminado para alertas que no coincidan con esa ruta.
 
-Se envió una alerta sintética de verificación al API del Alertmanager estable. La API respondió HTTP `200`; la alerta apareció asociada al receptor `discord-comicrent`. Después del `group_wait` de 30 segundos, las métricas del Alertmanager mostraron:
+Después de activar HA se envió una alerta sintética de verificación al API del Alertmanager estable. La API respondió HTTP `200`; la alerta apareció asociada al receptor `discord-comicrent`. Tras el `group_wait`, la métrica por réplica mostró un envío exitoso en uno de los peers y ninguno en el otro, sin errores. Ambos peers reportaron la misma ruta Discord y el estado `ready`; el envío quedó confirmado desde el grupo HA:
 
 ```text
+alertmanager_cluster_members 2
 alertmanager_notifications_total{integration="discord"} 1
 alertmanager_notifications_failed_total{integration="discord",reason="authError"} 0
 alertmanager_notifications_failed_total{integration="discord",reason="clientError"} 0
@@ -27,7 +28,7 @@ alertmanager_notifications_failed_total{integration="discord",reason="rateLimite
 alertmanager_notifications_failed_total{integration="discord",reason="serverError"} 0
 ```
 
-La alerta de prueba se envió directamente al API de Alertmanager; por ello verifica el enrutamiento y la entrega del receptor Discord. Las reglas SLO que generan alertas desde Prometheus se demuestran por separado con `PrometheusRule comicrent-slo-rules` y la evidencia de alertas disparadas.
+La alerta de prueba se envió directamente al API de Alertmanager; por ello verifica el enrutamiento, la entrega del receptor Discord y el estado del clúster HA. Las reglas SLO que generan alertas desde Prometheus se demuestran por separado con `PrometheusRule comicrent-slo-rules` y la evidencia de alertas disparadas. La alerta de prueba expiró automáticamente y ya no figura activa.
 
 ## Comprobación durante la calificación
 
@@ -43,7 +44,7 @@ Visitar `http://127.0.0.1:9093`. En **Status → Configuration**, comprobar la r
 (Invoke-WebRequest 'http://127.0.0.1:9093/metrics').Content | Select-String 'alertmanager_notifications_total\{integration="discord"\}|alertmanager_notifications_failed_total\{integration="discord"'
 ```
 
-La página **Status** puede seguir mostrando `Cluster Status: disabled`. Eso describe que solo hay una réplica de Alertmanager y no un clúster HA con peers; no deshabilita las rutas ni el envío a Discord.
+Con la configuración actual, **Status** debe mostrar `Cluster Status: ready` y dos peers. Si vuelve a indicar `disabled`, revisar que el CR de Alertmanager tenga dos réplicas y que exista conectividad entre los pods por el puerto `9094` (TCP y UDP).
 
 ## Manejo del secreto
 
