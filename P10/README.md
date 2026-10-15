@@ -18,13 +18,13 @@ Esta práctica amplía el clúster GitOps de P9 con métricas, trazas y registro
 | Consultas del análisis | [PromQL exacto para volumen, error y p95](#consultas-promql-del-canary); [plantilla GitOps](https://github.com/DavidVelasquez77/Practicas-SA-B-202307705-gitops/blob/main/apps/comicrent/templates/p10-analysis.yaml). |
 | SLO declarados | [Disponibilidad ≥99.9% y latencia ≥95% de solicitudes ≤500 ms, ambos en 30 días móviles](slo/SLOs.md). |
 | Reglas de alerta | [`PrometheusRule comicrent-slo-rules`](https://github.com/DavidVelasquez77/Practicas-SA-B-202307705-gitops/blob/main/apps/p10/observability/rules/slo-rules.yaml), con [runbook de disponibilidad](runbooks/availability-error-budget.md) y [runbook de latencia](runbooks/latency-error-budget.md). |
-| Canal de alertas | Alertmanager HA con dos réplicas activas enruta alertas SLO `warning`/`critical` al canal Discord `#alertas-p10`; el webhook está cifrado en un `SealedSecret`. GitOps `main` y ArgoCD están sincronizados en `b2d655d`. La [prueba E2E estable](evidence/discord-alertmanager-e2e.md) confirma el clúster de dos peers y una notificación entregada sin fallos. |
+| Canal de alertas | Alertmanager HA con dos réplicas activas enruta alertas SLO `warning`/`critical` al canal Discord `#alertas-p10`; el webhook está cifrado en un `SealedSecret`. GitOps `main` y ArgoCD estaban sincronizados en `70e6570` al revisar la entrega. La [prueba E2E estable](evidence/discord-alertmanager-e2e.md) confirma el clúster de dos peers y una notificación entregada sin fallos. |
 | Tablero | [JSON exportado de Grafana](dashboards/comicrent-operations.json), UID `comicrent-p10-operations`; [SLO y presupuesto](evidence/grafana-dashboard-final-slo.jpg), [24 h observadas](evidence/grafana-dashboard-fault-24h.jpg), [señales con colores diferenciados](evidence/grafana-dashboard-final-golden-signals.jpg) y [métricas de negocio](evidence/grafana-dashboard-business-live.png). |
 | Reversión por métricas | [AnalysisRun `comicrent-api-gateway-rollout-cd956dbbc-15-1` (`Failed`)](evidence/public-canary-abort-analysisrun.json) del Rollout `comicrent-api-gateway-rollout`, namespace `sa-p9`. [Tráfico por Service público, aborto y recuperación](evidence/public-canary-traffic.md); [Rollout estable recuperado](evidence/public-canary-recovered-rollout.json). |
 | Recorrido síntoma a causa | [Alerta → Prometheus → Loki → Tempo, máximo 1 min 16.93 s desde `firing`](evidence/block-7-canary-and-triage.md); [marcas medidas](evidence/block-7-signal-summary.json). |
-| Video demostrativo | [Carpeta pública de Drive con el video](https://drive.google.com/drive/folders/1o23KFwNxf1ac2Y3ctkz1hr3OQOUZ1a3o?usp=sharing). Recorrido previsto: **7 min 15 s**; ajustar el minutaje si la grabación final distribuye los puntos de otra manera. |
+| Video demostrativo | [Carpeta pública de Drive: `VIDEO_PRACTICA10.mp4` (5:25)](https://drive.google.com/drive/folders/1o23KFwNxf1ac2Y3ctkz1hr3OQOUZ1a3o?usp=sharing). El archivo es visible desde el enlace público y su duración cumple el rango de 5–8 minutos. |
 
-> **Estado de entrega:** el enlace público lleva a la carpeta de Drive acordada y el minutaje previsto está en la tabla. Antes de calificar, confirmar que el video final esté dentro de esa carpeta y que el acceso público funcione.
+> **Estado de entrega:** se verificó en la carpeta pública el archivo `VIDEO_PRACTICA10.mp4`, con duración de **5:25**. El minutaje de la sección final corresponde a los temas y marcas de tiempo de la grabación.
 
 ## Flujo de telemetría
 
@@ -45,6 +45,16 @@ python P10/tools/demo-dashboard-traffic.py --requests 20 --interval 0.5
 ```
 
 El generador consulta el Service y confirma que el Rollout esté `Healthy` antes de enviar hasta 50 logins ficticios con `traffic_source="canary-test"`; espera HTTP `401`, no crea rentas y no cambia la revisión del Canary. Muestra los `correlation_id` para buscar logs JSON y trazas. Mueve tráfico, latencia y la serie de sondas Canary; no genera actividad de negocio, saturación ni errores `5xx`. Usa `--traffic-source user` solo si aceptas que la latencia de esas solicitudes cuente para el SLO de usuario.
+
+Para que las tarjetas de negocio muestren operaciones nuevas, [demo-business-traffic.py](tools/demo-business-traffic.py) crea y devuelve rentas reales por el API Gateway. Por defecto solo muestra el plan; limita la ejecución a tres ciclos y exige `--apply` y un Rollout `Healthy`. Puedes usar una cuenta existente `Cliente` o `Admin`, o pasar `--register-demo-client` para registrar una cuenta Cliente única con correo reservado `example.invalid` y contraseña aleatoria. Esta cuenta queda guardada y la contraseña solo vive en memoria durante esa ejecución. No se crean cómics ni ejemplares ni se escribe directamente en la base de datos. Las rentas quedan registradas con estado `DEVUELTO` y las solicitudes cuentan como tráfico `user` en los SLI de latencia.
+
+```powershell
+python P10/tools/demo-business-traffic.py
+python P10/tools/demo-business-traffic.py --apply --count 1
+python P10/tools/demo-business-traffic.py --apply --register-demo-client --count 1
+```
+
+El script solicita el correo y la contraseña sin mostrarlos en pantalla. También puedes definir COMICRENT_DEMO_EMAIL para omitir el prompt del correo. Después de una ejecución correcta, espera hasta 30 segundos para que Prometheus y Grafana reflejen el aumento en “Rentas creadas · 7 d” y “Rentas devueltas · 7 d”.
 
 Para seguir una solicitud individual mediante un port-forward local, usa este procedimiento:
 
@@ -97,14 +107,15 @@ El fallo de P10 fue una URL de autenticación inválida en la revisión candidat
 
 ## Video demostrativo
 
-Duración requerida: 5–8 minutos. El video se publicará en la [carpeta pública de Drive de P10](https://drive.google.com/drive/folders/1o23KFwNxf1ac2Y3ctkz1hr3OQOUZ1a3o?usp=sharing). Este es el recorrido previsto de **7 min 15 s**; ajustar el minutaje de la tabla a la grabación final.
+El archivo [VIDEO_PRACTICA10.mp4](https://drive.google.com/drive/folders/1o23KFwNxf1ac2Y3ctkz1hr3OQOUZ1a3o?usp=sharing) dura **5 min 25 s**, dentro de los 5–8 minutos requeridos. El minutaje se cotejó con la transcripción del video.
 
-| Minutaje previsto | Qué mostrar |
+| Minutaje del video | Qué mostrar |
 |---|---|
-| 0:00–0:45 | ArgoCD: aplicaciones GitOps de observabilidad `Synced/Healthy` y servicios instrumentados. |
-| 0:45–1:45 | Prometheus: métricas de los tres servicios, dos métricas de negocio, reglas SLI y presupuestos. |
-| 1:45–2:45 | Grafana: tablero con las cuatro señales de oro y SLO de 30 días. |
-| 2:45–3:45 | AnalysisTemplate: volumen, error y p95 de la revisión candidata en PromQL. |
-| 3:45–5:00 | AnalysisRun fallido, evento `RolloutAborted` y ReplicaSet estable. |
-| 5:00–6:30 | Alerta `ComicRentAvailabilityBudgetFastBurn`, ruta afectada, registro JSON en Loki y `trace_id` en Tempo. |
-| 6:30–7:15 | Informe: tiempos medidos, recuperación GitOps y separación ya implementada entre tráfico de usuario y sondas Canary. |
+| 0:00–0:56 | Presentación, aplicaciones GitOps y servicios instrumentados con propagación de contexto. |
+| 0:56–1:28 | Prometheus: métricas técnicas y métricas de negocio de rentas creadas y devueltas. |
+| 1:28–2:10 | Grafana: objetivos de disponibilidad y latencia, ventana de 30 días y mediciones recientes. |
+| 2:10–2:38 | Una traza que recorre `rentals-service`, `comics-service` y `copies-service`, enlazada con el registro. |
+| 2:38–3:39 | AnalysisTemplate con volumen, tasa de error y p95; `502` del candidato, AnalysisRun fallido y aborto automático. |
+| 3:39–4:09 | Alertas de presupuesto y canal de salida de Alertmanager en Discord. |
+| 4:09–5:06 | Diagnóstico del incidente: ruta en Prometheus, `correlation_id` y registro JSON en Loki, `trace_id` y causa en Tempo; tiempo medido. |
+| 5:06–5:25 | Los seis campos del informe de operación y cierre. |
