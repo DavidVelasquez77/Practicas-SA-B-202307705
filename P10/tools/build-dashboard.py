@@ -132,7 +132,7 @@ dashboard = {
     "schemaVersion": 39,
     "version": 3,
     "refresh": "30s",
-    "time": {"from": "now-6h", "to": "now"},
+    "time": {"from": "now-7d", "to": "now"},
     "annotations": {
         "list": [{
             "builtIn": 1,
@@ -197,11 +197,11 @@ panels.append({
     "title": "",
     "transparent": True,
     "gridPos": grid(0, 41, 24, 3),
-    "options": {"mode": "markdown", "content": "## Actividad de negocio\nRentas creadas y devueltas en las últimas 24 horas. Cero = sin operaciones; panel vacío = revisar telemetría."},
+    "options": {"mode": "markdown", "content": "## Actividad de negocio · últimos 7 días\nRentas creadas y devueltas en la última semana. Cero = sin operaciones; panel vacío = revisar telemetría."},
 })
 panels.extend([
-    stat(13, "Rentas creadas · 24 h", "Operaciones completadas de creación.", 'sum(increase(comicrent_rentals_created_total{namespace="sa-p9"}[24h])) or vector(0)', 0, 44, unit="short", decimals=0, color="#60A5FA", width=12),
-    stat(14, "Rentas devueltas · 24 h", "Operaciones completadas de devolución.", 'sum(increase(comicrent_rentals_returned_total{namespace="sa-p9"}[24h])) or vector(0)', 12, 44, unit="short", decimals=0, color="#34D399", width=12),
+    stat(13, "Rentas creadas · 7 d", "Operaciones completadas de creación en los últimos 7 días.", 'sum(increase(comicrent_rentals_created_total{namespace="sa-p9"}[7d])) or vector(0)', 0, 44, unit="short", decimals=0, color="#60A5FA", width=12),
+    stat(14, "Rentas devueltas · 7 d", "Operaciones completadas de devolución en los últimos 7 días.", 'sum(increase(comicrent_rentals_returned_total{namespace="sa-p9"}[7d])) or vector(0)', 12, 44, unit="short", decimals=0, color="#34D399", width=12),
 ])
 
 OUTPUT.write_text(json.dumps(dashboard, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")

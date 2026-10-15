@@ -36,13 +36,15 @@ Esta práctica amplía el clúster GitOps de P9 con métricas, trazas y registro
 
 No se expone un endpoint que fuerce errores. Para generar una solicitud segura y correlacionable, abre un PowerShell y deja este reenvío activo:
 
-Para mover las señales del tablero con una ráfaga breve, puedes ejecutar desde la raíz del repositorio:
+El tablero abre en los últimos siete días para mostrar datos reales recientes —incluido el simulacro 5xx ya ejecutado—; las tarjetas de negocio también usan siete días. La fila de SLO reciente conserva sus cálculos de 24 horas.
+
+Para añadir actividad en vivo sin incluir las sondas en el SLO de usuario, ejecuta desde la raíz:
 
 ```powershell
 python P10/tools/demo-dashboard-traffic.py --requests 20 --interval 0.5
 ```
 
-El generador consulta el Service y confirma que el Rollout esté `Healthy` antes de enviar hasta 50 logins ficticios; espera HTTP `401` y no crea rentas ni modifica el Canary. Muestra los `correlation_id` para buscar los registros JSON en Loki. Mueve las señales de solicitudes, latencia y logs/trazas; no genera actividad de negocio, saturación ni errores `5xx`.
+El generador consulta el Service y confirma que el Rollout esté `Healthy` antes de enviar hasta 50 logins ficticios con `traffic_source="canary-test"`; espera HTTP `401`, no crea rentas y no cambia la revisión del Canary. Muestra los `correlation_id` para buscar logs JSON y trazas. Mueve tráfico, latencia y la serie de sondas Canary; no genera actividad de negocio, saturación ni errores `5xx`. Usa `--traffic-source user` solo si aceptas que la latencia de esas solicitudes cuente para el SLO de usuario.
 
 Para seguir una solicitud individual mediante un port-forward local, usa este procedimiento:
 
@@ -60,7 +62,7 @@ $response = Invoke-WebRequest -Method Post -Uri 'http://127.0.0.1:3000/api/auth/
 "Correlation ID: $($response.Headers['X-Correlation-ID'])"
 ```
 
-En Grafana Explore, selecciona Loki y busca `{namespace="sa-p9",service_name="api-gateway"} |= "$correlationId"`. Abre el `trace_id` del registro en Tempo. En Prometheus puedes consultar `increase(comicrent_http_requests_total{namespace="sa-p9",service="api-gateway",route="/api/auth/login",status_class="4xx",traffic_source="user"}[5m])`. Esta solicitud `401` es un rechazo esperado: demuestra propagación y correlación, pero **no** es una falla 5xx ni debe disparar la alerta SLO.
+En Grafana Explore, selecciona Loki y busca `{namespace="sa-p9",service_name="api-gateway"} |= "$correlationId"`. Abre el `trace_id` del registro en Tempo. En Prometheus puedes consultar `increase(comicrent_http_requests_total{namespace="sa-p9",service="api-gateway",route="/api/auth/login",status_class="4xx",traffic_source="user"}[5m])`. Esta solicitud `401` es un rechazo esperado y no es una falla 5xx; si se envía sin la cabecera Canary queda etiquetada como tráfico de usuario y su latencia sí participa en el SLO de latencia.
 
 Para demostrar una falla real, la alerta, el diagnóstico y la reversión, muestra el [incidente controlado ya ejecutado](evidence/block-7-canary-and-triage.md): el candidato produjo `502` por una dependencia de autenticación inválida, Prometheus activó la alerta y Argo Rollouts abortó conservando la versión estable. El detalle de la señal, el registro JSON y la traza está en esa evidencia y sus archivos enlazados.
 

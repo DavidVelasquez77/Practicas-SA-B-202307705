@@ -1,7 +1,9 @@
-"""Generate a small, safe burst of user traffic for the P10 dashboard demo.
+"""Generate a bounded batch of fictitious login requests for the P10 dashboard.
 
-Only sends fictitious login requests to the public API gateway and expects
-HTTP 401. It does not mutate business data or touch Argo Rollouts.
+By default requests are labelled canary-test, keeping them out of user SLOs
+and rollout analysis. The optional user source is counted toward the latency
+SLO. Requests expect HTTP 401 and do not mutate business data or change a
+Rollout revision.
 """
 
 from __future__ import annotations
@@ -42,6 +44,12 @@ def main() -> int:
     )
     parser.add_argument("--requests", type=int, default=20, help="Number of requests (1–50; default: 20).")
     parser.add_argument("--interval", type=float, default=1.0, help="Seconds between requests (0.5–5; default: 1).")
+    parser.add_argument(
+        "--traffic-source",
+        choices=("canary-test", "user"),
+        default="canary-test",
+        help="canary-test is excluded from user SLOs; user requests count toward latency SLOs.",
+    )
     args = parser.parse_args()
     if not 1 <= args.requests <= 50:
         parser.error("--requests must be between 1 and 50")
@@ -66,18 +74,26 @@ def main() -> int:
     correlation_ids: list[str] = []
     print(f"Inicio UTC: {utc_now()}")
     print(f"Destino: {SERVICE} /api/auth/login; Canary: Healthy")
+    print(f"Origen de trafico: {args.traffic_source}")
     print("Solo se usaran credenciales ficticias; respuesta esperada: HTTP 401.")
+    if args.traffic_source == "canary-test":
+        print("Las sondas quedan separadas del SLO de usuario y del analisis de promocion.")
+    else:
+        print("AVISO: estas solicitudes de usuario tambien se miden para el SLO de latencia.")
 
     for index in range(args.requests):
         correlation_id = f"p10-demo-{datetime.now(timezone.utc):%Y%m%dT%H%M%SZ}-{uuid4().hex[:8]}"
         correlation_ids.append(correlation_id)
+        headers = {
+            "Content-Type": "application/json",
+            "X-Correlation-ID": correlation_id,
+        }
+        if args.traffic_source == "canary-test":
+            headers["X-ComicRent-Observability-Probe"] = "canary"
         request = urllib.request.Request(
             url,
             data=body,
-            headers={
-                "Content-Type": "application/json",
-                "X-Correlation-ID": correlation_id,
-            },
+            headers=headers,
             method="POST",
         )
         try:
@@ -97,11 +113,11 @@ def main() -> int:
 
     print(f"Fin UTC: {utc_now()}")
     print(f"Resumen: {dict(counts)}")
-    print(f"IDs para buscar en Loki: {correlation_ids[0]} … {correlation_ids[-1]}")
+    print(f"IDs para buscar en Loki: primero={correlation_ids[0]} ultimo={correlation_ids[-1]}")
     if counts != Counter({401: args.requests}):
         print("ERROR: no todas las solicitudes tuvieron el 401 esperado; revisa la salida antes de la demo.")
         return 1
-    print("OK: trafico de demostracion completado; no se crearon rentas ni se modifico el Canary.")
+    print("OK: trafico de demostracion completado; no se crearon rentas ni se cambio la revision Canary.")
     return 0
 
 

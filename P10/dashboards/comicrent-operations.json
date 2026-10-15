@@ -13,7 +13,7 @@
   "version": 3,
   "refresh": "30s",
   "time": {
-    "from": "now-6h",
+    "from": "now-7d",
     "to": "now"
   },
   "annotations": {
@@ -1278,14 +1278,14 @@
       },
       "options": {
         "mode": "markdown",
-        "content": "## Actividad de negocio\nRentas creadas y devueltas en las últimas 24 horas. Cero = sin operaciones; panel vacío = revisar telemetría."
+        "content": "## Actividad de negocio · últimos 7 días\nRentas creadas y devueltas en la última semana. Cero = sin operaciones; panel vacío = revisar telemetría."
       }
     },
     {
       "id": 13,
       "type": "stat",
-      "title": "Rentas creadas · 24 h",
-      "description": "Operaciones completadas de creación.",
+      "title": "Rentas creadas · 7 d",
+      "description": "Operaciones completadas de creación en los últimos 7 días.",
       "datasource": {
         "type": "prometheus",
         "uid": "prometheus"
@@ -1331,8 +1331,8 @@
       },
       "targets": [
         {
-          "expr": "sum(increase(comicrent_rentals_created_total{namespace=\"sa-p9\"}[24h])) or vector(0)",
-          "legendFormat": "Rentas creadas · 24 h",
+          "expr": "sum(increase(comicrent_rentals_created_total{namespace=\"sa-p9\"}[7d])) or vector(0)",
+          "legendFormat": "Rentas creadas · 7 d",
           "refId": "A",
           "instant": true,
           "range": false
@@ -1342,8 +1342,8 @@
     {
       "id": 14,
       "type": "stat",
-      "title": "Rentas devueltas · 24 h",
-      "description": "Operaciones completadas de devolución.",
+      "title": "Rentas devueltas · 7 d",
+      "description": "Operaciones completadas de devolución en los últimos 7 días.",
       "datasource": {
         "type": "prometheus",
         "uid": "prometheus"
@@ -1389,8 +1389,8 @@
       },
       "targets": [
         {
-          "expr": "sum(increase(comicrent_rentals_returned_total{namespace=\"sa-p9\"}[24h])) or vector(0)",
-          "legendFormat": "Rentas devueltas · 24 h",
+          "expr": "sum(increase(comicrent_rentals_returned_total{namespace=\"sa-p9\"}[7d])) or vector(0)",
+          "legendFormat": "Rentas devueltas · 7 d",
           "refId": "A",
           "instant": true,
           "range": false
