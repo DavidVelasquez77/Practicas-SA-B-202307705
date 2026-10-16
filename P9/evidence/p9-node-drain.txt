@@ -1,12 +1,49 @@
-P9 prueba de tolerancia a fallo: drain de nodo
-==============================================
-
-El PDB del api-gateway informó EXPECTED=3, HEALTHY=3, DESIRED=1,
-ALLOWED=2 antes del drain. scripts/drain-node.ps1 cordonó y drenó
-gke-comicrent-gke-p6-default-pool-0d7bb2ca-bzqn. Los pods desalojados se
-reprogramaron en los nodos restantes; /health respondió HTTP 200 antes y
-después. El script descordonó el nodo y kubectl get nodes lo mostró Ready.
-El PDB volvió a informar 3/3 saludables.
-
-Captura: capturas/terminal-p9-node-drain-pdb.png
-Transcripción de comandos: ../salidas.txt
+Contexto Kubernetes: gke_comicrent-p6-2026_us-central1-a_comicrent-gke-p6
+Endpoint: http://136.71.50.47:3000/health
+Health antes: HTTP 200 a 2026-10-16T07:19:00.7609478+00:00
+Nodo seleccionado: gke-comicrent-gke-p6-default-pool-57db119c-ktnh
+Pods P9 que se evacuarán: 7; selector: app.kubernetes.io/name in (api-gateway,auth-service,comics-service,copies-consumer,copies-service,rentals-service,summary-consumer,cron-summary,cron-tick)
+PostgreSQL/RabbitMQ quedan fuera de la evacuación para preservar sus volúmenes singleton.
+Réplicas del gateway Ready que quedan en otros nodos: 2
+PDBs que protegen pods en el nodo: comicrent-p9-workloads-api-gateway, comicrent-p9-workloads-auth-service, comicrent-p9-workloads-comics-service
+node/gke-comicrent-gke-p6-default-pool-57db119c-ktnh cordoned
+node/gke-comicrent-gke-p6-default-pool-57db119c-ktnh already cordoned
+evicting pod sa-p9/comicrent-summary-consumer-75b8d978db-st5zp
+evicting pod sa-p9/comicrent-api-gateway-rollout-56c56d8b57-f445x
+evicting pod sa-p9/comicrent-cron-summary-29868900-8npzl
+evicting pod sa-p9/comicrent-cron-summary-29868910-v75wb
+evicting pod sa-p9/comicrent-cron-tick-29868914-hpxtb
+evicting pod sa-p9/comicrent-p9-workloads-auth-service-5465c8b7cf-d9ff9
+evicting pod sa-p9/comicrent-p9-workloads-comics-service-6486d99db5-gjtw2
+pod/comicrent-cron-summary-29868900-8npzl evicted
+pod/comicrent-cron-summary-29868910-v75wb evicted
+pod/comicrent-cron-tick-29868914-hpxtb evicted
+pod/comicrent-api-gateway-rollout-56c56d8b57-f445x evicted
+pod/comicrent-p9-workloads-auth-service-5465c8b7cf-d9ff9 evicted
+pod/comicrent-p9-workloads-comics-service-6486d99db5-gjtw2 evicted
+pod/comicrent-summary-consumer-75b8d978db-st5zp evicted
+node/gke-comicrent-gke-p6-default-pool-57db119c-ktnh drained
+Drenaje de cargas ComicRent completado.
+Duración del drenaje: 00:00:34.8172665
+Muestras HTTP durante el drenaje: 16; fallos: 0
+  2026-10-16T07:19:05.2622927+00:00 HTTP 200
+  2026-10-16T07:19:07.4938462+00:00 HTTP 200
+  2026-10-16T07:19:09.7041768+00:00 HTTP 200
+  2026-10-16T07:19:11.9289875+00:00 HTTP 200
+  2026-10-16T07:19:14.1080834+00:00 HTTP 200
+  2026-10-16T07:19:16.3003755+00:00 HTTP 200
+  2026-10-16T07:19:18.5110900+00:00 HTTP 200
+  2026-10-16T07:19:20.7024968+00:00 HTTP 200
+  2026-10-16T07:19:22.9031437+00:00 HTTP 200
+  2026-10-16T07:19:25.1038565+00:00 HTTP 200
+  2026-10-16T07:19:27.2927828+00:00 HTTP 200
+  2026-10-16T07:19:29.4914596+00:00 HTTP 200
+  2026-10-16T07:19:31.7292954+00:00 HTTP 200
+  2026-10-16T07:19:33.9291674+00:00 HTTP 200
+  2026-10-16T07:19:36.1459290+00:00 HTTP 200
+  2026-10-16T07:19:38.3397694+00:00 HTTP 200
+Health con cargas evacuadas: HTTP 200 a 2026-10-16T07:19:40.7242709+00:00
+node/gke-comicrent-gke-p6-default-pool-57db119c-ktnh uncordoned
+node/gke-comicrent-gke-p6-default-pool-57db119c-ktnh condition met
+Health final: HTTP 200 a 2026-10-16T07:21:14.6759781+00:00
+Drenaje completado; nodo descordonado y cargas ComicRent listas.

@@ -119,15 +119,17 @@ Estos comandos muestran nombres/estado solamente. **No uses `-o yaml`, `-o json`
 
 ### 2.5 Resiliencia ante pérdida de nodo — 8 puntos
 
-**Muestra primero:** [`terminal-p9-node-drain-pdb.png`](evidence/capturas/terminal-p9-node-drain-pdb.png) y [`p9-node-drain.txt`](evidence/p9-node-drain.txt). Presenta el PDB, las réplicas y HTTP 200 antes/después del drenaje.
+**Muestra primero:** [`p9-node-drain.txt`](evidence/p9-node-drain.txt), que registra la prueba vigente. La captura [`terminal-p9-node-drain-pdb.png`](evidence/capturas/terminal-p9-node-drain-pdb.png) es histórica y corresponde al script anterior, que solo evacuaba el gateway.
 
 ```powershell
+kubectl config current-context
 kubectl get pdb -n sa-p9
 kubectl get pods -n sa-p9 -o wide
 kubectl get nodes
+pwsh -NoProfile -ExecutionPolicy Bypass -File P9/scripts/drain-node.ps1 -PreflightOnly
 ```
 
-El script `P9/scripts/drain-node.ps1` cordona y drena un nodo; ejecútalo solo si el auxiliar solicita repetir la prueba y el entorno está listo para tolerar esa interrupción.
+Si el auxiliar pide repetir la demostración y hay tiempo, revisa el nodo y los pods que anuncia el preflight, y luego ejecuta `pwsh -NoProfile -ExecutionPolicy Bypass -File P9/scripts/drain-node.ps1 -Apply`. El script cordona el nodo, evacúa las cargas ComicRent sin estado, sondea el endpoint cada dos segundos y descordona automáticamente. Excluye PostgreSQL/RabbitMQ para conservar sus volúmenes y no interrumpe los componentes de plataforma; explica ese alcance. Para la evaluación basta mostrar la transcripción vigente y el estado Ready de los nodos; no repitas la prueba si no lo solicitan.
 
 ### 2.6 Restauración de datos verificada — 8 puntos
 

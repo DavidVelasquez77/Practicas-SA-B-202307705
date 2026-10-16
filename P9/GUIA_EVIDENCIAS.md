@@ -12,7 +12,7 @@ Las pruebas principales están ejecutadas y sus capturas están en P9/evidence/c
 | Dato existente antes del backup | [Captura](evidence/capturas/terminal-p9-marker-before-backup.png) | Fila P9-BEFORE-BACKUP-20260922-215517 sembrada en PostgreSQL antes del backup. |
 | Backup y pérdida controlada | [Backup](evidence/capturas/terminal-p9-backup-completed.png), [pérdida y RPO](evidence/capturas/terminal-p9-data-loss-rpo.png) | Backup Completed, cero errores/advertencias; dos filas borradas de la tabla de prueba; RPO 00:08:00.9834611. |
 | Restauración de contenido | [Restore y PVR](evidence/capturas/terminal-p9-restore-data-verified.png), [dato en base activa](evidence/capturas/terminal-p9-restore-active-db.png), [p9-backup-restore.txt](evidence/p9-backup-restore.txt) | Velero restauró volúmenes; se leyó la fila previa desde el PVC recuperado y luego se verificó el mismo marcador en auth_db activa. La fila posterior al backup se perdió, como corresponde al RPO. |
-| Pérdida de nodo | [Captura](evidence/capturas/terminal-p9-node-drain-pdb.png), [p9-node-drain.txt](evidence/p9-node-drain.txt) | El PDB protegió el gateway; el nodo fue drenado y descordonado; /health respondió HTTP 200 y el nodo volvió a Ready. |
+| Pérdida de nodo | [Transcripción actual](evidence/p9-node-drain.txt) | En el ensayo del 2026-10-16 se cordonó un nodo sin StatefulSets de PostgreSQL/RabbitMQ y se evacuaron siete pods de la aplicación ComicRent. Se sondeó `/health` cada 2 s durante 34.8 s: 16 respuestas HTTP 200, cero fallos. Después el nodo se descordonó y las réplicas volvieron a Ready. El alcance excluye los pods de plataforma y no prueba failover de los StatefulSets singleton. La captura anterior corresponde a una ejecución distinta del script y no sustituye esta transcripción. |
 | Reconstrucción completa | [Transcripción del simulacro final](evidence/p9-reconstruction-20260923-175941.txt), [resumen con marcas exactas](evidence/p9-reconstruction.txt), [capturas de apoyo de una ejecución anterior](evidence/capturas/) | La transcripción es la evidencia autoritativa del simulacro final: `app` se destruyó y reconstruyó sin intervención manual en los finalizers; ArgoCD sincronizó, Velero recuperó el marcador y este se verificó en la base activa. RTO exacto 00:31:48.361 y RPO 00:03:00.542. |
 
 ## Interpretación del RTO/RPO
@@ -44,7 +44,7 @@ El simulacro completo final midió RTO de **00:31:48.361** (objetivo 02:00:00) y
 
 ### Continuidad y reconstrucción
 
-![Drenaje de nodo con PDB y HTTP 200](evidence/capturas/terminal-p9-node-drain-pdb.png)
+La evidencia vigente del drenaje está en [p9-node-drain.txt](evidence/p9-node-drain.txt). La captura antigua `terminal-p9-node-drain-pdb.png` corresponde a una ejecución anterior y no debe presentarse como evidencia de esta prueba actualizada.
 
 ![Destroy de los recursos P9 app](evidence/capturas/terminal-p9-app-destroyed.png)
 
