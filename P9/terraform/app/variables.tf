@@ -51,5 +51,5 @@ variable "gitops_repo" {
 }
 variable "gitops_revision" {
   type    = string
-  default = "main"
+  default = "p9/technical-node-resilience"
 }

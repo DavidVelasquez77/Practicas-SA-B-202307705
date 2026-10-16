@@ -11,6 +11,7 @@ spec:
     - https://vmware-tanzu.github.io/helm-charts
     - https://kyverno.github.io/kyverno
     - https://charts.bitnami.com/bitnami
+    - https://cloudnative-pg.github.io/charts
   destinations:
     - namespace: "*"
       server: https://kubernetes.default.svc
