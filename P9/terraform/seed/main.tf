@@ -59,11 +59,27 @@ resource "google_storage_bucket_iam_member" "velero" {
   member = "serviceAccount:${google_service_account.velero.email}"
 }
 
+# Barman checks bucket metadata in addition to writing backup objects. Keep
+# this read-only permission scoped to the dedicated Velero bucket.
+resource "google_storage_bucket_iam_member" "cnpg_bucket_viewer" {
+  bucket = google_storage_bucket.velero.name
+  role   = "roles/storage.bucketViewer"
+  member = "serviceAccount:${google_service_account.velero.email}"
+}
+
 # ArgoCD crea esta KSA desde GitOps; el vínculo puede existir antes.
 resource "google_service_account_iam_member" "velero_workload_identity" {
   service_account_id = google_service_account.velero.name
   role               = "roles/iam.workloadIdentityUser"
   member             = "serviceAccount:${var.project_id}.svc.id.goog[velero/velero]"
+}
+
+# CloudNativePG writes physical backups and WAL segments to the durable P9
+# bucket using the same least-privilege bucket-scoped service account as Velero.
+resource "google_service_account_iam_member" "cnpg_backup_workload_identity" {
+  service_account_id = google_service_account.velero.name
+  role               = "roles/iam.workloadIdentityUser"
+  member             = "serviceAccount:${var.project_id}.svc.id.goog[sa-p9/comicrent-postgresql-ha]"
 }
 
 resource "google_service_account_iam_member" "velero_token_creator" {
