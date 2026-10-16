@@ -1,0 +1,20 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: p8-intentional-vulnerable
+  namespace: sa-p8
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: p8-intentional-vulnerable
+  template:
+    metadata:
+      labels:
+        app: p8-intentional-vulnerable
+    spec:
+      containers:
+        - name: vulnerable
+          image: nginx:latest
+          securityContext:
+            privileged: true
