@@ -18,6 +18,10 @@ variable "velero_bucket" {
   type    = string
   default = "comicrent-p9-velero-2026-202307705"
 }
+variable "postgresql_bucket" {
+  type    = string
+  default = "comicrent-p9-postgres-2026-202307705"
+}
 variable "backup_retention_days" {
   type    = number
   default = 30

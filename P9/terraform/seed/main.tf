@@ -47,9 +47,31 @@ resource "google_storage_bucket" "velero" {
   lifecycle { prevent_destroy = true }
 }
 
+# Keep CNPG's physical backups and WAL outside the Velero bucket root. Velero
+# rejects unknown top-level prefixes during BSL validation.
+resource "google_storage_bucket" "postgresql" {
+  name                        = var.postgresql_bucket
+  project                     = var.project_id
+  location                    = "US-CENTRAL1"
+  uniform_bucket_level_access = true
+  force_destroy               = false
+  versioning { enabled = true }
+  lifecycle_rule {
+    condition { age = var.backup_retention_days }
+    action { type = "Delete" }
+  }
+  lifecycle { prevent_destroy = true }
+}
+
 resource "google_service_account" "velero" {
   account_id   = "velero-p9"
   display_name = "Velero P9 backup access"
+  project      = var.project_id
+}
+
+resource "google_service_account" "cnpg_backup" {
+  account_id   = "cnpg-p9-backup"
+  display_name = "CloudNativePG P9 backup access"
   project      = var.project_id
 }
 
@@ -60,11 +82,17 @@ resource "google_storage_bucket_iam_member" "velero" {
 }
 
 # Barman checks bucket metadata in addition to writing backup objects. Keep
-# this read-only permission scoped to the dedicated Velero bucket.
-resource "google_storage_bucket_iam_member" "cnpg_bucket_viewer" {
-  bucket = google_storage_bucket.velero.name
+# both permissions scoped to the dedicated PostgreSQL bucket.
+resource "google_storage_bucket_iam_member" "cnpg_backup_object_admin" {
+  bucket = google_storage_bucket.postgresql.name
+  role   = "roles/storage.objectAdmin"
+  member = "serviceAccount:${google_service_account.cnpg_backup.email}"
+}
+
+resource "google_storage_bucket_iam_member" "cnpg_backup_bucket_viewer" {
+  bucket = google_storage_bucket.postgresql.name
   role   = "roles/storage.bucketViewer"
-  member = "serviceAccount:${google_service_account.velero.email}"
+  member = "serviceAccount:${google_service_account.cnpg_backup.email}"
 }
 
 # ArgoCD crea esta KSA desde GitOps; el vínculo puede existir antes.
@@ -74,10 +102,8 @@ resource "google_service_account_iam_member" "velero_workload_identity" {
   member             = "serviceAccount:${var.project_id}.svc.id.goog[velero/velero]"
 }
 
-# CloudNativePG writes physical backups and WAL segments to the durable P9
-# bucket using the same least-privilege bucket-scoped service account as Velero.
-resource "google_service_account_iam_member" "cnpg_backup_workload_identity" {
-  service_account_id = google_service_account.velero.name
+resource "google_service_account_iam_member" "cnpg_backup_workload_identity_dedicated" {
+  service_account_id = google_service_account.cnpg_backup.name
   role               = "roles/iam.workloadIdentityUser"
   member             = "serviceAccount:${var.project_id}.svc.id.goog[sa-p9/comicrent-postgresql-ha]"
 }
